@@ -7,7 +7,12 @@ export async function GET(_req: Request, { params }: Params) {
   const objectKey = key.join("/");
   const { env } = await getCloudflareContext({ async: true });
 
-  const obj = await env.IMAGES.get(objectKey);
+  let obj: R2ObjectBody | null;
+  try {
+    obj = await env.IMAGES.get(objectKey);
+  } catch {
+    return new Response("not found", { status: 404 });
+  }
   if (!obj) return new Response("not found", { status: 404 });
 
   return new Response(obj.body, {

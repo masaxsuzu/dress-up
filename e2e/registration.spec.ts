@@ -47,7 +47,7 @@ test("/add でアップロード→VLM失敗→手動入力→保存→一覧に
 test("/ 一覧に追加ボタンがある", async ({ page, request }) => {
   await clear(request);
   await page.goto("/");
-  await expect(page.getByRole("link", { name: /服を追加/ })).toBeVisible();
+  await expect(page.getByText("+ 服を追加")).toBeVisible();
   await expect(page.getByText("まだアイテムがありません。")).toBeVisible();
 });
 
