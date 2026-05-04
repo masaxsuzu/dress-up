@@ -15,8 +15,7 @@ CREATE TABLE clothing_items (
   tags                 TEXT    NOT NULL DEFAULT '[]',
   brand                TEXT,
   notes                TEXT,
-  image_original_key   TEXT    NOT NULL,
-  image_thumbnail_key  TEXT    NOT NULL,
+  image_key            TEXT    NOT NULL,
   created_at           TEXT    NOT NULL,
   updated_at           TEXT    NOT NULL
 );
