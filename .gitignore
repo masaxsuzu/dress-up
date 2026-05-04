@@ -1,6 +1,8 @@
 node_modules/
 .next/
+.open-next/
 .wrangler/
+next-env.d.ts
 .dev.vars
 .env
 .env.local
