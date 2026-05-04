@@ -9,11 +9,18 @@ import {
   type Color,
   type VLMExtraction,
 } from "@/schema/clothing";
+import {
+  CATEGORY_LABEL,
+  FORMALITY_LABEL,
+  PATTERN_LABEL,
+  SEASON_LABEL,
+} from "@/lib/labels";
 import { resizeImageForUpload } from "@/lib/resize-image";
 
 const CATEGORIES = ClothingCategorySchema.options;
 const PATTERNS = PatternSchema.options;
 const SEASONS = SeasonSchema.options;
+const FORMALITY_LEVELS = [1, 2, 3, 4, 5];
 
 export default function AddPage() {
   const [file, setFile] = useState<File | null>(null);
@@ -53,7 +60,7 @@ export default function AddPage() {
       if (data.extraction) {
         setDraft(data.extraction);
       } else {
-        setError(data.error ?? "VLM抽出に失敗しました。属性を手動で入力してください。");
+        setError(data.error ?? "属性の自動抽出に失敗しました。手動で入力してください。");
         setDraft(emptyExtraction());
       }
     } catch (e) {
@@ -94,29 +101,53 @@ export default function AddPage() {
   return (
     <main
       style={{
-        padding: "2rem",
+        padding: "1rem",
         maxWidth: 640,
         margin: "0 auto",
-        fontFamily: "system-ui, sans-serif",
       }}
     >
-      <p>
-        <a href="/">← 一覧に戻る</a>
+      <p style={{ margin: "0 0 1rem" }}>
+        <a href="/" style={{ color: "#666" }}>
+          ← 一覧に戻る
+        </a>
       </p>
-      <h1>服を追加</h1>
+      <h1 style={{ margin: "0 0 1rem", fontSize: "1.4rem" }}>服を追加</h1>
 
       <section style={{ marginBottom: "1.5rem" }}>
-        <input type="file" accept="image/*" onChange={onFileChange} />
+        <label
+          style={{
+            display: "block",
+            padding: "1rem",
+            border: "2px dashed #ccc",
+            borderRadius: 10,
+            background: "#fff",
+            textAlign: "center",
+            cursor: "pointer",
+          }}
+        >
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={onFileChange}
+            style={{ display: "none" }}
+          />
+          <span style={{ fontSize: "0.95rem" }}>
+            {file ? "別の写真を選ぶ" : "写真を撮る / 選ぶ"}
+          </span>
+        </label>
         {previewUrl && (
           <div style={{ marginTop: "0.75rem" }}>
             <img
               src={previewUrl}
               alt=""
               style={{
-                maxWidth: "100%",
-                maxHeight: 400,
+                width: "100%",
+                maxHeight: "50vh",
+                objectFit: "contain",
                 borderRadius: 8,
                 border: "1px solid #eee",
+                background: "#fff",
               }}
             />
           </div>
@@ -127,7 +158,7 @@ export default function AddPage() {
         <button
           onClick={onExtract}
           disabled={extracting}
-          style={btn(extracting)}
+          style={primaryBtn(extracting)}
         >
           {extracting ? "解析中..." : "属性を抽出"}
         </button>
@@ -145,13 +176,15 @@ export default function AddPage() {
       )}
 
       {draft && (
-        <button onClick={onSave} disabled={saving} style={btn(saving)}>
+        <button onClick={onSave} disabled={saving} style={primaryBtn(saving)}>
           {saving ? "保存中..." : "保存"}
         </button>
       )}
 
       {error && (
-        <p style={{ color: "#c00", whiteSpace: "pre-wrap" }}>{error}</p>
+        <p style={{ color: "#c00", whiteSpace: "pre-wrap", marginTop: "1rem" }}>
+          {error}
+        </p>
       )}
     </main>
   );
@@ -172,15 +205,17 @@ function emptyExtraction(): VLMExtraction {
   };
 }
 
-function btn(disabled: boolean): React.CSSProperties {
+function primaryBtn(disabled: boolean): React.CSSProperties {
   return {
-    padding: "0.6rem 1.2rem",
+    padding: "0.85rem 1.2rem",
     background: disabled ? "#999" : "#111",
     color: "#fff",
     border: "none",
-    borderRadius: 6,
+    borderRadius: 8,
     cursor: disabled ? "not-allowed" : "pointer",
-    marginRight: "0.5rem",
+    fontSize: "1rem",
+    width: "100%",
+    marginBottom: "0.75rem",
   };
 }
 
@@ -200,17 +235,28 @@ function ExtractionForm({
   onNotesChange: (s: string) => void;
 }) {
   return (
-    <div style={{ display: "grid", gap: "0.9rem", marginBottom: "1.5rem" }}>
+    <div
+      style={{
+        display: "grid",
+        gap: "1rem",
+        marginBottom: "1.5rem",
+        background: "#fff",
+        padding: "1rem",
+        borderRadius: 10,
+        border: "1px solid #eee",
+      }}
+    >
       <Field label="カテゴリ">
         <select
           value={value.category}
           onChange={(e) =>
             onChange({ ...value, category: e.target.value as never })
           }
+          style={inputStyle}
         >
           {CATEGORIES.map((c) => (
             <option key={c} value={c}>
-              {c}
+              {CATEGORY_LABEL[c]}
             </option>
           ))}
         </select>
@@ -223,16 +269,18 @@ function ExtractionForm({
             onChange({ ...value, subcategory: e.target.value || null })
           }
           placeholder="例: Tシャツ、デニム"
+          style={inputStyle}
         />
       </Field>
 
-      <Field label="カラー (各行 name,#hex)">
+      <Field label="カラー (各行 名前,#hex)">
         <textarea
           rows={Math.max(2, value.colors.length)}
           value={value.colors.map((c) => `${c.name},${c.hex}`).join("\n")}
           onChange={(e) =>
             onChange({ ...value, colors: parseColors(e.target.value) })
           }
+          style={inputStyle}
         />
       </Field>
 
@@ -245,11 +293,12 @@ function ExtractionForm({
               pattern: (e.target.value || null) as never,
             })
           }
+          style={inputStyle}
         >
           <option value="">(なし)</option>
           {PATTERNS.map((p) => (
             <option key={p} value={p}>
-              {p}
+              {PATTERN_LABEL[p]}
             </option>
           ))}
         </select>
@@ -261,6 +310,8 @@ function ExtractionForm({
           onChange={(e) =>
             onChange({ ...value, material: e.target.value || null })
           }
+          placeholder="例: コットン、ウール"
+          style={inputStyle}
         />
       </Field>
 
@@ -270,13 +321,26 @@ function ExtractionForm({
           onChange={(e) =>
             onChange({ ...value, silhouette: e.target.value || null })
           }
+          placeholder="例: ゆったり、タイト"
+          style={inputStyle}
         />
       </Field>
 
       <Field label="シーズン">
-        <div style={{ display: "flex", gap: "0.75rem" }}>
+        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
           {SEASONS.map((s) => (
-            <label key={s} style={{ display: "flex", gap: 4 }}>
+            <label
+              key={s}
+              style={{
+                display: "flex",
+                gap: 4,
+                alignItems: "center",
+                padding: "0.4rem 0.6rem",
+                border: "1px solid #ddd",
+                borderRadius: 6,
+                background: value.season.includes(s) ? "#eef" : "#fff",
+              }}
+            >
               <input
                 type="checkbox"
                 checked={value.season.includes(s)}
@@ -289,22 +353,26 @@ function ExtractionForm({
                   })
                 }
               />
-              {s}
+              {SEASON_LABEL[s]}
             </label>
           ))}
         </div>
       </Field>
 
-      <Field label="フォーマル度 (1-5)">
-        <input
-          type="number"
-          min={1}
-          max={5}
+      <Field label="フォーマル度">
+        <select
           value={value.formality}
           onChange={(e) =>
             onChange({ ...value, formality: Number(e.target.value) })
           }
-        />
+          style={inputStyle}
+        >
+          {FORMALITY_LEVELS.map((n) => (
+            <option key={n} value={n}>
+              {n} - {FORMALITY_LABEL[n]}
+            </option>
+          ))}
+        </select>
       </Field>
 
       <Field label="シーン (カンマ区切り)">
@@ -313,6 +381,8 @@ function ExtractionForm({
           onChange={(e) =>
             onChange({ ...value, occasion: parseList(e.target.value) })
           }
+          placeholder="例: オフィス, デート"
+          style={inputStyle}
         />
       </Field>
 
@@ -322,11 +392,17 @@ function ExtractionForm({
           onChange={(e) =>
             onChange({ ...value, tags: parseList(e.target.value) })
           }
+          placeholder="例: お気に入り, ヘビロテ"
+          style={inputStyle}
         />
       </Field>
 
       <Field label="ブランド">
-        <input value={brand} onChange={(e) => onBrandChange(e.target.value)} />
+        <input
+          value={brand}
+          onChange={(e) => onBrandChange(e.target.value)}
+          style={inputStyle}
+        />
       </Field>
 
       <Field label="メモ">
@@ -334,6 +410,7 @@ function ExtractionForm({
           rows={3}
           value={notes}
           onChange={(e) => onNotesChange(e.target.value)}
+          style={inputStyle}
         />
       </Field>
     </div>
@@ -354,6 +431,16 @@ function Field({
     </label>
   );
 }
+
+const inputStyle: React.CSSProperties = {
+  padding: "0.55rem 0.7rem",
+  fontSize: "1rem",
+  border: "1px solid #ddd",
+  borderRadius: 6,
+  background: "#fff",
+  width: "100%",
+  boxSizing: "border-box",
+};
 
 function parseColors(text: string): Color[] {
   return text

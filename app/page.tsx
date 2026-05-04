@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { listItems } from "@/lib/db";
+import { CATEGORY_LABEL } from "@/lib/labels";
 
 export const dynamic = "force-dynamic";
 
@@ -11,36 +12,38 @@ export default async function Home() {
   return (
     <main
       style={{
-        padding: "2rem",
+        padding: "1rem",
         maxWidth: 1100,
         margin: "0 auto",
-        fontFamily: "system-ui, sans-serif",
       }}
     >
       <header
         style={{
           display: "flex",
           justifyContent: "space-between",
-          alignItems: "baseline",
-          marginBottom: "1.5rem",
+          alignItems: "center",
+          marginBottom: "1rem",
+          gap: "0.5rem",
         }}
       >
-        <h1 style={{ margin: 0 }}>dress-up</h1>
+        <h1 style={{ margin: 0, fontSize: "1.4rem" }}>dress-up</h1>
         <Link
           href="/add"
           style={{
-            padding: "0.5rem 1rem",
+            padding: "0.6rem 1rem",
             background: "#111",
             color: "#fff",
-            borderRadius: 6,
+            borderRadius: 999,
             textDecoration: "none",
+            fontSize: "0.95rem",
+            whiteSpace: "nowrap",
           }}
         >
           + 服を追加
         </Link>
       </header>
 
-      <p style={{ color: "#666" }}>
+      <p style={{ color: "#666", fontSize: "0.9rem", margin: "0 0 1rem" }}>
         {items.length === 0
           ? "まだアイテムがありません。"
           : `${items.length} 件のアイテム`}
@@ -49,59 +52,64 @@ export default async function Home() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-          gap: "1rem",
+          gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
+          gap: "0.75rem",
         }}
       >
         {items.map((item) => (
-          <article
+          <Link
             key={item.id}
-            style={{
-              border: "1px solid #eee",
-              borderRadius: 8,
-              overflow: "hidden",
-              background: "#fff",
-            }}
+            href={`/items/${item.id}`}
+            style={{ textDecoration: "none", color: "inherit" }}
           >
-            <img
-              src={`/api/images/${item.imageKey}`}
-              alt={item.subcategory ?? item.category}
+            <article
               style={{
-                width: "100%",
-                aspectRatio: "1",
-                objectFit: "cover",
-                display: "block",
+                border: "1px solid #eee",
+                borderRadius: 10,
+                overflow: "hidden",
+                background: "#fff",
               }}
-            />
-            <div style={{ padding: "0.75rem" }}>
-              <div style={{ fontSize: "0.85rem", color: "#666" }}>
-                {item.category}
-                {item.subcategory ? ` / ${item.subcategory}` : ""}
-              </div>
-              <div
+            >
+              <img
+                src={`/api/images/${item.imageKey}`}
+                alt={item.subcategory ?? item.category}
                 style={{
-                  display: "flex",
-                  gap: 4,
-                  marginTop: 6,
-                  flexWrap: "wrap",
+                  width: "100%",
+                  aspectRatio: "1",
+                  objectFit: "cover",
+                  display: "block",
                 }}
-              >
-                {item.colors.map((c) => (
-                  <span
-                    key={c.hex + c.name}
-                    title={c.name}
-                    style={{
-                      width: 14,
-                      height: 14,
-                      background: c.hex,
-                      borderRadius: "50%",
-                      border: "1px solid #ccc",
-                    }}
-                  />
-                ))}
+              />
+              <div style={{ padding: "0.6rem" }}>
+                <div style={{ fontSize: "0.85rem", color: "#666" }}>
+                  {CATEGORY_LABEL[item.category]}
+                  {item.subcategory ? ` / ${item.subcategory}` : ""}
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 4,
+                    marginTop: 6,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  {item.colors.map((c) => (
+                    <span
+                      key={c.hex + c.name}
+                      title={c.name}
+                      style={{
+                        width: 14,
+                        height: 14,
+                        background: c.hex,
+                        borderRadius: "50%",
+                        border: "1px solid #ccc",
+                      }}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
-          </article>
+            </article>
+          </Link>
         ))}
       </div>
     </main>

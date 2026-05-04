@@ -50,3 +50,38 @@ test("/ 一覧に追加ボタンがある", async ({ page, request }) => {
   await expect(page.getByRole("link", { name: /服を追加/ })).toBeVisible();
   await expect(page.getByText("まだアイテムがありません。")).toBeVisible();
 });
+
+test("詳細ページから削除すると一覧から消える", async ({ page, request }) => {
+  await clear(request);
+
+  // API 経由で1件作っておく（UIフローはもう一つのテストでカバー済み）
+  const created = await request.post("/api/items", {
+    data: {
+      category: "tops",
+      subcategory: null,
+      colors: [{ name: "navy", hex: "#1f2a44" }],
+      pattern: null,
+      material: null,
+      silhouette: null,
+      season: ["spring"],
+      formality: 2,
+      occasion: [],
+      tags: [],
+      brand: null,
+      notes: null,
+      imageKey: "items/dummy.png",
+    },
+  });
+  expect(created.ok()).toBeTruthy();
+  const { item } = await created.json();
+
+  await page.goto(`/items/${item.id}`);
+  await expect(page.getByText("カテゴリ")).toBeVisible();
+
+  // confirm() を自動承認
+  page.on("dialog", (d) => d.accept());
+
+  await page.getByRole("button", { name: "削除" }).click();
+  await page.waitForURL("/");
+  await expect(page.getByText("まだアイテムがありません。")).toBeVisible();
+});
