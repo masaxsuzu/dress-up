@@ -9,6 +9,10 @@ const ALLOWED_TYPES = new Set([
   "image/gif",
 ]);
 
+// Anthropic API は base64 後 5MB まで。base64 は元の約4/3倍になるので
+// 生バイトは ~3.75MB が上限。安全側で 3.5MB を弾く。
+const MAX_IMAGE_BYTES = 3_500_000;
+
 export async function POST(req: Request) {
   const { env } = await getCloudflareContext({ async: true });
 
@@ -21,6 +25,14 @@ export async function POST(req: Request) {
     return Response.json(
       { error: `unsupported content type: ${file.type}` },
       { status: 400 },
+    );
+  }
+  if (file.size > MAX_IMAGE_BYTES) {
+    return Response.json(
+      {
+        error: `image too large: ${file.size} bytes (max ${MAX_IMAGE_BYTES})`,
+      },
+      { status: 413 },
     );
   }
 

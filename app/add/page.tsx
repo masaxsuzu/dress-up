@@ -9,6 +9,7 @@ import {
   type Color,
   type VLMExtraction,
 } from "@/schema/clothing";
+import { resizeImageForUpload } from "@/lib/resize-image";
 
 const CATEGORIES = ClothingCategorySchema.options;
 const PATTERNS = PatternSchema.options;
@@ -39,8 +40,9 @@ export default function AddPage() {
     setExtracting(true);
     setError(null);
     try {
+      const resized = await resizeImageForUpload(file);
       const fd = new FormData();
-      fd.append("file", file);
+      fd.append("file", resized);
       const res = await fetch("/api/extract", { method: "POST", body: fd });
       const data = (await res.json()) as {
         imageKey?: string;
