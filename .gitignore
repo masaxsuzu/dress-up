@@ -1,0 +1,16 @@
+node_modules/
+.next/
+.wrangler/
+.dev.vars
+.env
+.env.local
+.env.*.local
+
+dist/
+build/
+out/
+
+*.log
+.DS_Store
+.vscode/
+.idea/
