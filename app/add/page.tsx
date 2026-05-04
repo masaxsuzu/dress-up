@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import {
   ClothingCategorySchema,
   PatternSchema,
@@ -16,6 +15,7 @@ import {
   PATTERN_LABEL,
   SEASON_LABEL,
 } from "@/lib/labels";
+import { takePendingFile } from "@/components/add-button";
 import { resizeImageForUpload } from "@/lib/resize-image";
 
 const CATEGORIES = ClothingCategorySchema.options;
@@ -24,10 +24,6 @@ const SEASONS = SeasonSchema.options;
 const FORMALITY_LEVELS = [1, 2, 3, 4, 5];
 
 export default function AddPage() {
-  const router = useRouter();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const fileSelectedRef = useRef(false);
-
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [extracting, setExtracting] = useState(false);
@@ -39,22 +35,15 @@ export default function AddPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const input = inputRef.current;
-    if (!input) return;
-    input.click();
-
-    const onFocus = () => {
-      setTimeout(() => {
-        if (!fileSelectedRef.current) router.back();
-      }, 300);
-    };
-    window.addEventListener("focus", onFocus, { once: true });
-    return () => window.removeEventListener("focus", onFocus);
+    const f = takePendingFile();
+    if (f) {
+      setFile(f);
+      setPreviewUrl(URL.createObjectURL(f));
+    }
   }, []);
 
   function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0] ?? null;
-    if (f) fileSelectedRef.current = true;
     setFile(f);
     setDraft(null);
     setImageKey(null);
@@ -146,14 +135,13 @@ export default function AddPage() {
           }}
         >
           <input
-            ref={inputRef}
             type="file"
             accept="image/*"
             onChange={onFileChange}
             style={{ display: "none" }}
           />
           <span style={{ fontSize: "0.95rem" }}>
-            {file ? "別の写真を選ぶ" : "カメラを起動中..."}
+            {file ? "別の写真を選ぶ" : "写真を選ぶ"}
           </span>
         </label>
         {previewUrl && (

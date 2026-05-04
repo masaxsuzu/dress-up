@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { listItems } from "@/lib/db";
 import { CATEGORY_LABEL } from "@/lib/labels";
+import { AddButton } from "@/components/add-button";
 
 export const dynamic = "force-dynamic";
 
@@ -27,8 +28,7 @@ export default async function Home() {
         }}
       >
         <h1 style={{ margin: 0, fontSize: "1.4rem" }}>dress-up</h1>
-        <Link
-          href="/add"
+        <AddButton
           style={{
             padding: "0.6rem 1rem",
             background: "#111",
@@ -38,9 +38,7 @@ export default async function Home() {
             fontSize: "0.95rem",
             whiteSpace: "nowrap",
           }}
-        >
-          + 服を追加
-        </Link>
+        />
       </header>
 
       <p style={{ color: "#666", fontSize: "0.9rem", margin: "0 0 1rem" }}>
