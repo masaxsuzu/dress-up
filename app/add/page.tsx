@@ -128,7 +128,6 @@ export default function AddPage() {
           <input
             type="file"
             accept="image/*"
-            capture="environment"
             onChange={onFileChange}
             style={{ display: "none" }}
           />
