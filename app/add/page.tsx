@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   ClothingCategorySchema,
   PatternSchema,
@@ -23,6 +24,10 @@ const SEASONS = SeasonSchema.options;
 const FORMALITY_LEVELS = [1, 2, 3, 4, 5];
 
 export default function AddPage() {
+  const router = useRouter();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const fileSelectedRef = useRef(false);
+
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [extracting, setExtracting] = useState(false);
@@ -33,8 +38,23 @@ export default function AddPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    const input = inputRef.current;
+    if (!input) return;
+    input.click();
+
+    const onFocus = () => {
+      setTimeout(() => {
+        if (!fileSelectedRef.current) router.back();
+      }, 300);
+    };
+    window.addEventListener("focus", onFocus, { once: true });
+    return () => window.removeEventListener("focus", onFocus);
+  }, []);
+
   function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0] ?? null;
+    if (f) fileSelectedRef.current = true;
     setFile(f);
     setDraft(null);
     setImageKey(null);
@@ -126,13 +146,14 @@ export default function AddPage() {
           }}
         >
           <input
+            ref={inputRef}
             type="file"
             accept="image/*"
             onChange={onFileChange}
             style={{ display: "none" }}
           />
           <span style={{ fontSize: "0.95rem" }}>
-            {file ? "別の写真を選ぶ" : "写真を撮る / 選ぶ"}
+            {file ? "別の写真を選ぶ" : "カメラを起動中..."}
           </span>
         </label>
         {previewUrl && (
