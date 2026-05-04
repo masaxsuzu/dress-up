@@ -4,6 +4,9 @@ node_modules/
 .wrangler/
 next-env.d.ts
 *.tsbuildinfo
+
+playwright-report/
+test-results/
 .dev.vars
 .env
 .env.local
