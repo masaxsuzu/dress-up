@@ -2,6 +2,7 @@ import type {
   ClothingCategory,
   ClothingItem,
   ClothingItemInput,
+  ClothingItemUpdate,
   Pattern,
 } from "@/schema/clothing";
 
@@ -110,4 +111,42 @@ export async function deleteItem(
     .bind(id)
     .run();
   return (result.meta.changes ?? 0) > 0;
+}
+
+export async function updateItem(
+  db: D1Database,
+  id: string,
+  input: ClothingItemUpdate,
+): Promise<ClothingItem | null> {
+  const now = new Date().toISOString();
+
+  const result = await db
+    .prepare(
+      `UPDATE clothing_items SET
+        category = ?, subcategory = ?, colors = ?, pattern = ?, material = ?,
+        silhouette = ?, season = ?, formality = ?, occasion = ?, tags = ?,
+        brand = ?, notes = ?, updated_at = ?
+      WHERE id = ?`,
+    )
+    .bind(
+      input.category,
+      input.subcategory,
+      JSON.stringify(input.colors),
+      input.pattern,
+      input.material,
+      input.silhouette,
+      JSON.stringify(input.season),
+      input.formality,
+      JSON.stringify(input.occasion),
+      JSON.stringify(input.tags),
+      input.brand,
+      input.notes,
+      now,
+      id,
+    )
+    .run();
+
+  if ((result.meta.changes ?? 0) === 0) return null;
+
+  return getItem(db, id);
 }

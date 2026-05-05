@@ -2,8 +2,8 @@ import { Miniflare } from "miniflare";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { createItem, deleteItem, getItem, listItems } from "@/lib/db";
-import type { ClothingItemInput } from "@/schema/clothing";
+import { createItem, deleteItem, getItem, listItems, updateItem } from "@/lib/db";
+import type { ClothingItemInput, ClothingItemUpdate } from "@/schema/clothing";
 
 let mf: Miniflare;
 let db: D1Database;
@@ -111,5 +111,59 @@ describe("deleteItem", () => {
 
   it("存在しないidに対してfalseを返す", async () => {
     expect(await deleteItem(db, "no-such-id")).toBe(false);
+  });
+});
+
+describe("updateItem", () => {
+  const UPDATE: ClothingItemUpdate = {
+    category: "bottoms",
+    subcategory: "デニム",
+    colors: [{ name: "blue", hex: "#0000ff" }],
+    pattern: "stripe",
+    material: "denim",
+    silhouette: "slim",
+    season: ["spring", "autumn"],
+    formality: 3,
+    occasion: ["office"],
+    tags: ["updated"],
+    brand: "levis",
+    notes: "updated notes",
+  };
+
+  it("フィールドが更新されupdatedAtが変わる", async () => {
+    const created = await createItem(db, SAMPLE);
+    // Ensure updated_at will be different
+    await new Promise((r) => setTimeout(r, 5));
+    const updated = await updateItem(db, created.id, UPDATE);
+
+    expect(updated).not.toBeNull();
+    expect(updated!.id).toBe(created.id);
+    expect(updated!.category).toBe("bottoms");
+    expect(updated!.subcategory).toBe("デニム");
+    expect(updated!.colors).toEqual([{ name: "blue", hex: "#0000ff" }]);
+    expect(updated!.pattern).toBe("stripe");
+    expect(updated!.season).toEqual(["spring", "autumn"]);
+    expect(updated!.brand).toBe("levis");
+    expect(updated!.notes).toBe("updated notes");
+    // imageKey is immutable
+    expect(updated!.imageKey).toBe(SAMPLE.imageKey);
+    // createdAt is preserved, updatedAt is refreshed
+    expect(updated!.createdAt).toBe(created.createdAt);
+    expect(updated!.updatedAt).not.toBe(created.updatedAt);
+  });
+
+  it("JSONカラム(colors/season/occasion/tags)のラウンドトリップ", async () => {
+    const created = await createItem(db, SAMPLE);
+    const updated = await updateItem(db, created.id, UPDATE);
+
+    expect(updated!.colors).toEqual(UPDATE.colors);
+    expect(updated!.season).toEqual(UPDATE.season);
+    expect(updated!.occasion).toEqual(UPDATE.occasion);
+    expect(updated!.tags).toEqual(UPDATE.tags);
+  });
+
+  it("存在しないidに対してnullを返す", async () => {
+    const result = await updateItem(db, "no-such-id", UPDATE);
+    expect(result).toBeNull();
   });
 });
