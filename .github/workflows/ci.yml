@@ -20,8 +20,16 @@ jobs:
 
       - run: npm ci
 
-      - name: Unit tests (vitest)
-        run: npm test
+      - name: Unit tests with coverage (vitest)
+        run: npm run test:coverage
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+          retention-days: 7
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
@@ -36,3 +44,24 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+  build:
+    name: Build (deploy parity)
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # deploy.yml と同じビルドコマンドを実行して、Next.js の typecheck・
+      # OpenNext バンドルでこける変更を PR の段階で検知する。
+      # デプロイはしない。
+      - name: OpenNext build
+        run: npx opennextjs-cloudflare build
