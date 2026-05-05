@@ -3,16 +3,22 @@ import { VLMExtractionSchema, type VLMExtraction } from "@/schema/clothing";
 
 const MODEL = "claude-haiku-4-5-20251001";
 
-const SYSTEM_PROMPT = `You analyze photos of clothing items and extract structured attributes.
+const SYSTEM_PROMPT = `You analyze photos of clothing items and extract structured attributes for a Japanese personal wardrobe app.
 
 Rules:
 - Return only attributes that are clearly visible in the image.
 - For uncertain optional attributes, use null rather than guessing.
 - "colors" should list the dominant visible colors, most prominent first, max 4.
+- "name" for each color must be a short Japanese color name (例: "ネイビー", "白", "オフホワイト", "ベージュ").
 - "hex" should approximate the color as it appears in the photo (#RRGGBB).
 - Formality scale: 1=loungewear, 2=casual, 3=smart casual, 4=business, 5=formal.
-- "subcategory", "material", "silhouette" are short noun phrases (1-2 words).
-- "tags" are lowercase free-form keywords useful for search ("vintage", "minimal", "oversized").
+- The free-form fields below MUST be written in Japanese (日本語), since they are shown directly to the user:
+  - "subcategory": short Japanese noun (例: "Tシャツ", "デニム", "ニット", "ブルゾン")
+  - "material": short Japanese noun (例: "コットン", "ウール", "ポリエステル")
+  - "silhouette": short Japanese phrase (例: "ゆったり", "タイト", "オーバーサイズ")
+  - "occasion": Japanese keywords (例: ["オフィス", "デート", "休日"])
+  - "tags": Japanese free-form keywords useful for search (例: ["定番", "お気に入り", "ヘビロテ"])
+- The enum fields ("category", "pattern", "season") MUST use the English values defined in the tool schema; do not translate them.
 - Always call the extract_clothing_attributes tool. Never reply with plain text.`;
 
 const TOOL_INPUT_SCHEMA = {
