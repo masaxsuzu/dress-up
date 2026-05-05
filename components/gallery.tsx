@@ -1,0 +1,341 @@
+"use client";
+
+import Link from "next/link";
+import { useCallback, useMemo, useState, useTransition } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import type { ClothingCategory, ClothingItem, Season } from "@/schema/clothing";
+import { ClothingCategorySchema, SeasonSchema } from "@/schema/clothing";
+import { CATEGORY_LABEL, SEASON_LABEL } from "@/lib/labels";
+
+// ---------------------------------------------------------------------------
+// Filter helpers
+// ---------------------------------------------------------------------------
+
+function matchesText(item: ClothingItem, q: string): boolean {
+  if (!q) return true;
+  const lower = q.toLowerCase();
+  return [
+    item.subcategory,
+    item.brand,
+    item.material,
+    item.notes,
+    ...item.tags,
+  ]
+    .filter(Boolean)
+    .some((v) => v!.toLowerCase().includes(lower));
+}
+
+function matchesCategory(
+  item: ClothingItem,
+  categories: ClothingCategory[],
+): boolean {
+  if (categories.length === 0) return true;
+  return categories.includes(item.category);
+}
+
+function matchesSeason(item: ClothingItem, seasons: Season[]): boolean {
+  if (seasons.length === 0) return true;
+  return seasons.some((s) => item.season.includes(s));
+}
+
+// ---------------------------------------------------------------------------
+// URL param helpers
+// ---------------------------------------------------------------------------
+
+type Params = {
+  q: string;
+  categories: ClothingCategory[];
+  seasons: Season[];
+};
+
+function parseParams(sp: URLSearchParams): Params {
+  const q = sp.get("q") ?? "";
+  const categories = (sp.getAll("category") as ClothingCategory[]).filter((c) =>
+    ClothingCategorySchema.options.includes(c),
+  );
+  const seasons = (sp.getAll("season") as Season[]).filter((s) =>
+    SeasonSchema.options.includes(s),
+  );
+  return { q, categories, seasons };
+}
+
+function buildURL(params: Params): string {
+  const sp = new URLSearchParams();
+  if (params.q) sp.set("q", params.q);
+  for (const c of params.categories) sp.append("category", c);
+  for (const s of params.seasons) sp.append("season", s);
+  const qs = sp.toString();
+  return qs ? `/?${qs}` : "/";
+}
+
+// ---------------------------------------------------------------------------
+// Sub-components
+// ---------------------------------------------------------------------------
+
+function Chip({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        padding: "0.3rem 0.75rem",
+        borderRadius: 999,
+        border: active ? "2px solid #111" : "1px solid #ccc",
+        background: active ? "#111" : "#fff",
+        color: active ? "#fff" : "#333",
+        cursor: "pointer",
+        fontSize: "0.82rem",
+        fontWeight: active ? 600 : 400,
+        whiteSpace: "nowrap",
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main Gallery component
+// ---------------------------------------------------------------------------
+
+export function Gallery({ items }: { items: ClothingItem[] }) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const [, startTransition] = useTransition();
+
+  const { q, categories, seasons } = parseParams(searchParams);
+
+  // local controlled state for the search box so it's responsive
+  const [searchText, setSearchText] = useState(q);
+
+  const updateParams = useCallback(
+    (next: Partial<Params>) => {
+      const merged: Params = {
+        q: next.q ?? q,
+        categories: next.categories ?? categories,
+        seasons: next.seasons ?? seasons,
+      };
+      startTransition(() => {
+        router.replace(buildURL(merged), { scroll: false });
+      });
+    },
+    [q, categories, seasons, router],
+  );
+
+  function toggleCategory(cat: ClothingCategory) {
+    const next = categories.includes(cat)
+      ? categories.filter((c) => c !== cat)
+      : [...categories, cat];
+    updateParams({ categories: next });
+  }
+
+  function toggleSeason(s: Season) {
+    const next = seasons.includes(s)
+      ? seasons.filter((x) => x !== s)
+      : [...seasons, s];
+    updateParams({ seasons: next });
+  }
+
+  function handleSearchSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    updateParams({ q: searchText.trim() });
+  }
+
+  function clearAll() {
+    setSearchText("");
+    startTransition(() => {
+      router.replace("/", { scroll: false });
+    });
+  }
+
+  const activeFilterCount =
+    (q ? 1 : 0) + categories.length + seasons.length;
+
+  const filtered = useMemo(
+    () =>
+      items.filter(
+        (item) =>
+          matchesText(item, q) &&
+          matchesCategory(item, categories) &&
+          matchesSeason(item, seasons),
+      ),
+    [items, q, categories, seasons],
+  );
+
+  return (
+    <>
+      {/* Search & filter panel */}
+      <div
+        style={{
+          marginBottom: "1rem",
+          display: "flex",
+          flexDirection: "column",
+          gap: "0.6rem",
+        }}
+      >
+        {/* Search box */}
+        <form
+          onSubmit={handleSearchSubmit}
+          style={{ display: "flex", gap: "0.5rem" }}
+        >
+          <input
+            type="search"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            onBlur={() => updateParams({ q: searchText.trim() })}
+            placeholder="ブランド・素材・タグで検索"
+            style={{
+              flex: 1,
+              padding: "0.5rem 0.8rem",
+              borderRadius: 999,
+              border: "1px solid #ccc",
+              fontSize: "0.9rem",
+              background: "#fff",
+              outline: "none",
+              minWidth: 0,
+            }}
+          />
+        </form>
+
+        {/* Category chips */}
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "0.4rem",
+          }}
+        >
+          {ClothingCategorySchema.options.map((cat) => (
+            <Chip
+              key={cat}
+              label={CATEGORY_LABEL[cat]}
+              active={categories.includes(cat)}
+              onClick={() => toggleCategory(cat)}
+            />
+          ))}
+        </div>
+
+        {/* Season chips */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
+          {SeasonSchema.options.map((s) => (
+            <Chip
+              key={s}
+              label={SEASON_LABEL[s]}
+              active={seasons.includes(s)}
+              onClick={() => toggleSeason(s)}
+            />
+          ))}
+        </div>
+
+        {/* Active filter count + clear */}
+        {activeFilterCount > 0 && (
+          <div
+            style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
+          >
+            <span style={{ fontSize: "0.8rem", color: "#666" }}>
+              {activeFilterCount} 件のフィルター適用中
+            </span>
+            <button
+              onClick={clearAll}
+              style={{
+                background: "none",
+                border: "none",
+                color: "#555",
+                cursor: "pointer",
+                fontSize: "0.8rem",
+                textDecoration: "underline",
+                padding: 0,
+              }}
+            >
+              クリア
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Item count */}
+      <p
+        data-testid="item-count"
+        style={{ color: "#666", fontSize: "0.9rem", margin: "0 0 1rem" }}
+      >
+        {items.length === 0
+          ? "まだアイテムがありません。"
+          : activeFilterCount > 0
+            ? `${filtered.length} / ${items.length} 件`
+            : `${items.length} 件のアイテム`}
+      </p>
+
+      {/* Gallery grid */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
+          gap: "0.75rem",
+        }}
+      >
+        {filtered.map((item) => (
+          <Link
+            key={item.id}
+            href={`/items/${item.id}`}
+            style={{ textDecoration: "none", color: "inherit" }}
+          >
+            <article
+              style={{
+                border: "1px solid #eee",
+                borderRadius: 10,
+                overflow: "hidden",
+                background: "#fff",
+              }}
+            >
+              <img
+                src={`/api/images/${item.imageKey}`}
+                alt={item.subcategory ?? item.category}
+                style={{
+                  width: "100%",
+                  aspectRatio: "1",
+                  objectFit: "cover",
+                  display: "block",
+                }}
+              />
+              <div style={{ padding: "0.6rem" }}>
+                <div style={{ fontSize: "0.85rem", color: "#666" }}>
+                  {CATEGORY_LABEL[item.category]}
+                  {item.subcategory ? ` / ${item.subcategory}` : ""}
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 4,
+                    marginTop: 6,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  {item.colors.map((c) => (
+                    <span
+                      key={c.hex + c.name}
+                      title={c.name}
+                      style={{
+                        width: 14,
+                        height: 14,
+                        background: c.hex,
+                        borderRadius: "50%",
+                        border: "1px solid #ccc",
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </article>
+          </Link>
+        ))}
+      </div>
+    </>
+  );
+}
