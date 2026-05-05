@@ -1,8 +1,8 @@
-import Link from "next/link";
+import { Suspense } from "react";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { listItems } from "@/lib/db";
-import { CATEGORY_LABEL } from "@/lib/labels";
 import { AddButton } from "@/components/add-button";
+import { Gallery } from "@/components/gallery";
 
 export const dynamic = "force-dynamic";
 
@@ -41,75 +41,10 @@ export default async function Home() {
         />
       </header>
 
-      <p style={{ color: "#666", fontSize: "0.9rem", margin: "0 0 1rem" }}>
-        {items.length === 0
-          ? "まだアイテムがありません。"
-          : `${items.length} 件のアイテム`}
-      </p>
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
-          gap: "0.75rem",
-        }}
-      >
-        {items.map((item) => (
-          <Link
-            key={item.id}
-            href={`/items/${item.id}`}
-            style={{ textDecoration: "none", color: "inherit" }}
-          >
-            <article
-              style={{
-                border: "1px solid #eee",
-                borderRadius: 10,
-                overflow: "hidden",
-                background: "#fff",
-              }}
-            >
-              <img
-                src={`/api/images/${item.imageKey}`}
-                alt={item.subcategory ?? item.category}
-                style={{
-                  width: "100%",
-                  aspectRatio: "1",
-                  objectFit: "cover",
-                  display: "block",
-                }}
-              />
-              <div style={{ padding: "0.6rem" }}>
-                <div style={{ fontSize: "0.85rem", color: "#666" }}>
-                  {CATEGORY_LABEL[item.category]}
-                  {item.subcategory ? ` / ${item.subcategory}` : ""}
-                </div>
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 4,
-                    marginTop: 6,
-                    flexWrap: "wrap",
-                  }}
-                >
-                  {item.colors.map((c) => (
-                    <span
-                      key={c.hex + c.name}
-                      title={c.name}
-                      style={{
-                        width: 14,
-                        height: 14,
-                        background: c.hex,
-                        borderRadius: "50%",
-                        border: "1px solid #ccc",
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-            </article>
-          </Link>
-        ))}
-      </div>
+      {/* Gallery is a client component; wrap in Suspense for useSearchParams */}
+      <Suspense>
+        <Gallery items={items} />
+      </Suspense>
     </main>
   );
 }
