@@ -27,8 +27,8 @@ export default function EditPage({
 
   useEffect(() => {
     fetch(`/api/items/${id}`)
-      .then((r) => r.json())
-      .then((data: { item?: ClothingItem; error?: string }) => {
+      .then((r) => r.json() as Promise<{ item?: ClothingItem; error?: string }>)
+      .then((data) => {
         if (!data.item) {
           setError(data.error ?? "not found");
           return;
