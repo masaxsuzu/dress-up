@@ -70,13 +70,14 @@ export default function RecommendPage() {
             marginBottom: "0.5rem",
           }}
         >
-          TPO・シチュエーション
+          シーン・場面
           <textarea
-            rows={2}
+            rows={3}
             placeholder="例: 同僚と週末ランチ、結婚式の二次会、雨の通勤"
             value={tpo}
             onChange={(e) => setTpo(e.target.value)}
             style={{
+              boxSizing: "border-box",
               display: "block",
               width: "100%",
               marginTop: "0.25rem",
@@ -92,9 +93,12 @@ export default function RecommendPage() {
         <button
           onClick={onSubmit}
           disabled={loading || !tpo.trim()}
-          style={primaryBtn(loading || !tpo.trim())}
+          style={{
+            ...primaryBtn(loading || !tpo.trim()),
+            marginTop: "0.75rem",
+          }}
         >
-          {loading ? "提案中..." : "提案"}
+          {loading ? "提案中..." : "コーデを見つける"}
         </button>
       </section>
 
