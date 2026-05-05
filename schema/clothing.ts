@@ -62,3 +62,10 @@ export const ClothingItemSchema = ClothingItemInputSchema.extend({
   updatedAt: z.string(),
 });
 export type ClothingItem = z.infer<typeof ClothingItemSchema>;
+
+// 編集時の入力形 (imageKey は変更しない)。
+export const ClothingItemUpdateSchema = VLMExtractionSchema.extend({
+  brand: z.string().nullable(),
+  notes: z.string().nullable(),
+});
+export type ClothingItemUpdate = z.infer<typeof ClothingItemUpdateSchema>;

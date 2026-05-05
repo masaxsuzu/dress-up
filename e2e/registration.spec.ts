@@ -51,6 +51,55 @@ test("/ 一覧に追加ボタンがある", async ({ page, request }) => {
   await expect(page.getByText("まだアイテムがありません。")).toBeVisible();
 });
 
+test("詳細ページから編集して変更が反映される", async ({ page, request }) => {
+  await clear(request);
+
+  const created = await request.post("/api/items", {
+    data: {
+      category: "tops",
+      subcategory: "Tシャツ",
+      colors: [{ name: "navy", hex: "#1f2a44" }],
+      pattern: null,
+      material: null,
+      silhouette: null,
+      season: ["spring"],
+      formality: 2,
+      occasion: [],
+      tags: [],
+      brand: null,
+      notes: null,
+      imageKey: "items/dummy.png",
+    },
+  });
+  expect(created.ok()).toBeTruthy();
+  const { item } = await created.json();
+
+  // 詳細ページに移動して編集ボタンを確認
+  await page.goto(`/items/${item.id}`);
+  await expect(page.getByRole("link", { name: "編集" })).toBeVisible();
+  await page.getByRole("link", { name: "編集" }).click();
+
+  // 編集ページが表示されること (フォームがロードされるまで待つ)
+  await expect(page.getByRole("heading", { name: "アイテムを編集" })).toBeVisible({
+    timeout: 15_000,
+  });
+  // 保存ボタンが有効になるまで待つ (データロード完了の目印)
+  await expect(page.getByRole("button", { name: "保存" })).toBeEnabled({
+    timeout: 15_000,
+  });
+
+  // カテゴリをボトムスに変更 (最初のselectがカテゴリ)
+  const selects = page.locator("select");
+  await selects.first().selectOption("bottoms");
+
+  // 保存ボタンをクリック
+  await page.getByRole("button", { name: "保存" }).click();
+
+  // 詳細ページに戻る
+  await page.waitForURL(`/items/${item.id}`, { timeout: 15_000 });
+  await expect(page.getByText("ボトムス")).toBeVisible();
+});
+
 test("詳細ページから削除すると一覧から消える", async ({ page, request }) => {
   await clear(request);
 
