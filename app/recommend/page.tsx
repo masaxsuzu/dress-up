@@ -1,10 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import type { ClothingItem, Season } from "@/schema/clothing";
+import type { ClothingCategory, ClothingItem, Season } from "@/schema/clothing";
 import { primaryBtn } from "@/components/clothing-form";
 
-type Outfit = { items: ClothingItem[]; reason: string };
+type MissingItem = { category: ClothingCategory; description: string };
+type OutfitResult = {
+  kind: "outfit";
+  items: ClothingItem[];
+  reason: string;
+};
+type ShoppingResult = {
+  kind: "shopping";
+  missing: MissingItem[];
+  reason: string;
+};
+type Result = OutfitResult | ShoppingResult;
 
 const SEASON_LABEL: Record<Season, string> = {
   spring: "春",
@@ -13,18 +24,29 @@ const SEASON_LABEL: Record<Season, string> = {
   winter: "冬",
 };
 
+const CATEGORY_LABEL: Record<ClothingCategory, string> = {
+  tops: "トップス",
+  outerwear: "アウター",
+  bottoms: "ボトムス",
+  dress: "ワンピース",
+  shoes: "シューズ",
+  bag: "バッグ",
+  accessory: "アクセサリー",
+  other: "その他",
+};
+
 export default function RecommendPage() {
   const [tpo, setTpo] = useState("");
   const [loading, setLoading] = useState(false);
   const [season, setSeason] = useState<Season | null>(null);
-  const [outfits, setOutfits] = useState<Outfit[] | null>(null);
+  const [result, setResult] = useState<Result | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function onSubmit() {
     if (!tpo.trim() || loading) return;
     setLoading(true);
     setError(null);
-    setOutfits(null);
+    setResult(null);
     setSeason(null);
     try {
       const res = await fetch("/api/recommend", {
@@ -34,7 +56,10 @@ export default function RecommendPage() {
       });
       const data = (await res.json()) as {
         season?: Season;
-        outfits?: Outfit[];
+        kind?: "outfit" | "shopping";
+        items?: ClothingItem[];
+        missing?: MissingItem[];
+        reason?: string;
         error?: string | { formErrors?: string[] };
       };
       if (!res.ok) {
@@ -45,7 +70,15 @@ export default function RecommendPage() {
         throw new Error(msg);
       }
       if (data.season) setSeason(data.season);
-      if (data.outfits) setOutfits(data.outfits);
+      if (data.kind === "outfit" && data.items && data.reason) {
+        setResult({ kind: "outfit", items: data.items, reason: data.reason });
+      } else if (data.kind === "shopping" && data.missing && data.reason) {
+        setResult({
+          kind: "shopping",
+          missing: data.missing,
+          reason: data.reason,
+        });
+      }
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -106,7 +139,7 @@ export default function RecommendPage() {
         <p style={{ color: "#c00", whiteSpace: "pre-wrap" }}>{error}</p>
       )}
 
-      {season && outfits && (
+      {season && result && (
         <section>
           <p
             style={{
@@ -115,20 +148,21 @@ export default function RecommendPage() {
               marginBottom: "0.75rem",
             }}
           >
-            季節: {SEASON_LABEL[season]} / {outfits.length} 案
+            季節: {SEASON_LABEL[season]} /{" "}
+            {result.kind === "outfit" ? "コーデ提案" : "買い足し提案"}
           </p>
-          <div style={{ display: "grid", gap: "1rem" }}>
-            {outfits.map((outfit, i) => (
-              <OutfitCard key={i} outfit={outfit} index={i} />
-            ))}
-          </div>
+          {result.kind === "outfit" ? (
+            <OutfitCard outfit={result} />
+          ) : (
+            <ShoppingCard shopping={result} />
+          )}
         </section>
       )}
     </main>
   );
 }
 
-function OutfitCard({ outfit, index }: { outfit: Outfit; index: number }) {
+function OutfitCard({ outfit }: { outfit: OutfitResult }) {
   return (
     <article
       style={{
@@ -138,9 +172,6 @@ function OutfitCard({ outfit, index }: { outfit: Outfit; index: number }) {
         background: "#fff",
       }}
     >
-      <h2 style={{ fontSize: "0.95rem", margin: "0 0 0.5rem" }}>
-        提案 {index + 1}
-      </h2>
       <div
         style={{
           display: "flex",
@@ -187,6 +218,68 @@ function OutfitCard({ outfit, index }: { outfit: Outfit; index: number }) {
       </div>
       <p style={{ margin: 0, fontSize: "0.9rem", lineHeight: 1.5 }}>
         {outfit.reason}
+      </p>
+    </article>
+  );
+}
+
+function ShoppingCard({ shopping }: { shopping: ShoppingResult }) {
+  return (
+    <article
+      style={{
+        border: "1px solid #e5e5e5",
+        borderRadius: 10,
+        padding: "0.75rem",
+        background: "#fff",
+      }}
+    >
+      <h2 style={{ fontSize: "0.95rem", margin: "0 0 0.5rem" }}>
+        買い足したいアイテム
+      </h2>
+      <p
+        style={{
+          margin: "0 0 0.75rem",
+          fontSize: "0.85rem",
+          color: "#555",
+          background: "#f7f5ef",
+          border: "1px solid #ece7d8",
+          borderRadius: 6,
+          padding: "0.5rem 0.6rem",
+        }}
+      >
+        このシーンに合うコーデを既存のワードローブから組めなかったため、買い足し候補を提案します。
+      </p>
+      <ul style={{ margin: "0 0 0.75rem", padding: 0, listStyle: "none" }}>
+        {shopping.missing.map((m, i) => (
+          <li
+            key={i}
+            style={{
+              display: "flex",
+              alignItems: "baseline",
+              gap: "0.5rem",
+              padding: "0.4rem 0",
+              borderBottom:
+                i === shopping.missing.length - 1 ? "none" : "1px solid #eee",
+            }}
+          >
+            <span
+              style={{
+                fontSize: "0.7rem",
+                color: "#fff",
+                background: "#888",
+                borderRadius: 4,
+                padding: "0.1rem 0.4rem",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {CATEGORY_LABEL[m.category]}
+            </span>
+            <span style={{ fontSize: "0.9rem" }}>{m.description}</span>
+          </li>
+        ))}
+      </ul>
+      <p style={{ margin: 0, fontSize: "0.9rem", lineHeight: 1.5 }}>
+        {shopping.reason}
       </p>
     </article>
   );

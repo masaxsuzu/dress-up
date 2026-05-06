@@ -43,18 +43,15 @@ beforeEach(() => {
 });
 
 describe("recommendOutfits", () => {
-  it("tool_useブロックの内容をスキーマでパースして返す", async () => {
+  it("kind='outfit' のレスポンスをパースして返す", async () => {
     createMock.mockResolvedValue({
       content: [
         {
           type: "tool_use",
           input: {
-            outfits: [
-              {
-                item_ids: ["tops-1", "bottoms-1", "shoes-1"],
-                reason: "白Tにデニムでカジュアル。",
-              },
-            ],
+            kind: "outfit",
+            item_ids: ["tops-1", "bottoms-1", "shoes-1"],
+            reason: "白Tにデニムでカジュアル。",
           },
         },
       ],
@@ -64,26 +61,49 @@ describe("recommendOutfits", () => {
       season: "spring",
       tpo: "週末ランチ",
     });
-    expect(result.outfits).toHaveLength(1);
-    expect(result.outfits[0].item_ids).toEqual([
-      "tops-1",
-      "bottoms-1",
-      "shoes-1",
-    ]);
+    expect(result.kind).toBe("outfit");
+    if (result.kind !== "outfit") return;
+    expect(result.item_ids).toEqual(["tops-1", "bottoms-1", "shoes-1"]);
+    expect(result.reason).toContain("白T");
   });
 
-  it("ハルシネーションされた未知のidは除外される", async () => {
+  it("kind='shopping' のレスポンスをそのまま返す", async () => {
     createMock.mockResolvedValue({
       content: [
         {
           type: "tool_use",
           input: {
-            outfits: [
-              {
-                item_ids: ["tops-1", "ghost-item"],
-                reason: "test",
-              },
+            kind: "shopping",
+            missing: [
+              { category: "shoes", description: "黒のレザーパンプス" },
+              { category: "dress", description: "ネイビーのミディ丈ワンピース" },
             ],
+            reason: "結婚式の二次会には足元と一着の主役が必要です。",
+          },
+        },
+      ],
+    });
+
+    const result = await recommendOutfits("sk-test", ITEMS, {
+      season: "autumn",
+      tpo: "結婚式の二次会",
+    });
+    expect(result.kind).toBe("shopping");
+    if (result.kind !== "shopping") return;
+    expect(result.missing).toHaveLength(2);
+    expect(result.missing[0].category).toBe("shoes");
+    expect(result.missing[0].description).toBe("黒のレザーパンプス");
+  });
+
+  it("outfit でハルシネーションされた未知のidは除外される", async () => {
+    createMock.mockResolvedValue({
+      content: [
+        {
+          type: "tool_use",
+          input: {
+            kind: "outfit",
+            item_ids: ["tops-1", "ghost-item"],
+            reason: "test",
           },
         },
       ],
@@ -93,16 +113,20 @@ describe("recommendOutfits", () => {
       season: "spring",
       tpo: "test",
     });
-    expect(result.outfits[0].item_ids).toEqual(["tops-1"]);
+    expect(result.kind).toBe("outfit");
+    if (result.kind !== "outfit") return;
+    expect(result.item_ids).toEqual(["tops-1"]);
   });
 
-  it("有効なidが残らない場合はthrowする", async () => {
+  it("outfit で有効なidが残らない場合はthrowする", async () => {
     createMock.mockResolvedValue({
       content: [
         {
           type: "tool_use",
           input: {
-            outfits: [{ item_ids: ["ghost-1", "ghost-2"], reason: "x" }],
+            kind: "outfit",
+            item_ids: ["ghost-1", "ghost-2"],
+            reason: "x",
           },
         },
       ],
@@ -136,7 +160,9 @@ describe("recommendOutfits", () => {
         {
           type: "tool_use",
           input: {
-            outfits: [{ item_ids: ["tops-1"], reason: "ok" }],
+            kind: "outfit",
+            item_ids: ["tops-1"],
+            reason: "ok",
           },
         },
       ],
@@ -151,7 +177,7 @@ describe("recommendOutfits", () => {
     const args = createMock.mock.calls[0][0];
     expect(args.tool_choice).toEqual({
       type: "tool",
-      name: "recommend_outfits",
+      name: "recommend_outfit",
     });
     const userMsg = args.messages[0];
     expect(userMsg.role).toBe("user");

@@ -7,41 +7,67 @@ const MODEL = "claude-haiku-4-5-20251001";
 const SYSTEM_PROMPT = `You are a fashion stylist for a Japanese personal wardrobe app.
 You receive the user's wardrobe (a JSON list of items with attributes), the current season, and a TPO description.
 
-Your job: propose 3 distinct outfit ideas using ONLY items from the provided wardrobe.
+Your job: propose ONE recommendation. The result is one of two kinds:
 
-Outfit construction rules:
-- A typical outfit has tops + bottoms + shoes. Outerwear / bag / accessory may be added.
-- A "dress" item replaces tops + bottoms.
-- Each outfit must include at least 1 item, no item used twice within the same outfit.
-- Only reference item ids that exist in the provided list. NEVER invent ids.
-- Match the current season (avoid winter coats in summer, etc.).
-- Match the TPO: formality, vibe, color mood.
-- The 3 outfits should be distinct from each other (different vibes, formality levels, or color tones).
-- Each outfit's "reason" must be in Japanese, 1-2 sentences, concrete (mention key items and why they suit the TPO).
-- Always call the recommend_outfits tool. Never reply with plain text.`;
+1. kind="outfit": If the wardrobe has enough items to build a complete, season-appropriate, TPO-appropriate outfit, return the item_ids of that outfit (using ONLY items from the provided list).
+2. kind="shopping": If the wardrobe is missing key pieces required for the TPO/season (e.g. no formal shoes for a wedding, no warm coat in winter, no dress for a fancy dinner), DO NOT force a poor outfit from existing items. Instead, return a list of items the user should buy. Each missing item has a category and a Japanese description (e.g. "黒のレザーパンプス").
+
+Rules:
+- Output exactly one proposal (never both).
+- A typical outfit has tops + bottoms + shoes. Outerwear / bag / accessory may be added. A "dress" replaces tops + bottoms.
+- For kind="outfit": only reference item ids that exist in the provided list. NEVER invent ids. Each id used once.
+- For kind="shopping": list 1-5 missing items, each genuinely necessary for the TPO. Don't suggest items the user already owns.
+- Match the current season (avoid winter coats in summer, etc.) and the TPO (formality, vibe, color mood).
+- "reason" is in Japanese, 1-3 sentences, concrete. For outfit, mention key items and why they suit the TPO. For shopping, explain what's missing and why it matters for this TPO.
+- Always call the recommend_outfit tool. Never reply with plain text.`;
 
 const TOOL_INPUT_SCHEMA = {
   type: "object",
   properties: {
-    outfits: {
+    kind: {
+      type: "string",
+      enum: ["outfit", "shopping"],
+      description:
+        "outfit: the wardrobe is sufficient. shopping: items must be purchased.",
+    },
+    item_ids: {
       type: "array",
-      minItems: 1,
+      items: { type: "string" },
+      description:
+        "Required when kind='outfit'. Ids from the provided wardrobe.",
+    },
+    missing: {
+      type: "array",
       maxItems: 5,
       items: {
         type: "object",
         properties: {
-          item_ids: {
-            type: "array",
-            minItems: 1,
-            items: { type: "string" },
+          category: {
+            type: "string",
+            enum: [
+              "tops",
+              "outerwear",
+              "bottoms",
+              "dress",
+              "shoes",
+              "bag",
+              "accessory",
+              "other",
+            ],
           },
-          reason: { type: "string" },
+          description: {
+            type: "string",
+            description: "Japanese, concrete. e.g. '黒のレザーパンプス'",
+          },
         },
-        required: ["item_ids", "reason"],
+        required: ["category", "description"],
       },
+      description:
+        "Required when kind='shopping'. Items the user should buy.",
     },
+    reason: { type: "string" },
   },
-  required: ["outfits"],
+  required: ["kind", "reason"],
 } as const;
 
 // Claude に渡す軽量 view。imageKey, hex, notes, タイムスタンプは不要。
@@ -84,19 +110,20 @@ export async function recommendOutfits(
     ],
     tools: [
       {
-        name: "recommend_outfits",
-        description: "Record outfit recommendations.",
+        name: "recommend_outfit",
+        description:
+          "Record one outfit recommendation, or shopping suggestions if the wardrobe is insufficient.",
         input_schema: TOOL_INPUT_SCHEMA as never,
       },
     ],
-    tool_choice: { type: "tool", name: "recommend_outfits" },
+    tool_choice: { type: "tool", name: "recommend_outfit" },
     messages: [
       {
         role: "user",
         content: [
           {
             type: "text",
-            text: `Season: ${context.season}\nTPO: ${context.tpo}\n\nWardrobe (JSON):\n${JSON.stringify(compact)}\n\nPropose 3 outfits.`,
+            text: `Season: ${context.season}\nTPO: ${context.tpo}\n\nWardrobe (JSON):\n${JSON.stringify(compact)}\n\nPropose one outfit, or a shopping list if the wardrobe is insufficient.`,
           },
         ],
       },
@@ -110,19 +137,17 @@ export async function recommendOutfits(
 
   const draft = RecommendDraftSchema.parse(toolUse.input);
 
-  // ハルシネーション防止: 存在しない id を返してきたらフィルタ。
-  // 全アイテムが消えた outfit は捨てる。
-  const validIds = new Set(items.map((i) => i.id));
-  const cleaned = draft.outfits
-    .map((o) => ({
-      ...o,
-      item_ids: o.item_ids.filter((id) => validIds.has(id)),
-    }))
-    .filter((o) => o.item_ids.length > 0);
+  if (draft.kind === "shopping") {
+    return draft;
+  }
 
-  if (cleaned.length === 0) {
+  // ハルシネーション防止: 存在しない id を返してきたら除外。
+  const validIds = new Set(items.map((i) => i.id));
+  const filtered = draft.item_ids.filter((id) => validIds.has(id));
+
+  if (filtered.length === 0) {
     throw new Error("提案アイテムが既存のワードローブと一致しませんでした");
   }
 
-  return { outfits: cleaned };
+  return { ...draft, item_ids: filtered };
 }
