@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import type { ClothingItem, Season } from "@/schema/clothing";
 import { RecommendDraftSchema, type RecommendDraft } from "@/schema/recommend";
 
-const MODEL = "claude-haiku-4-5-20251001";
+const MODEL = "claude-sonnet-4-6";
 
 const SYSTEM_PROMPT = `You are a fashion stylist for a Japanese personal wardrobe app.
 You receive the user's wardrobe (a JSON list of items with attributes), the current season, and a TPO description.
