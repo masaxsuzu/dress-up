@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { ClothingCategory, ClothingItem, Season } from "@/schema/clothing";
 import { primaryBtn } from "@/components/clothing-form";
+import { layoutOutfitBoard } from "@/lib/outfit-layout";
 
 type MissingItem = { category: ClothingCategory; description: string };
 type OutfitResult = {
@@ -224,28 +225,8 @@ function OutfitCard({ outfit }: { outfit: OutfitResult }) {
   );
 }
 
-const MAIN_ORDER: ClothingCategory[] = [
-  "outerwear",
-  "tops",
-  "dress",
-  "bottoms",
-  "shoes",
-];
-const SIDE_ORDER: ClothingCategory[] = ["bag", "accessory", "other"];
-
 function OutfitBoard({ items }: { items: ClothingItem[] }) {
-  const main = items
-    .filter((i) => MAIN_ORDER.includes(i.category))
-    .sort(
-      (a, b) =>
-        MAIN_ORDER.indexOf(a.category) - MAIN_ORDER.indexOf(b.category),
-    );
-  const side = items
-    .filter((i) => SIDE_ORDER.includes(i.category))
-    .sort(
-      (a, b) =>
-        SIDE_ORDER.indexOf(a.category) - SIDE_ORDER.indexOf(b.category),
-    );
+  const { main, side } = layoutOutfitBoard(items);
 
   return (
     <div
