@@ -172,12 +172,13 @@ function OutfitCard({ outfit }: { outfit: OutfitResult }) {
         background: "#fff",
       }}
     >
+      <OutfitBoard items={outfit.items} />
       <div
         style={{
           display: "flex",
           gap: "0.5rem",
           overflowX: "auto",
-          marginBottom: "0.5rem",
+          margin: "0.75rem 0 0.5rem",
           paddingBottom: "0.25rem",
         }}
       >
@@ -191,10 +192,10 @@ function OutfitCard({ outfit }: { outfit: OutfitResult }) {
               src={`/api/images/${item.imageKey}`}
               alt={item.subcategory ?? item.category}
               style={{
-                width: 110,
-                height: 110,
+                width: 72,
+                height: 72,
                 objectFit: "cover",
-                borderRadius: 8,
+                borderRadius: 6,
                 border: "1px solid #eee",
                 display: "block",
               }}
@@ -202,10 +203,10 @@ function OutfitCard({ outfit }: { outfit: OutfitResult }) {
             <p
               style={{
                 margin: "0.25rem 0 0",
-                fontSize: "0.75rem",
+                fontSize: "0.7rem",
                 color: "#666",
                 textAlign: "center",
-                maxWidth: 110,
+                maxWidth: 72,
                 overflow: "hidden",
                 whiteSpace: "nowrap",
                 textOverflow: "ellipsis",
@@ -220,6 +221,84 @@ function OutfitCard({ outfit }: { outfit: OutfitResult }) {
         {outfit.reason}
       </p>
     </article>
+  );
+}
+
+const MAIN_ORDER: ClothingCategory[] = [
+  "outerwear",
+  "tops",
+  "dress",
+  "bottoms",
+  "shoes",
+];
+const SIDE_ORDER: ClothingCategory[] = ["bag", "accessory", "other"];
+
+function OutfitBoard({ items }: { items: ClothingItem[] }) {
+  const main = items
+    .filter((i) => MAIN_ORDER.includes(i.category))
+    .sort(
+      (a, b) =>
+        MAIN_ORDER.indexOf(a.category) - MAIN_ORDER.indexOf(b.category),
+    );
+  const side = items
+    .filter((i) => SIDE_ORDER.includes(i.category))
+    .sort(
+      (a, b) =>
+        SIDE_ORDER.indexOf(a.category) - SIDE_ORDER.indexOf(b.category),
+    );
+
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: side.length > 0 ? "minmax(0, 2fr) minmax(0, 1fr)" : "1fr",
+        gap: "0.5rem",
+        background: "#f7f5ef",
+        border: "1px solid #ece7d8",
+        borderRadius: 8,
+        padding: "0.5rem",
+      }}
+    >
+      <div
+        style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}
+      >
+        {main.map((item) => (
+          <BoardImage key={item.id} item={item} />
+        ))}
+      </div>
+      {side.length > 0 && (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.4rem",
+            justifyContent: "flex-end",
+          }}
+        >
+          {side.map((item) => (
+            <BoardImage key={item.id} item={item} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BoardImage({ item }: { item: ClothingItem }) {
+  return (
+    <img
+      src={`/api/images/${item.imageKey}`}
+      alt={item.subcategory ?? item.category}
+      style={{
+        width: "100%",
+        aspectRatio: "1 / 1",
+        objectFit: "cover",
+        borderRadius: 6,
+        border: "1px solid #e5dfc9",
+        background: "#fff",
+        display: "block",
+      }}
+    />
   );
 }
 
