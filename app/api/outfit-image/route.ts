@@ -2,13 +2,23 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { z } from "zod";
 import { listItems } from "@/lib/db";
 import { buildOutfitPrompt } from "@/lib/outfit-prompt";
+import type { Season } from "@/schema/clothing";
 
 const InputSchema = z.object({
   item_ids: z.array(z.string()).min(1).max(10),
   tpo: z.string().min(1).max(200),
+  season: z.enum(["spring", "summer", "autumn", "winter"]).optional(),
 });
 
-const MODEL = "@cf/black-forest-labs/flux-1-schnell";
+const MODEL = "@cf/leonardo/lucid-origin";
+
+function currentSeason(date = new Date()): Season {
+  const m = date.getMonth() + 1;
+  if (m >= 3 && m <= 5) return "spring";
+  if (m >= 6 && m <= 8) return "summer";
+  if (m >= 9 && m <= 11) return "autumn";
+  return "winter";
+}
 
 export async function POST(req: Request) {
   const { env } = await getCloudflareContext({ async: true });
@@ -32,13 +42,23 @@ export async function POST(req: Request) {
     );
   }
 
-  const prompt = buildOutfitPrompt(items, parsed.data.tpo);
+  const prompt = buildOutfitPrompt(items, {
+    tpo: parsed.data.tpo,
+    season: parsed.data.season ?? currentSeason(),
+  });
 
   try {
     const result = (await env.AI.run(MODEL, {
       prompt,
-      steps: 4,
+      width: 768,
+      height: 1152,
+      num_steps: 30,
+      guidance: 6.5,
     })) as { image: string };
+
+    if (!result.image) {
+      throw new Error("画像が返されませんでした");
+    }
 
     const bytes = Uint8Array.from(atob(result.image), (c) => c.charCodeAt(0));
     return new Response(bytes, {

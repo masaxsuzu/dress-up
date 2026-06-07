@@ -156,7 +156,7 @@ export default function RecommendPage() {
             {result.kind === "outfit" ? "コーデ提案" : "買い足し提案"}
           </p>
           {result.kind === "outfit" ? (
-            <OutfitCard outfit={result} tpo={submittedTpo} />
+            <OutfitCard outfit={result} tpo={submittedTpo} season={season} />
           ) : (
             <ShoppingCard shopping={result} />
           )}
@@ -169,9 +169,11 @@ export default function RecommendPage() {
 function OutfitCard({
   outfit,
   tpo,
+  season,
 }: {
   outfit: OutfitResult;
   tpo: string;
+  season: Season;
 }) {
   return (
     <article
@@ -183,7 +185,7 @@ function OutfitCard({
       }}
     >
       <OutfitBoard items={outfit.items} />
-      <GeneratedImage items={outfit.items} tpo={tpo} />
+      <GeneratedImage items={outfit.items} tpo={tpo} season={season} />
       <div
         style={{
           display: "flex",
@@ -296,9 +298,11 @@ function BoardImage({ item }: { item: ClothingItem }) {
 function GeneratedImage({
   items,
   tpo,
+  season,
 }: {
   items: ClothingItem[];
   tpo: string;
+  season: Season;
 }) {
   const [state, setState] = useState<"idle" | "running" | "done" | "error">(
     "idle",
@@ -322,6 +326,7 @@ function GeneratedImage({
         body: JSON.stringify({
           item_ids: items.map((i) => i.id),
           tpo,
+          season,
         }),
       });
       if (!res.ok) {

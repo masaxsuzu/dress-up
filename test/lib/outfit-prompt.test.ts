@@ -32,15 +32,17 @@ describe("buildOutfitPrompt", () => {
         item({ id: "b", category: "bottoms", colors: [{ name: "ネイビー", hex: "#001" }], subcategory: "デニム", material: "デニム" }),
         item({ id: "s", category: "shoes", colors: [{ name: "白", hex: "#fff" }], subcategory: "スニーカー", material: null }),
       ],
-      "週末ランチ",
+      { tpo: "週末ランチ" },
     );
-    expect(prompt).toContain("white cotton T-shirt");
-    expect(prompt).toContain("navy denim denim jeans");
+    expect(prompt).toContain("white cotton t-shirt");
+    expect(prompt).toContain("navy blue denim jeans");
     expect(prompt).toContain("white sneakers");
-    expect(prompt).toContain("Full-body fashion lookbook");
+    expect(prompt).toContain("Top:");
+    expect(prompt).toContain("Bottoms:");
+    expect(prompt).toContain("Shoes:");
   });
 
-  it("バッグ・アクセサリーは Holding 句に入る", () => {
+  it("バッグ・アクセサリーも箇条書きに含まれる", () => {
     const prompt = buildOutfitPrompt(
       [
         item({ id: "t", subcategory: "Tシャツ" }),
@@ -52,23 +54,25 @@ describe("buildOutfitPrompt", () => {
           material: "レザー",
         }),
       ],
-      "通勤",
+      { tpo: "通勤" },
     );
-    expect(prompt).toContain("Holding black leather tote bag");
+    expect(prompt).toContain("Bag: black leather tote bag");
   });
 
   it("solid と other パターンは説明に含めない", () => {
     const prompt = buildOutfitPrompt(
       [item({ id: "t", pattern: "solid" })],
-      "x",
+      { tpo: "x" },
     );
-    expect(prompt).not.toContain("solid");
+    // "solid" は形容詞として描写に入らない
+    expect(prompt).not.toContain("solid t-shirt");
+    expect(prompt).not.toContain("solid white");
   });
 
   it("striped パターンは含める", () => {
     const prompt = buildOutfitPrompt(
       [item({ id: "t", pattern: "stripe", subcategory: "シャツ" })],
-      "x",
+      { tpo: "x" },
     );
     expect(prompt).toContain("striped");
   });
@@ -83,14 +87,14 @@ describe("buildOutfitPrompt", () => {
           material: "謎素材",
         }),
       ],
-      "x",
+      { tpo: "x" },
     );
     expect(prompt).toContain("謎色");
     expect(prompt).toContain("謎素材");
     expect(prompt).toContain("オリジナル製品名");
   });
 
-  it("着衣順 (outerwear→tops→dress→bottoms→shoes) で並べる", () => {
+  it("着衣順 (outerwear→tops→dress→bottoms→shoes→bag→accessory) で並べる", () => {
     const prompt = buildOutfitPrompt(
       [
         item({ id: "shoes", category: "shoes", subcategory: "スニーカー" }),
@@ -98,15 +102,68 @@ describe("buildOutfitPrompt", () => {
         item({ id: "tops", category: "tops", subcategory: "Tシャツ" }),
         item({ id: "bottoms", category: "bottoms", subcategory: "デニム" }),
       ],
-      "x",
+      { tpo: "x" },
     );
     const coatIdx = prompt.indexOf("coat");
-    const tshirtIdx = prompt.indexOf("T-shirt");
-    const denimIdx = prompt.indexOf("denim jeans");
+    const tshirtIdx = prompt.indexOf("t-shirt");
+    const denimIdx = prompt.indexOf("jeans");
     const sneakerIdx = prompt.indexOf("sneakers");
     expect(coatIdx).toBeGreaterThanOrEqual(0);
     expect(coatIdx).toBeLessThan(tshirtIdx);
     expect(tshirtIdx).toBeLessThan(denimIdx);
     expect(denimIdx).toBeLessThan(sneakerIdx);
+  });
+
+  it("素材が subcategory に既に含まれる場合は重複させない", () => {
+    const prompt = buildOutfitPrompt(
+      [
+        item({
+          id: "b",
+          category: "bottoms",
+          subcategory: "デニム",
+          material: "デニム",
+          colors: [{ name: "ネイビー", hex: "#001" }],
+        }),
+      ],
+      { tpo: "x" },
+    );
+    // jeans (←デニム) は material "denim" を含むが、subcategory に "denim" は無いので
+    // describeItem は "navy blue denim jeans" を返す。"denim denim" のような重複は無い。
+    expect(prompt).not.toMatch(/denim denim/);
+  });
+
+  it("複数色は up to 2 まで使う", () => {
+    const prompt = buildOutfitPrompt(
+      [
+        item({
+          id: "t",
+          subcategory: "シャツ",
+          colors: [
+            { name: "白", hex: "#fff" },
+            { name: "黒", hex: "#000" },
+            { name: "赤", hex: "#f00" },
+          ],
+        }),
+      ],
+      { tpo: "x" },
+    );
+    expect(prompt).toContain("white and black");
+    expect(prompt).not.toContain("red");
+  });
+
+  it("TPO と season をプロンプトに含める", () => {
+    const prompt = buildOutfitPrompt(
+      [item({ id: "t" })],
+      { tpo: "結婚式の二次会", season: "winter" },
+    );
+    expect(prompt).toContain("Scene: 結婚式の二次会");
+    expect(prompt).toContain("Season: winter");
+  });
+
+  it("photorealistic と studio background のスタイル指定が含まれる", () => {
+    const prompt = buildOutfitPrompt([item({ id: "t" })], { tpo: "x" });
+    expect(prompt).toContain("photorealistic");
+    expect(prompt).toContain("studio");
+    expect(prompt).toContain("full body");
   });
 });
