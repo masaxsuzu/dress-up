@@ -3,5 +3,6 @@ interface CloudflareEnv {
   DB: D1Database;
   IMAGES: R2Bucket;
   ASSETS: Fetcher;
+  AI: Ai;
   ANTHROPIC_API_KEY: string;
 }

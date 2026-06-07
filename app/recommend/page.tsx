@@ -4,10 +4,6 @@ import { useEffect, useState } from "react";
 import type { ClothingCategory, ClothingItem, Season } from "@/schema/clothing";
 import { primaryBtn } from "@/components/clothing-form";
 import { layoutOutfitBoard } from "@/lib/outfit-layout";
-import {
-  compositeOutfit,
-  type CompositeProgress,
-} from "@/lib/composite-outfit";
 
 type MissingItem = { category: ClothingCategory; description: string };
 type OutfitResult = {
@@ -42,22 +38,25 @@ const CATEGORY_LABEL: Record<ClothingCategory, string> = {
 
 export default function RecommendPage() {
   const [tpo, setTpo] = useState("");
+  const [submittedTpo, setSubmittedTpo] = useState("");
   const [loading, setLoading] = useState(false);
   const [season, setSeason] = useState<Season | null>(null);
   const [result, setResult] = useState<Result | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function onSubmit() {
-    if (!tpo.trim() || loading) return;
+    const trimmed = tpo.trim();
+    if (!trimmed || loading) return;
     setLoading(true);
     setError(null);
     setResult(null);
     setSeason(null);
+    setSubmittedTpo(trimmed);
     try {
       const res = await fetch("/api/recommend", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tpo: tpo.trim() }),
+        body: JSON.stringify({ tpo: trimmed }),
       });
       const data = (await res.json()) as {
         season?: Season;
@@ -157,7 +156,7 @@ export default function RecommendPage() {
             {result.kind === "outfit" ? "コーデ提案" : "買い足し提案"}
           </p>
           {result.kind === "outfit" ? (
-            <OutfitCard outfit={result} />
+            <OutfitCard outfit={result} tpo={submittedTpo} />
           ) : (
             <ShoppingCard shopping={result} />
           )}
@@ -167,7 +166,13 @@ export default function RecommendPage() {
   );
 }
 
-function OutfitCard({ outfit }: { outfit: OutfitResult }) {
+function OutfitCard({
+  outfit,
+  tpo,
+}: {
+  outfit: OutfitResult;
+  tpo: string;
+}) {
   return (
     <article
       style={{
@@ -178,7 +183,7 @@ function OutfitCard({ outfit }: { outfit: OutfitResult }) {
       }}
     >
       <OutfitBoard items={outfit.items} />
-      <PhantomComposite items={outfit.items} />
+      <GeneratedImage items={outfit.items} tpo={tpo} />
       <div
         style={{
           display: "flex",
@@ -288,11 +293,16 @@ function BoardImage({ item }: { item: ClothingItem }) {
   );
 }
 
-function PhantomComposite({ items }: { items: ClothingItem[] }) {
+function GeneratedImage({
+  items,
+  tpo,
+}: {
+  items: ClothingItem[];
+  tpo: string;
+}) {
   const [state, setState] = useState<"idle" | "running" | "done" | "error">(
     "idle",
   );
-  const [progress, setProgress] = useState<CompositeProgress | null>(null);
   const [url, setUrl] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -304,10 +314,24 @@ function PhantomComposite({ items }: { items: ClothingItem[] }) {
 
   async function onGenerate() {
     setState("running");
-    setProgress({ current: 0, total: items.length, label: "準備中" });
     setErrorMsg(null);
     try {
-      const blob = await compositeOutfit(items, (p) => setProgress(p));
+      const res = await fetch("/api/outfit-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          item_ids: items.map((i) => i.id),
+          tpo,
+        }),
+      });
+      if (!res.ok) {
+        const ct = res.headers.get("Content-Type") ?? "";
+        const msg = ct.includes("json")
+          ? (((await res.json()) as { error?: string }).error ?? "生成失敗")
+          : `${res.status}`;
+        throw new Error(msg);
+      }
+      const blob = await res.blob();
       if (url) URL.revokeObjectURL(url);
       setUrl(URL.createObjectURL(blob));
       setState("done");
@@ -330,10 +354,10 @@ function PhantomComposite({ items }: { items: ClothingItem[] }) {
             width: "100%",
           }}
         >
-          全身イメージを生成（初回 ~30秒、モデルDL ~80MB）
+          全身イメージを生成（AI 画像、~10 秒）
         </button>
       )}
-      {state === "running" && progress && (
+      {state === "running" && (
         <div
           style={{
             padding: "0.75rem",
@@ -344,32 +368,7 @@ function PhantomComposite({ items }: { items: ClothingItem[] }) {
             color: "#444",
           }}
         >
-          <p style={{ margin: "0 0 0.5rem" }}>
-            生成中… {progress.current}/{progress.total}（{progress.label}）
-          </p>
-          <div
-            style={{
-              height: 6,
-              background: "#e5e5e5",
-              borderRadius: 999,
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                height: "100%",
-                width: `${
-                  progress.total > 0
-                    ? Math.round(
-                        (progress.current / Math.max(progress.total, 1)) * 100,
-                      )
-                    : 0
-                }%`,
-                background: "#111",
-                transition: "width 200ms",
-              }}
-            />
-          </div>
+          AI が生成中…
         </div>
       )}
       {state === "done" && url && (
@@ -388,7 +387,7 @@ function PhantomComposite({ items }: { items: ClothingItem[] }) {
           />
           <a
             href={url}
-            download="outfit.png"
+            download="outfit.jpg"
             style={{
               display: "inline-block",
               padding: "0.4rem 0.8rem",
