@@ -1,9 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ClothingCategory, ClothingItem, Season } from "@/schema/clothing";
 import { primaryBtn } from "@/components/clothing-form";
 import { layoutOutfitBoard } from "@/lib/outfit-layout";
+import {
+  compositeOutfit,
+  type CompositeProgress,
+} from "@/lib/composite-outfit";
 
 type MissingItem = { category: ClothingCategory; description: string };
 type OutfitResult = {
@@ -174,6 +178,7 @@ function OutfitCard({ outfit }: { outfit: OutfitResult }) {
       }}
     >
       <OutfitBoard items={outfit.items} />
+      <PhantomComposite items={outfit.items} />
       <div
         style={{
           display: "flex",
@@ -280,6 +285,130 @@ function BoardImage({ item }: { item: ClothingItem }) {
         display: "block",
       }}
     />
+  );
+}
+
+function PhantomComposite({ items }: { items: ClothingItem[] }) {
+  const [state, setState] = useState<"idle" | "running" | "done" | "error">(
+    "idle",
+  );
+  const [progress, setProgress] = useState<CompositeProgress | null>(null);
+  const [url, setUrl] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [url]);
+
+  async function onGenerate() {
+    setState("running");
+    setProgress({ current: 0, total: items.length, label: "準備中" });
+    setErrorMsg(null);
+    try {
+      const blob = await compositeOutfit(items, (p) => setProgress(p));
+      if (url) URL.revokeObjectURL(url);
+      setUrl(URL.createObjectURL(blob));
+      setState("done");
+    } catch (e) {
+      setErrorMsg((e as Error).message);
+      setState("error");
+    }
+  }
+
+  return (
+    <div style={{ marginTop: "0.75rem" }}>
+      {state === "idle" && (
+        <button
+          onClick={onGenerate}
+          style={{
+            ...primaryBtn(false),
+            background: "#fff",
+            color: "#111",
+            border: "1px solid #111",
+            width: "100%",
+          }}
+        >
+          全身イメージを生成（初回 ~30秒、モデルDL ~80MB）
+        </button>
+      )}
+      {state === "running" && progress && (
+        <div
+          style={{
+            padding: "0.75rem",
+            background: "#fafafa",
+            border: "1px solid #eee",
+            borderRadius: 8,
+            fontSize: "0.85rem",
+            color: "#444",
+          }}
+        >
+          <p style={{ margin: "0 0 0.5rem" }}>
+            生成中… {progress.current}/{progress.total}（{progress.label}）
+          </p>
+          <div
+            style={{
+              height: 6,
+              background: "#e5e5e5",
+              borderRadius: 999,
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                height: "100%",
+                width: `${
+                  progress.total > 0
+                    ? Math.round(
+                        (progress.current / Math.max(progress.total, 1)) * 100,
+                      )
+                    : 0
+                }%`,
+                background: "#111",
+                transition: "width 200ms",
+              }}
+            />
+          </div>
+        </div>
+      )}
+      {state === "done" && url && (
+        <div>
+          <img
+            src={url}
+            alt="全身コーデ"
+            style={{
+              width: "100%",
+              maxWidth: 480,
+              display: "block",
+              margin: "0 auto 0.5rem",
+              borderRadius: 8,
+              border: "1px solid #eee",
+            }}
+          />
+          <a
+            href={url}
+            download="outfit.png"
+            style={{
+              display: "inline-block",
+              padding: "0.4rem 0.8rem",
+              fontSize: "0.85rem",
+              border: "1px solid #111",
+              borderRadius: 6,
+              textDecoration: "none",
+              color: "#111",
+            }}
+          >
+            画像を保存
+          </a>
+        </div>
+      )}
+      {state === "error" && (
+        <p style={{ color: "#c00", fontSize: "0.85rem" }}>
+          生成に失敗しました: {errorMsg}
+        </p>
+      )}
+    </div>
   );
 }
 
