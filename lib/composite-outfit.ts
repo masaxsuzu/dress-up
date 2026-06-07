@@ -102,7 +102,22 @@ export async function compositeOutfit(
       label: item.subcategory ?? item.category,
     });
 
-    const cutoutBlob = await removeBackground(`/api/images/${item.imageKey}`);
+    const imgRes = await fetch(`/api/images/${item.imageKey}`, {
+      credentials: "include",
+    });
+    if (!imgRes.ok) {
+      throw new Error(
+        `画像を取得できませんでした (${imgRes.status}): ${item.imageKey}`,
+      );
+    }
+    const imgBlob = await imgRes.blob();
+    if (!imgBlob.type.startsWith("image/")) {
+      throw new Error(
+        `画像の形式が不正です (${imgBlob.type}): ${item.imageKey}`,
+      );
+    }
+
+    const cutoutBlob = await removeBackground(imgBlob);
     const bmp = await createImageBitmap(cutoutBlob);
 
     const slot = SLOTS[item.category]!;
