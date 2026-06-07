@@ -1,4 +1,15 @@
-import type { ClothingCategory, ClothingItem, Pattern } from "@/schema/clothing";
+import type { ClothingCategory, ClothingItem, Pattern, Season } from "@/schema/clothing";
+
+const CATEGORY_LABEL_EN: Record<ClothingCategory, string> = {
+  tops: "Top",
+  outerwear: "Outerwear",
+  bottoms: "Bottoms",
+  dress: "Dress",
+  shoes: "Shoes",
+  bag: "Bag",
+  accessory: "Accessory",
+  other: "Item",
+};
 
 const CATEGORY_NOUN: Record<ClothingCategory, string> = {
   tops: "top",
@@ -12,13 +23,20 @@ const CATEGORY_NOUN: Record<ClothingCategory, string> = {
 };
 
 const PATTERN_ADJ: Record<Pattern, string> = {
-  solid: "solid",
+  solid: "",
   stripe: "striped",
   check: "checked",
   dot: "polka dot",
   floral: "floral",
-  graphic: "graphic",
+  graphic: "graphic-print",
   other: "",
+};
+
+const SEASON_LABEL_EN: Record<Season, string> = {
+  spring: "spring",
+  summer: "summer",
+  autumn: "autumn",
+  winter: "winter",
 };
 
 const SUBCATEGORY_JA_TO_EN: Record<string, string> = {
@@ -38,7 +56,7 @@ const SUBCATEGORY_JA_TO_EN: Record<string, string> = {
   "ダウンジャケット": "down jacket",
   "ブルゾン": "blouson",
   "トレンチコート": "trench coat",
-  "デニム": "denim jeans",
+  "デニム": "jeans",
   "ジーンズ": "jeans",
   "パンツ": "pants",
   "スラックス": "slacks",
@@ -80,7 +98,7 @@ const COLOR_JA_TO_EN: Record<string, string> = {
   "オフホワイト": "off-white",
   "黒": "black",
   "グレー": "gray",
-  "チャコール": "charcoal",
+  "チャコール": "charcoal gray",
   "赤": "red",
   "ワインレッド": "wine red",
   "ピンク": "pink",
@@ -96,7 +114,7 @@ const COLOR_JA_TO_EN: Record<string, string> = {
   "グリーン": "green",
   "青": "blue",
   "ブルー": "blue",
-  "ネイビー": "navy",
+  "ネイビー": "navy blue",
   "水色": "light blue",
   "紫": "purple",
   "パープル": "purple",
@@ -125,24 +143,33 @@ function translate(map: Record<string, string>, value: string | null): string {
   return map[value] ?? value;
 }
 
+// "navy denim denim jeans" のような重複を避けて、簡潔な英語描写にする。
 function describeItem(item: ClothingItem): string {
-  const parts: string[] = [];
-  const firstColor = item.colors[0]?.name;
-  if (firstColor) parts.push(translate(COLOR_JA_TO_EN, firstColor));
-  if (item.pattern && item.pattern !== "solid" && item.pattern !== "other") {
-    parts.push(PATTERN_ADJ[item.pattern]);
+  const tokens: string[] = [];
+
+  const colors = item.colors.slice(0, 2).map((c) => translate(COLOR_JA_TO_EN, c.name));
+  if (colors.length === 1) tokens.push(colors[0]);
+  else if (colors.length === 2) tokens.push(`${colors[0]} and ${colors[1]}`);
+
+  if (item.pattern && PATTERN_ADJ[item.pattern]) {
+    tokens.push(PATTERN_ADJ[item.pattern]);
   }
-  if (item.material) parts.push(translate(MATERIAL_JA_TO_EN, item.material));
+
+  const material = translate(MATERIAL_JA_TO_EN, item.material).toLowerCase();
   const sub = item.subcategory
-    ? translate(SUBCATEGORY_JA_TO_EN, item.subcategory)
+    ? translate(SUBCATEGORY_JA_TO_EN, item.subcategory).toLowerCase()
     : CATEGORY_NOUN[item.category];
-  parts.push(sub);
-  return parts.filter(Boolean).join(" ");
+
+  // material が subcategory に既に含まれていれば省略 (denim + jeans = jeans)
+  if (material && !sub.includes(material)) tokens.push(material);
+  tokens.push(sub);
+
+  return tokens.filter(Boolean).join(" ");
 }
 
 export function buildOutfitPrompt(
   items: ClothingItem[],
-  tpo: string,
+  context: { tpo?: string; season?: Season } = {},
 ): string {
   const wearOrder: ClothingCategory[] = [
     "outerwear",
@@ -157,20 +184,28 @@ export function buildOutfitPrompt(
   const sorted = [...items].sort(
     (a, b) => wearOrder.indexOf(a.category) - wearOrder.indexOf(b.category),
   );
-  const wearables = sorted
-    .filter((i) => i.category !== "bag" && i.category !== "accessory")
-    .map(describeItem);
-  const accessories = sorted
-    .filter((i) => i.category === "bag" || i.category === "accessory")
-    .map(describeItem);
 
-  const wearText = wearables.length > 0 ? wearables.join(", ") : "casual clothes";
-  const accText =
-    accessories.length > 0 ? ` Holding ${accessories.join(" and ")}.` : "";
+  const outfitLines = sorted.map(
+    (item) => `- ${CATEGORY_LABEL_EN[item.category]}: ${describeItem(item)}`,
+  );
+
+  const seasonClause = context.season
+    ? `Season: ${SEASON_LABEL_EN[context.season]}.`
+    : "";
+  const tpoClause = context.tpo ? `Scene: ${context.tpo}.` : "";
 
   return [
-    "Full-body fashion lookbook photo, frontal view, neutral light gray studio background.",
-    `A young Japanese person standing naturally, wearing ${wearText}.${accText}`,
-    "Soft natural lighting, sharp focus, clean magazine editorial style, no text, no logos.",
-  ].join(" ");
+    "Professional fashion photograph, full body, front view, neutral light gray seamless studio background.",
+    "Subject: a young adult standing naturally, arms relaxed, looking at camera with a soft expression.",
+    seasonClause,
+    tpoClause,
+    "",
+    "Outfit (the model must wear exactly these items, with accurate colors and materials):",
+    ...outfitLines,
+    "",
+    "Style: high-resolution photorealistic editorial fashion photograph, sharp focus on garments, accurate fabric texture, true-to-description colors, soft natural studio lighting.",
+    "Strict: no text, no brand logos, no watermark, no additional clothing not listed above.",
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
