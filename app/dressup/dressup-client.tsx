@@ -33,14 +33,27 @@ type LayerPos = {
   zIndex: number;
 };
 
+// 各カテゴリの配置は「カンバス縦 = 肩から床」の人体比率を基準にする。
+// 縦割合 (おおよそ):
+//   肩=5%, 腰=35%, 太もも中央=55%, 膝=65%, 足首=88%, 床=100%
+// 横は: 肩幅~50%, 腰幅~32%, 足V字~30%。
+// 服はその範囲を覆うように top/height を決める。これで実物の身体比率に合った
+// 重ね合わせになり、アウター巨大・靴豆粒のチグハグが解消する。
 const LAYER_POS: Partial<Record<ClothingCategory, LayerPos>> = {
-  outerwear: { top: "6%", left: "8%", width: "84%", height: "60%", zIndex: 1 },
-  tops: { top: "16%", left: "24%", width: "52%", height: "34%", zIndex: 3 },
-  dress: { top: "16%", left: "22%", width: "56%", height: "58%", zIndex: 3 },
-  bottoms: { top: "44%", left: "24%", width: "52%", height: "38%", zIndex: 2 },
-  shoes: { top: "78%", left: "35%", width: "30%", height: "18%", zIndex: 4 },
-  bag: { top: "4%", right: "4%", width: "22%", height: "22%", zIndex: 5 },
-  accessory: { top: "4%", left: "4%", width: "18%", height: "18%", zIndex: 5 },
+  // mid-length jacket: 肩〜太もも (5%-55%)
+  outerwear: { top: "5%", left: "21%", width: "58%", height: "50%", zIndex: 1 },
+  // tops: 肩〜腰 (5%-35%)
+  tops: { top: "5%", left: "31%", width: "38%", height: "30%", zIndex: 3 },
+  // dress: 肩〜膝 (5%-65%)
+  dress: { top: "5%", left: "28%", width: "44%", height: "60%", zIndex: 3 },
+  // 長ズボン: 腰〜足首 (35%-88%)
+  bottoms: { top: "35%", left: "34%", width: "32%", height: "53%", zIndex: 2 },
+  // 靴: 足首〜床 (86%-100%)
+  shoes: { top: "86%", left: "35%", width: "30%", height: "14%", zIndex: 4 },
+  // bag: 体側 (腰の高さ)
+  bag: { top: "35%", right: "4%", width: "18%", height: "20%", zIndex: 5 },
+  // accessory: 首/襟元
+  accessory: { top: "4%", left: "5%", width: "14%", height: "14%", zIndex: 5 },
 };
 
 function imgSrc(item: ClothingItem) {
