@@ -167,4 +167,21 @@ describe("buildOutfitPrompt", () => {
     expect(prompt).toContain("studio");
     expect(prompt).toContain("full body");
   });
+
+  it("subcategoryがnullならカテゴリ名を使う", () => {
+    const prompt = buildOutfitPrompt(
+      [
+        item({
+          id: "t",
+          category: "tops",
+          subcategory: null,
+          material: null,
+          colors: [{ name: "白", hex: "#fff" }],
+        }),
+      ],
+      { tpo: "x" },
+    );
+    // CATEGORY_NOUN.tops = "top"
+    expect(prompt).toContain("white top");
+  });
 });
