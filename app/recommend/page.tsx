@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import type { ClothingCategory, ClothingItem, Season } from "@/schema/clothing";
 import { primaryBtn } from "@/components/clothing-form";
-import { layoutOutfitBoard } from "@/lib/outfit-layout";
 
 type MissingItem = { category: ClothingCategory; description: string };
 type OutfitResult = {
@@ -75,7 +74,11 @@ export default function RecommendPage() {
       }
       if (data.season) setSeason(data.season);
       if (data.kind === "outfit" && data.items && data.reason) {
-        setResult({ kind: "outfit", items: data.items, reason: data.reason });
+        setResult({
+          kind: "outfit",
+          items: data.items,
+          reason: data.reason,
+        });
       } else if (data.kind === "shopping" && data.missing && data.reason) {
         setResult({
           kind: "shopping",
@@ -184,14 +187,24 @@ function OutfitCard({
         background: "#fff",
       }}
     >
-      <OutfitBoard items={outfit.items} />
-      <GeneratedImage items={outfit.items} tpo={tpo} season={season} />
+      <OutfitFullBodyImage items={outfit.items} tpo={tpo} season={season} />
+
+      <h2
+        style={{
+          margin: "0 0 0.4rem",
+          fontSize: "0.8rem",
+          color: "#888",
+          fontWeight: "normal",
+        }}
+      >
+        使ったアイテム
+      </h2>
       <div
         style={{
           display: "flex",
           gap: "0.5rem",
           overflowX: "auto",
-          margin: "0.75rem 0 0.5rem",
+          margin: "0 0 0.75rem",
           paddingBottom: "0.25rem",
         }}
       >
@@ -230,6 +243,17 @@ function OutfitCard({
           </a>
         ))}
       </div>
+
+      <h2
+        style={{
+          margin: "0 0 0.4rem",
+          fontSize: "0.8rem",
+          color: "#888",
+          fontWeight: "normal",
+        }}
+      >
+        説明
+      </h2>
       <p style={{ margin: 0, fontSize: "0.9rem", lineHeight: 1.5 }}>
         {outfit.reason}
       </p>
@@ -237,65 +261,7 @@ function OutfitCard({
   );
 }
 
-function OutfitBoard({ items }: { items: ClothingItem[] }) {
-  const { main, side } = layoutOutfitBoard(items);
-
-  return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: side.length > 0 ? "minmax(0, 2fr) minmax(0, 1fr)" : "1fr",
-        gap: "0.5rem",
-        background: "#f7f5ef",
-        border: "1px solid #ece7d8",
-        borderRadius: 8,
-        padding: "0.5rem",
-      }}
-    >
-      <div
-        style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}
-      >
-        {main.map((item) => (
-          <BoardImage key={item.id} item={item} />
-        ))}
-      </div>
-      {side.length > 0 && (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.4rem",
-            justifyContent: "flex-end",
-          }}
-        >
-          {side.map((item) => (
-            <BoardImage key={item.id} item={item} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function BoardImage({ item }: { item: ClothingItem }) {
-  return (
-    <img
-      src={`/api/images/${item.imageKey}`}
-      alt={item.subcategory ?? item.category}
-      style={{
-        width: "100%",
-        aspectRatio: "1 / 1",
-        objectFit: "cover",
-        borderRadius: 6,
-        border: "1px solid #e5dfc9",
-        background: "#fff",
-        display: "block",
-      }}
-    />
-  );
-}
-
-function GeneratedImage({
+function OutfitFullBodyImage({
   items,
   tpo,
   season,
@@ -304,115 +270,101 @@ function GeneratedImage({
   tpo: string;
   season: Season;
 }) {
-  const [state, setState] = useState<"idle" | "running" | "done" | "error">(
-    "idle",
-  );
+  const [state, setState] = useState<"running" | "done" | "error">("running");
   const [url, setUrl] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
-    return () => {
-      if (url) URL.revokeObjectURL(url);
-    };
-  }, [url]);
-
-  async function onGenerate() {
+    const controller = new AbortController();
+    let createdUrl: string | null = null;
     setState("running");
     setErrorMsg(null);
-    try {
-      const res = await fetch("/api/outfit-image", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          item_ids: items.map((i) => i.id),
-          tpo,
-          season,
-        }),
-      });
-      if (!res.ok) {
-        const ct = res.headers.get("Content-Type") ?? "";
-        const msg = ct.includes("json")
-          ? (((await res.json()) as { error?: string }).error ?? "生成失敗")
-          : `${res.status}`;
-        throw new Error(msg);
-      }
-      const blob = await res.blob();
-      if (url) URL.revokeObjectURL(url);
-      setUrl(URL.createObjectURL(blob));
-      setState("done");
-    } catch (e) {
-      setErrorMsg((e as Error).message);
-      setState("error");
-    }
-  }
 
+    (async () => {
+      try {
+        const res = await fetch("/api/outfit-image", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            item_ids: items.map((i) => i.id),
+            tpo,
+            season,
+          }),
+          signal: controller.signal,
+        });
+        if (!res.ok) {
+          const ct = res.headers.get("Content-Type") ?? "";
+          const msg = ct.includes("json")
+            ? (((await res.json()) as { error?: string }).error ?? "生成失敗")
+            : `${res.status}`;
+          throw new Error(msg);
+        }
+        const blob = await res.blob();
+        createdUrl = URL.createObjectURL(blob);
+        setUrl(createdUrl);
+        setState("done");
+      } catch (e) {
+        if ((e as Error).name === "AbortError") return;
+        setErrorMsg((e as Error).message);
+        setState("error");
+      }
+    })();
+
+    return () => {
+      controller.abort();
+      if (createdUrl) URL.revokeObjectURL(createdUrl);
+    };
+  }, [items, tpo, season]);
+
+  if (state === "running") {
+    return (
+      <div
+        style={{
+          padding: "1.5rem 0.75rem",
+          background: "#fafafa",
+          border: "1px solid #eee",
+          borderRadius: 8,
+          fontSize: "0.85rem",
+          color: "#666",
+          marginBottom: "0.75rem",
+          textAlign: "center",
+        }}
+      >
+        全身イメージを生成中…
+      </div>
+    );
+  }
+  if (state === "error") {
+    return (
+      <div
+        style={{
+          padding: "0.75rem",
+          background: "#fafafa",
+          border: "1px solid #eee",
+          borderRadius: 8,
+          fontSize: "0.85rem",
+          color: "#c00",
+          marginBottom: "0.75rem",
+          textAlign: "center",
+        }}
+      >
+        全身イメージの生成に失敗しました: {errorMsg}
+      </div>
+    );
+  }
   return (
-    <div style={{ marginTop: "0.75rem" }}>
-      {state === "idle" && (
-        <button
-          onClick={onGenerate}
-          style={{
-            ...primaryBtn(false),
-            background: "#fff",
-            color: "#111",
-            border: "1px solid #111",
-            width: "100%",
-          }}
-        >
-          全身イメージを生成（AI 画像、~10 秒）
-        </button>
-      )}
-      {state === "running" && (
-        <div
-          style={{
-            padding: "0.75rem",
-            background: "#fafafa",
-            border: "1px solid #eee",
-            borderRadius: 8,
-            fontSize: "0.85rem",
-            color: "#444",
-          }}
-        >
-          AI が生成中…
-        </div>
-      )}
-      {state === "done" && url && (
-        <div>
-          <img
-            src={url}
-            alt="全身コーデ"
-            style={{
-              width: "100%",
-              maxWidth: 480,
-              display: "block",
-              margin: "0 auto 0.5rem",
-              borderRadius: 8,
-              border: "1px solid #eee",
-            }}
-          />
-          <a
-            href={url}
-            download="outfit.jpg"
-            style={{
-              display: "inline-block",
-              padding: "0.4rem 0.8rem",
-              fontSize: "0.85rem",
-              border: "1px solid #111",
-              borderRadius: 6,
-              textDecoration: "none",
-              color: "#111",
-            }}
-          >
-            画像を保存
-          </a>
-        </div>
-      )}
-      {state === "error" && (
-        <p style={{ color: "#c00", fontSize: "0.85rem" }}>
-          生成に失敗しました: {errorMsg}
-        </p>
-      )}
-    </div>
+    <img
+      src={url ?? ""}
+      alt="全身コーデ"
+      style={{
+        width: "100%",
+        maxWidth: 480,
+        display: "block",
+        margin: "0 auto 0.75rem",
+        borderRadius: 8,
+        border: "1px solid #eee",
+      }}
+    />
   );
 }
 

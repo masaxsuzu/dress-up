@@ -1,8 +1,7 @@
-import { GoogleGenAI, Modality } from "@google/genai";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { z } from "zod";
 import { listItems } from "@/lib/db";
-import { buildOutfitPrompt } from "@/lib/outfit-prompt";
+import { generateOutfitImage, type OutfitImageInput } from "@/lib/outfit-image";
 import type { ClothingItem, Season } from "@/schema/clothing";
 
 const InputSchema = z.object({
@@ -10,8 +9,6 @@ const InputSchema = z.object({
   tpo: z.string().min(1).max(200),
   season: z.enum(["spring", "summer", "autumn", "winter"]).optional(),
 });
-
-const MODEL = "gemini-2.5-flash-image";
 
 function currentSeason(date = new Date()): Season {
   const m = date.getMonth() + 1;
@@ -24,13 +21,17 @@ function currentSeason(date = new Date()): Season {
 async function loadItemImage(
   bucket: R2Bucket,
   item: ClothingItem,
-): Promise<{ mediaType: string; base64: string } | null> {
+): Promise<OutfitImageInput | null> {
   const obj = await bucket.get(item.imageKey).catch(() => null);
   if (!obj) return null;
   const mediaType = obj.httpMetadata?.contentType ?? "image/jpeg";
   if (!mediaType.startsWith("image/")) return null;
   const buf = await obj.arrayBuffer();
-  return { mediaType, base64: Buffer.from(buf).toString("base64") };
+  return {
+    id: item.id,
+    mediaType,
+    base64: Buffer.from(buf).toString("base64"),
+  };
 }
 
 export async function POST(req: Request) {
@@ -55,47 +56,21 @@ export async function POST(req: Request) {
     );
   }
 
-  const prompt = buildOutfitPrompt(items, {
-    tpo: parsed.data.tpo,
-    season: parsed.data.season ?? currentSeason(),
-  });
-
-  // 実物アイテム画像を入力に渡して、それを着た人物像を Nano Banana に作らせる。
   const settled = await Promise.all(items.map((i) => loadItemImage(env.IMAGES, i)));
-  const imageParts = settled
-    .filter((x): x is NonNullable<typeof x> => x !== null)
-    .map((img) => ({
-      inlineData: { mimeType: img.mediaType, data: img.base64 },
-    }));
+  const images = settled.filter(
+    (x): x is OutfitImageInput => x !== null,
+  );
 
   try {
-    const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
-    const response = await ai.models.generateContent({
-      model: MODEL,
-      contents: [
-        {
-          role: "user",
-          parts: [...imageParts, { text: prompt }],
-        },
-      ],
-      config: {
-        responseModalities: [Modality.IMAGE],
-      },
+    const image = await generateOutfitImage(env.GEMINI_API_KEY, items, images, {
+      tpo: parsed.data.tpo,
+      season: parsed.data.season ?? currentSeason(),
     });
 
-    const part = response.candidates?.[0]?.content?.parts?.find(
-      (p) => p.inlineData?.data,
-    );
-    const data = part?.inlineData?.data;
-    if (!data) {
-      throw new Error("画像が返されませんでした");
-    }
-    const mimeType = part.inlineData?.mimeType ?? "image/png";
-
-    const bytes = Uint8Array.from(atob(data), (c) => c.charCodeAt(0));
+    const bytes = Uint8Array.from(atob(image.base64), (c) => c.charCodeAt(0));
     return new Response(bytes, {
       headers: {
-        "Content-Type": mimeType,
+        "Content-Type": image.mediaType,
         "Cache-Control": "private, no-store",
       },
     });
