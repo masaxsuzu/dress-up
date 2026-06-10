@@ -1,6 +1,6 @@
 import { Miniflare } from "miniflare";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { deleteImage, getImage, putImage } from "@/lib/r2";
+import { deleteImage, getImage, putIcon, putImage } from "@/lib/r2";
 
 let mf: Miniflare;
 let bucket: R2Bucket;
@@ -48,6 +48,25 @@ describe("putImage", () => {
   it("未知のMIMEはbin拡張子になる", async () => {
     const key = await putImage(bucket, PAYLOAD, "application/octet-stream");
     expect(key).toMatch(/\.bin$/);
+  });
+});
+
+describe("putIcon", () => {
+  it("icons/<itemId>.<ext> として保存しContent-Typeを残す", async () => {
+    const key = await putIcon(bucket, "item-42", PAYLOAD, "image/png");
+    expect(key).toBe("icons/item-42.png");
+    const obj = await bucket.get(key);
+    expect(obj).not.toBeNull();
+    expect(obj!.httpMetadata?.contentType).toBe("image/png");
+  });
+
+  it("同じitemIdで再呼び出しすると上書きする", async () => {
+    await putIcon(bucket, "item-x", PAYLOAD, "image/png");
+    const newPayload = new Uint8Array([9, 9, 9]).buffer;
+    const key = await putIcon(bucket, "item-x", newPayload, "image/png");
+    const obj = await bucket.get(key);
+    const got = new Uint8Array(await obj!.arrayBuffer());
+    expect(Array.from(got)).toEqual([9, 9, 9]);
   });
 });
 

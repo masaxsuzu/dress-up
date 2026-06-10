@@ -50,6 +50,19 @@ describe("removeBackground", () => {
     expect(result).toBeNull();
   });
 
+  it("Content-Type ヘッダ無しなら image/jpeg と仮定する", async () => {
+    const res = new Response(new Uint8Array([0xff, 0xd8, 0xff, 0xe0]), {
+      status: 200,
+    });
+    // Response が body から自動付与する Content-Type を消す
+    res.headers.delete("Content-Type");
+    fetchMock.mockResolvedValue(res);
+
+    const result = await removeBackground("k", jpegBytes(), "image/jpeg");
+    expect(result).not.toBeNull();
+    expect(result!.mimeType).toBe("image/jpeg");
+  });
+
   it("リクエストに x-api-key と multipart で画像が含まれる", async () => {
     fetchMock.mockResolvedValue(
       new Response(new Uint8Array([0xff, 0xd8]), {

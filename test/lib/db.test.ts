@@ -2,7 +2,14 @@ import { Miniflare } from "miniflare";
 import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { createItem, deleteItem, getItem, listItems, updateItem } from "@/lib/db";
+import {
+  createItem,
+  deleteItem,
+  getItem,
+  listItems,
+  setIconKey,
+  updateItem,
+} from "@/lib/db";
 import type { ClothingItemInput, ClothingItemUpdate } from "@/schema/clothing";
 
 let mf: Miniflare;
@@ -166,5 +173,33 @@ describe("updateItem", () => {
   it("存在しないidに対してnullを返す", async () => {
     const result = await updateItem(db, "no-such-id", UPDATE);
     expect(result).toBeNull();
+  });
+});
+
+describe("setIconKey", () => {
+  it("作成直後の iconKey は null", async () => {
+    const created = await createItem(db, SAMPLE);
+    expect(created.iconKey).toBeNull();
+    const fetched = await getItem(db, created.id);
+    expect(fetched!.iconKey).toBeNull();
+  });
+
+  it("setIconKey で更新後 getItem に反映される", async () => {
+    const created = await createItem(db, SAMPLE);
+    await setIconKey(db, created.id, "icons/x.png");
+    const fetched = await getItem(db, created.id);
+    expect(fetched!.iconKey).toBe("icons/x.png");
+  });
+
+  it("listItems / updateItem を経ても iconKey は保持される", async () => {
+    const created = await createItem(db, SAMPLE);
+    await setIconKey(db, created.id, "icons/y.png");
+    const updated = await updateItem(db, created.id, {
+      ...SAMPLE,
+      brand: "new-brand",
+    });
+    expect(updated!.iconKey).toBe("icons/y.png");
+    const list = await listItems(db);
+    expect(list[0].iconKey).toBe("icons/y.png");
   });
 });
