@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import type { ClothingItem, Season } from "@/schema/clothing";
 import { RecommendDraftSchema, type RecommendDraft } from "@/schema/recommend";
 
-const MODEL = "claude-sonnet-4-6";
+const MODEL = "claude-opus-4-8";
 
 export type ItemImage = {
   id: string;
