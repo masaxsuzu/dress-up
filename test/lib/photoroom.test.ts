@@ -84,4 +84,25 @@ describe("removeBackground", () => {
     expect(body.get("background.color")).toBe("FFFFFFFF");
     expect(body.get("export.format")).toBe("jpg");
   });
+
+  it("background: 'transparent' で 00000000 / PNG を要求する", async () => {
+    fetchMock.mockResolvedValue(
+      new Response(new Uint8Array([0x89, 0x50, 0x4e, 0x47]), {
+        status: 200,
+        headers: { "Content-Type": "image/png" },
+      }),
+    );
+
+    const result = await removeBackground("k", jpegBytes(), "image/jpeg", {
+      background: "transparent",
+    });
+    expect(result).not.toBeNull();
+    expect(result!.mimeType).toBe("image/png");
+
+    const [, init] = fetchMock.mock.calls[0];
+    const body = init.body as FormData;
+    expect(body.get("background.color")).toBe("00000000");
+    expect(body.get("export.format")).toBe("png");
+    expect(init.headers.Accept).toBe("image/png");
+  });
 });

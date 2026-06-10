@@ -16,9 +16,11 @@ const CATEGORY_HINT: Record<ClothingCategory, string> = {
     "shoulders defined, sleeves hanging slightly out, neckline at the top, hem at the waist. " +
     "Front view, vertical orientation.",
   outerwear:
-    "Render this outer garment as if worn over an invisible body, ghost-mannequin style: " +
-    "shoulders at the top, sleeves hanging down naturally, full length visible (open or buttoned). " +
-    "Front view, vertical orientation.",
+    "Render this outer garment as if worn open over an invisible body, ghost-mannequin style: " +
+    "shoulders at the top, sleeves hanging straight down on both sides, " +
+    "FULLY UNBUTTONED with the front parted so the center vertical axis (where inner clothes would be) is empty/visible. " +
+    "The two front panels drape outward to either side, exposing the lining or inside fabric. " +
+    "Lapels, collar, and hem clearly visible. Front view, vertical orientation.",
   bottoms:
     "Render this bottom garment as if worn on an invisible lower body, ghost-mannequin style: " +
     "waistband at the top, two legs straight down for pants or skirt fanning naturally. " +
@@ -28,8 +30,9 @@ const CATEGORY_HINT: Record<ClothingCategory, string> = {
     "shoulders/neckline at the top, dress falling to its natural length. " +
     "Front view, vertical orientation.",
   shoes:
-    "Render this pair of shoes from a slight 3/4 front angle, placed side by side as if on the floor. " +
-    "Both shoes fully visible.",
+    "Render this pair of shoes as if worn in a standing pose, from a slight 3/4 front angle. " +
+    "Place both shoes flat on the floor with HEELS CLOSE TOGETHER and TOES POINTED OUTWARD at about 20-30 degrees (V-shape, ハの字, like standing at attention). " +
+    "Both shoes fully visible at the same scale.",
   bag:
     "Render this bag from the front, hanging naturally from its invisible strap or handle. " +
     "Show the full silhouette.",
