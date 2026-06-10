@@ -4,7 +4,7 @@ import { recommendOutfits, type ItemImage } from "@/lib/recommend";
 import type { ClothingItem, Season } from "@/schema/clothing";
 import { RecommendInputSchema } from "@/schema/recommend";
 
-const ALLOWED_MEDIA_TYPES = new Set<ItemImage["mediaType"]>([
+const ALLOWED_MEDIA_TYPES = new Set([
   "image/jpeg",
   "image/png",
   "image/webp",
@@ -25,8 +25,7 @@ async function loadItemImage(
 ): Promise<ItemImage | null> {
   const obj = await bucket.get(item.imageKey).catch(() => null);
   if (!obj) return null;
-  const mediaType = (obj.httpMetadata?.contentType ??
-    "image/jpeg") as ItemImage["mediaType"];
+  const mediaType = obj.httpMetadata?.contentType ?? "image/jpeg";
   if (!ALLOWED_MEDIA_TYPES.has(mediaType)) return null;
   const buf = await obj.arrayBuffer();
   return {
@@ -59,7 +58,7 @@ export async function POST(req: Request) {
   const images = settled.filter((x): x is ItemImage => x !== null);
 
   try {
-    const draft = await recommendOutfits(env.ANTHROPIC_API_KEY, items, {
+    const draft = await recommendOutfits(env.GEMINI_API_KEY, items, {
       season,
       tpo: parsed.data.tpo,
       images,

@@ -1,11 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const createMock = vi.fn();
-vi.mock("@anthropic-ai/sdk", () => ({
-  default: vi.fn().mockImplementation(() => ({
-    messages: { create: createMock },
-  })),
-}));
+const generateContentMock = vi.fn();
+vi.mock("@google/genai", async (importOriginal) => {
+  const actual = (await importOriginal()) as Record<string, unknown>;
+  return {
+    ...actual,
+    GoogleGenAI: vi.fn().mockImplementation(() => ({
+      models: { generateContent: generateContentMock },
+    })),
+  };
+});
 
 const { extractClothing } = await import("@/lib/vlm");
 
@@ -24,24 +28,28 @@ const VALID_EXTRACTION = {
 
 const IMAGE = { mediaType: "image/png", base64: "AAAA" };
 
+function mockFunctionCall(name: string, args: unknown) {
+  return {
+    functionCalls: [{ name, args }],
+  };
+}
+
 beforeEach(() => {
-  createMock.mockReset();
+  generateContentMock.mockReset();
 });
 
 describe("extractClothing", () => {
-  it("tool_useブロックの内容をスキーマでパースして返す", async () => {
-    createMock.mockResolvedValue({
-      content: [{ type: "tool_use", input: VALID_EXTRACTION }],
-    });
+  it("function_call の args をスキーマでパースして返す", async () => {
+    generateContentMock.mockResolvedValue(
+      mockFunctionCall("extract_clothing_attributes", VALID_EXTRACTION),
+    );
 
     const result = await extractClothing("sk-test", IMAGE);
     expect(result).toEqual(VALID_EXTRACTION);
   });
 
-  it("tool_useブロックが無いとthrowする", async () => {
-    createMock.mockResolvedValue({
-      content: [{ type: "text", text: "sorry" }],
-    });
+  it("function_call が無いとthrowする", async () => {
+    generateContentMock.mockResolvedValue({ functionCalls: [] });
 
     await expect(extractClothing("sk-test", IMAGE)).rejects.toThrow(
       /did not call/i,
@@ -49,37 +57,34 @@ describe("extractClothing", () => {
   });
 
   it("不正な抽出結果はZodで弾く", async () => {
-    createMock.mockResolvedValue({
-      content: [
-        {
-          type: "tool_use",
-          input: { ...VALID_EXTRACTION, category: "hoodie" }, // 未知のenum
-        },
-      ],
-    });
+    generateContentMock.mockResolvedValue(
+      mockFunctionCall("extract_clothing_attributes", {
+        ...VALID_EXTRACTION,
+        category: "hoodie", // 未知のenum
+      }),
+    );
 
     await expect(extractClothing("sk-test", IMAGE)).rejects.toThrow();
   });
 
-  it("画像とapiKeyをAnthropic SDKに渡す", async () => {
-    createMock.mockResolvedValue({
-      content: [{ type: "tool_use", input: VALID_EXTRACTION }],
-    });
+  it("画像と apiKey を Gemini SDK に渡す", async () => {
+    generateContentMock.mockResolvedValue(
+      mockFunctionCall("extract_clothing_attributes", VALID_EXTRACTION),
+    );
 
     await extractClothing("sk-key-xyz", IMAGE);
 
-    expect(createMock).toHaveBeenCalledOnce();
-    const args = createMock.mock.calls[0][0];
-    expect(args.tool_choice).toEqual({
-      type: "tool",
-      name: "extract_clothing_attributes",
-    });
-    const userMessage = args.messages[0];
-    expect(userMessage.role).toBe("user");
-    const imageBlock = userMessage.content.find(
-      (c: { type: string }) => c.type === "image",
+    expect(generateContentMock).toHaveBeenCalledOnce();
+    const args = generateContentMock.mock.calls[0][0];
+    expect(args.model).toBe("gemini-2.5-flash");
+    expect(args.config.toolConfig.functionCallingConfig.allowedFunctionNames).toEqual([
+      "extract_clothing_attributes",
+    ]);
+    const userParts = args.contents[0].parts;
+    const inline = userParts.find(
+      (p: { inlineData?: { mimeType: string; data: string } }) => p.inlineData,
     );
-    expect(imageBlock.source.media_type).toBe("image/png");
-    expect(imageBlock.source.data).toBe("AAAA");
+    expect(inline.inlineData.mimeType).toBe("image/png");
+    expect(inline.inlineData.data).toBe("AAAA");
   });
 });

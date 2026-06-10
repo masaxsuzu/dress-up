@@ -10,9 +10,9 @@ const ALLOWED_TYPES = new Set([
   "image/gif",
 ]);
 
-// Anthropic API は base64 後 5MB まで。base64 は元の約4/3倍になるので
-// 生バイトは ~3.75MB が上限。安全側で 3.5MB を弾く。
-const MAX_IMAGE_BYTES = 3_500_000;
+// Gemini API は inlineData 1 件あたり 20MB まで。実用的にはサーバ側の
+// メモリと、フォームアップロードのレイテンシを考えて 5MB を上限にする。
+const MAX_IMAGE_BYTES = 5_000_000;
 
 export async function POST(req: Request) {
   const { env } = await getCloudflareContext({ async: true });
@@ -60,7 +60,7 @@ export async function POST(req: Request) {
   const base64 = Buffer.from(storedBytes).toString("base64");
 
   try {
-    const extraction = await extractClothing(env.ANTHROPIC_API_KEY, {
+    const extraction = await extractClothing(env.GEMINI_API_KEY, {
       mediaType: storedMime,
       base64,
     });
