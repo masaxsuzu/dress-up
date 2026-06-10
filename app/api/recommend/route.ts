@@ -1,5 +1,6 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { listItems } from "@/lib/db";
+import { generateOutfitImage, type OutfitImage } from "@/lib/outfit-image";
 import { recommendOutfits, type ItemImage } from "@/lib/recommend";
 import type { ClothingItem, Season } from "@/schema/clothing";
 import { RecommendInputSchema } from "@/schema/recommend";
@@ -78,11 +79,31 @@ export async function POST(req: Request) {
       .map((id) => itemMap.get(id))
       .filter((x): x is NonNullable<typeof x> => x !== undefined);
 
+    // 提案アイテムに対応する画像のみを Flash Image に渡す。
+    const imageMap = new Map(images.map((img) => [img.id, img]));
+    const outfitImages = hydratedItems
+      .map((it) => imageMap.get(it.id))
+      .filter((x): x is ItemImage => x !== undefined);
+
+    // 全身画像の生成。失敗してもテキスト提案は返す。
+    let image: OutfitImage | null = null;
+    try {
+      image = await generateOutfitImage(
+        env.GEMINI_API_KEY,
+        hydratedItems,
+        outfitImages,
+        { tpo: parsed.data.tpo, season },
+      );
+    } catch {
+      image = null;
+    }
+
     return Response.json({
       season,
       kind: "outfit" as const,
       items: hydratedItems,
       reason: draft.reason,
+      image,
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
