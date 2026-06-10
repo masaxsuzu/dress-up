@@ -9,18 +9,6 @@ import {
   type DressupSlots,
 } from "@/lib/dressup-slots";
 
-// アバター（縦に積む）スロットの順序。dress は tops の位置に出す。
-const AVATAR_STACK: ClothingCategory[] = [
-  "outerwear",
-  "tops",
-  "dress",
-  "bottoms",
-  "shoes",
-];
-
-// アバター横に並べる小物。
-const AVATAR_SIDE: ClothingCategory[] = ["bag", "accessory"];
-
 // ピッカーで出すカテゴリ順。
 const PICKER_ORDER: ClothingCategory[] = [
   "outerwear",
@@ -32,6 +20,28 @@ const PICKER_ORDER: ClothingCategory[] = [
   "accessory",
   "other",
 ];
+
+// レイヤードキャンバスでの各カテゴリの配置（%）。
+// dress は tops+bottoms をまたぐ位置・サイズで、tops と排他なので両立しない。
+// z-index は: outerwear(下) < bottoms < tops/dress < shoes < bag/accessory(浮かせる)
+type LayerPos = {
+  top?: string;
+  left?: string;
+  right?: string;
+  width: string;
+  height: string;
+  zIndex: number;
+};
+
+const LAYER_POS: Partial<Record<ClothingCategory, LayerPos>> = {
+  outerwear: { top: "6%", left: "8%", width: "84%", height: "60%", zIndex: 1 },
+  tops: { top: "16%", left: "24%", width: "52%", height: "34%", zIndex: 3 },
+  dress: { top: "16%", left: "22%", width: "56%", height: "58%", zIndex: 3 },
+  bottoms: { top: "44%", left: "24%", width: "52%", height: "38%", zIndex: 2 },
+  shoes: { top: "78%", left: "35%", width: "30%", height: "18%", zIndex: 4 },
+  bag: { top: "4%", right: "4%", width: "22%", height: "22%", zIndex: 5 },
+  accessory: { top: "4%", left: "4%", width: "18%", height: "18%", zIndex: 5 },
+};
 
 function imgSrc(item: ClothingItem) {
   return `/api/images/${item.iconKey ?? item.imageKey}`;
@@ -92,7 +102,7 @@ export function DressupClient({ items }: { items: ClothingItem[] }) {
         </button>
       </header>
 
-      <Avatar slots={slots} byId={byId} />
+      <OutfitCanvas slots={slots} byId={byId} />
 
       <section style={{ marginTop: "1rem" }}>
         {PICKER_ORDER.map((cat) => {
@@ -118,96 +128,94 @@ export function DressupClient({ items }: { items: ClothingItem[] }) {
   );
 }
 
-function Avatar({
+function OutfitCanvas({
   slots,
   byId,
 }: {
   slots: DressupSlots;
   byId: Map<string, ClothingItem>;
 }) {
-  const stack = AVATAR_STACK
-    .map((cat) => ({ cat, item: slots[cat] ? byId.get(slots[cat]!) : null }))
-    .filter((x) => x.item);
-  const side = AVATAR_SIDE
-    .map((cat) => ({ cat, item: slots[cat] ? byId.get(slots[cat]!) : null }))
-    .filter((x) => x.item);
+  const layers = (Object.keys(LAYER_POS) as ClothingCategory[])
+    .map((cat) => {
+      const id = slots[cat];
+      if (!id) return null;
+      const item = byId.get(id);
+      if (!item) return null;
+      const pos = LAYER_POS[cat];
+      if (!pos) return null;
+      return { cat, item, pos };
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null);
 
   return (
     <div
       style={{
-        display: "grid",
-        gridTemplateColumns:
-          side.length > 0 ? "minmax(0, 2fr) minmax(0, 1fr)" : "1fr",
-        gap: "0.5rem",
+        position: "relative",
+        width: "100%",
+        maxWidth: 360,
+        aspectRatio: "3 / 4",
+        margin: "0 auto",
         background: "#f7f5ef",
         border: "1px solid #ece7d8",
         borderRadius: 12,
-        padding: "0.75rem",
-        minHeight: 220,
+        overflow: "hidden",
       }}
     >
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "0.4rem",
-          alignItems: "center",
-        }}
-      >
-        {stack.length === 0 && side.length === 0 ? (
-          <p
-            style={{
-              margin: "auto",
-              color: "#888",
-              fontSize: "0.9rem",
-              textAlign: "center",
-            }}
-          >
-            下のアイテムをタップして着せ替えしてください
-          </p>
-        ) : (
-          stack.map(({ cat, item }) => (
-            <AvatarSlot
-              key={cat}
-              item={item!}
-              size={140}
-            />
-          ))
-        )}
-      </div>
-      {side.length > 0 && (
-        <div
+      {layers.length === 0 && (
+        <p
           style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.4rem",
-            justifyContent: "flex-end",
+            position: "absolute",
+            inset: 0,
+            margin: "auto",
+            display: "grid",
+            placeItems: "center",
+            color: "#888",
+            fontSize: "0.9rem",
+            textAlign: "center",
+            padding: "0 1rem",
           }}
         >
-          {side.map(({ cat, item }) => (
-            <AvatarSlot key={cat} item={item!} size={90} />
-          ))}
-        </div>
+          下のアイテムをタップして着せ替えしてください
+        </p>
       )}
+      {layers.map(({ cat, item, pos }) => (
+        <CanvasLayer key={cat} item={item} pos={pos} />
+      ))}
     </div>
   );
 }
 
-function AvatarSlot({ item, size }: { item: ClothingItem; size: number }) {
+function CanvasLayer({ item, pos }: { item: ClothingItem; pos: LayerPos }) {
+  const hasIcon = !!item.iconKey;
   return (
-    <img
-      src={imgSrc(item)}
-      alt={item.subcategory ?? item.category}
+    <div
       style={{
-        width: size,
-        height: size,
-        objectFit: "contain",
-        background: "#fff",
-        borderRadius: 8,
-        border: "1px solid #e5dfc9",
-        display: "block",
+        position: "absolute",
+        top: pos.top,
+        left: pos.left,
+        right: pos.right,
+        width: pos.width,
+        height: pos.height,
+        zIndex: pos.zIndex,
       }}
-    />
+    >
+      <img
+        src={imgSrc(item)}
+        alt={item.subcategory ?? item.category}
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit: "contain",
+          // アイコン(白背景PNG)は multiply で白を消して下のレイヤーと馴染ませる。
+          // 元写真はそのまま白フレームで「写真」として浮かせる。
+          mixBlendMode: hasIcon ? "multiply" : "normal",
+          background: hasIcon ? "transparent" : "#fff",
+          border: hasIcon ? "none" : "1px solid #ddd",
+          borderRadius: 6,
+          display: "block",
+        }}
+      />
+    </div>
   );
 }
 
