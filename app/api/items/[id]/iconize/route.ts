@@ -1,15 +1,10 @@
 import { GoogleGenAI, Modality } from "@google/genai";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { getItem, setIconKey } from "@/lib/db";
+import { buildIconPrompt } from "@/lib/icon-prompt";
 import { putIcon } from "@/lib/r2";
 
 const MODEL = "gemini-2.5-flash-image";
-
-const PROMPT =
-  "Generate a clean flat-lay icon of this single clothing item. " +
-  "Pure white background, item centered, no person or mannequin, no shadows, no accessories. " +
-  "Faithfully reproduce the item's color, pattern, texture, and shape. " +
-  "Style: crisp product-shot icon suitable for a dress-up game.";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -28,6 +23,7 @@ export async function POST(_req: Request, { params }: Params) {
   const base64 = Buffer.from(await obj.arrayBuffer()).toString("base64");
 
   const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
+  const prompt = buildIconPrompt(item.category);
 
   let data: string;
   let mimeType: string;
@@ -39,7 +35,7 @@ export async function POST(_req: Request, { params }: Params) {
           role: "user",
           parts: [
             { inlineData: { mimeType: mediaType, data: base64 } },
-            { text: PROMPT },
+            { text: prompt },
           ],
         },
       ],
