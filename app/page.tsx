@@ -30,21 +30,6 @@ export default async function Home() {
         <h1 style={{ margin: 0, fontSize: "1.4rem" }}>dress-up</h1>
         <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
           <a
-            href="/dressup"
-            style={{
-              padding: "0.6rem 1rem",
-              background: "#fff",
-              color: "#111",
-              border: "1px solid #111",
-              borderRadius: 999,
-              textDecoration: "none",
-              fontSize: "0.95rem",
-              whiteSpace: "nowrap",
-            }}
-          >
-            着せ替え
-          </a>
-          <a
             href="/recommend"
             style={{
               padding: "0.6rem 1rem",

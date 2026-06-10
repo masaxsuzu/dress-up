@@ -215,12 +215,13 @@ function OutfitCard({
             style={{ flexShrink: 0, textDecoration: "none", color: "#111" }}
           >
             <img
-              src={`/api/images/${item.imageKey}`}
+              src={`/api/images/${item.iconKey ?? item.imageKey}`}
               alt={item.subcategory ?? item.category}
               style={{
                 width: 72,
                 height: 72,
-                objectFit: "cover",
+                objectFit: item.iconKey ? "contain" : "cover",
+                background: item.iconKey ? "#f7f5ef" : undefined,
                 borderRadius: 6,
                 border: "1px solid #eee",
                 display: "block",

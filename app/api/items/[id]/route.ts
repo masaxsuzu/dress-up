@@ -37,5 +37,9 @@ export async function DELETE(_req: Request, { params }: Params) {
 
   await deleteItem(env.DB, id);
   await deleteImage(env.IMAGES, item.imageKey);
+  // アイコン (生成済みなら) も R2 から消す。残しておくと R2 にオーファンが残る。
+  if (item.iconKey) {
+    await deleteImage(env.IMAGES, item.iconKey).catch(() => {});
+  }
   return new Response(null, { status: 204 });
 }
