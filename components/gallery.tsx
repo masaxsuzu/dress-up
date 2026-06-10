@@ -295,12 +295,15 @@ export function Gallery({ items }: { items: ClothingItem[] }) {
               }}
             >
               <img
-                src={`/api/images/${item.imageKey}`}
+                src={`/api/images/${item.iconKey ?? item.imageKey}`}
                 alt={item.subcategory ?? item.category}
                 style={{
                   width: "100%",
                   aspectRatio: "1",
-                  objectFit: "cover",
+                  // アイコン (透過 PNG, 服が中央) なら contain で全体を見せる。
+                  // 元写真フォールバック時は cover で枠を埋める。
+                  objectFit: item.iconKey ? "contain" : "cover",
+                  background: item.iconKey ? "#f7f5ef" : undefined,
                   display: "block",
                 }}
               />

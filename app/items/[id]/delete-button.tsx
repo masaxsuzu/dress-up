@@ -1,10 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 export function DeleteButton({ id }: { id: string }) {
-  const router = useRouter();
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -14,11 +12,13 @@ export function DeleteButton({ id }: { id: string }) {
     setError(null);
     try {
       const res = await fetch(`/api/items/${id}`, { method: "DELETE" });
-      if (!res.ok && res.status !== 204) {
-        throw new Error(await res.text());
+      if (!res.ok) {
+        const body = await res.text().catch(() => "");
+        throw new Error(body || `削除に失敗 (status ${res.status})`);
       }
-      router.push("/");
-      router.refresh();
+      // router.push + refresh は RSC キャッシュが残るケースで一覧から消えないことが
+      // あったので、確実にリロードされるハードナビゲーションに統一する。
+      window.location.href = "/";
     } catch (e) {
       setError((e as Error).message);
       setDeleting(false);
