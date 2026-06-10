@@ -55,14 +55,7 @@ export function DressupClient({ items }: { items: ClothingItem[] }) {
     [items],
   );
 
-  const wornItems: ClothingItem[] = [];
-  for (const cat of [...AVATAR_STACK, ...AVATAR_SIDE]) {
-    const id = slots[cat];
-    if (!id) continue;
-    const item = byId.get(id);
-    if (item) wornItems.push(item);
-  }
-  const isEmpty = wornItems.length === 0;
+  const isEmpty = Object.keys(slots).length === 0;
 
   return (
     <main style={{ padding: "1rem", maxWidth: 900, margin: "0 auto" }}>
@@ -139,8 +132,6 @@ function Avatar({
     .map((cat) => ({ cat, item: slots[cat] ? byId.get(slots[cat]!) : null }))
     .filter((x) => x.item);
 
-  const empty = stack.length === 0 && side.length === 0;
-
   return (
     <div
       style={{
@@ -198,7 +189,6 @@ function Avatar({
           ))}
         </div>
       )}
-      {empty && null}
     </div>
   );
 }
