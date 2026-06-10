@@ -159,6 +159,9 @@ function OutfitCanvas({
         border: "1px solid #ece7d8",
         borderRadius: 12,
         overflow: "hidden",
+        // mix-blend-mode の backdrop を canvas に確定させる。
+        // これがないと各レイヤーが自分の stacking context に閉じてしまい blend が空振りする。
+        isolation: "isolate",
       }}
     >
       {layers.length === 0 && (
@@ -197,6 +200,9 @@ function CanvasLayer({ item, pos }: { item: ClothingItem; pos: LayerPos }) {
         width: pos.width,
         height: pos.height,
         zIndex: pos.zIndex,
+        // blend mode はラッパー側に置く。img 側に付けると z-index で作られる
+        // 内側 stacking context に閉じてしまい canvas 背景と混ざらない。
+        mixBlendMode: hasIcon ? "multiply" : "normal",
       }}
     >
       <img
@@ -206,9 +212,7 @@ function CanvasLayer({ item, pos }: { item: ClothingItem; pos: LayerPos }) {
           width: "100%",
           height: "100%",
           objectFit: "contain",
-          // アイコン(白背景PNG)は multiply で白を消して下のレイヤーと馴染ませる。
-          // 元写真はそのまま白フレームで「写真」として浮かせる。
-          mixBlendMode: hasIcon ? "multiply" : "normal",
+          // アイコン未生成 (元写真) は白フレームで「写真」として浮かせる。
           background: hasIcon ? "transparent" : "#fff",
           border: hasIcon ? "none" : "1px solid #ddd",
           borderRadius: 6,
