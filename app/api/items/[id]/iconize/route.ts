@@ -2,6 +2,7 @@ import { GoogleGenAI, Modality } from "@google/genai";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { getItem, setIconKey } from "@/lib/db";
 import { buildIconPrompt } from "@/lib/icon-prompt";
+import { removeBackground } from "@/lib/photoroom";
 import { putIcon } from "@/lib/r2";
 
 const MODEL = "gemini-2.5-flash-image";
@@ -55,8 +56,26 @@ export async function POST(_req: Request, { params }: Params) {
     return Response.json({ error: message }, { status: 500 });
   }
 
-  const bytes = Uint8Array.from(atob(data), (c) => c.charCodeAt(0)).buffer;
-  const iconKey = await putIcon(env.IMAGES, id, bytes as ArrayBuffer, mimeType);
+  let bytes: ArrayBuffer = Uint8Array.from(atob(data), (c) => c.charCodeAt(0))
+    .buffer as ArrayBuffer;
+
+  // Photoroom があれば、Gemini が付けてくる白背景を真の透過 PNG に置き換える。
+  // キャンバスに重ねたときに白い四角が見えるのを避けるため。
+  // 失敗 or 未設定なら白背景のまま (CSS の mix-blend-mode multiply でフォールバック)。
+  if (env.PHOTOROOM_API_KEY) {
+    const cutout = await removeBackground(
+      env.PHOTOROOM_API_KEY,
+      bytes,
+      mimeType,
+      { background: "transparent" },
+    ).catch(() => null);
+    if (cutout) {
+      bytes = cutout.bytes;
+      mimeType = cutout.mimeType;
+    }
+  }
+
+  const iconKey = await putIcon(env.IMAGES, id, bytes, mimeType);
   await setIconKey(env.DB, id, iconKey);
 
   return Response.json({ iconKey });
