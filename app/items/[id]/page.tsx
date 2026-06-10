@@ -9,6 +9,7 @@ import {
   SEASON_LABEL,
 } from "@/lib/labels";
 import { DeleteButton } from "./delete-button";
+import { IconizeButton } from "./iconize-button";
 
 export const dynamic = "force-dynamic";
 
@@ -143,6 +144,34 @@ export default async function ItemPage({
         </Row>
       </div>
 
+      {item.iconKey && (
+        <div
+          style={{
+            marginTop: "1rem",
+            background: "#fff",
+            borderRadius: 10,
+            border: "1px solid #eee",
+            padding: "1rem",
+          }}
+        >
+          <p style={{ margin: "0 0 0.5rem", fontSize: "0.8rem", color: "#888" }}>
+            アイコン
+          </p>
+          <img
+            src={`/api/images/${item.iconKey}`}
+            alt="icon"
+            style={{
+              width: 128,
+              height: 128,
+              objectFit: "contain",
+              background: "#f8f8f8",
+              borderRadius: 8,
+              border: "1px solid #eee",
+            }}
+          />
+        </div>
+      )}
+
       <div style={{ marginTop: "1.5rem", display: "grid", gap: "0.75rem" }}>
         <Link
           href={`/items/${item.id}/edit`}
@@ -162,6 +191,7 @@ export default async function ItemPage({
         >
           編集
         </Link>
+        <IconizeButton id={item.id} hasIcon={item.iconKey !== null} />
         <DeleteButton id={item.id} />
       </div>
     </main>

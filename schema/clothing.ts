@@ -58,6 +58,7 @@ export type ClothingItemInput = z.infer<typeof ClothingItemInputSchema>;
 // DBに保存された行を読み出した形。
 export const ClothingItemSchema = ClothingItemInputSchema.extend({
   id: z.string(),
+  iconKey: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });

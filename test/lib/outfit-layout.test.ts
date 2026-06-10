@@ -18,6 +18,7 @@ function item(id: string, category: ClothingCategory): ClothingItem {
     brand: null,
     notes: null,
     imageKey: `items/${id}.jpg`,
+    iconKey: null,
     createdAt: "2026-01-01T00:00:00Z",
     updatedAt: "2026-01-01T00:00:00Z",
   };

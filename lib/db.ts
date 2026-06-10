@@ -21,6 +21,7 @@ interface Row {
   brand: string | null;
   notes: string | null;
   image_key: string;
+  icon_key: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -41,6 +42,7 @@ function rowToItem(row: Row): ClothingItem {
     brand: row.brand,
     notes: row.notes,
     imageKey: row.image_key,
+    iconKey: row.icon_key,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -99,7 +101,18 @@ export async function createItem(
     )
     .run();
 
-  return { ...input, id, createdAt: now, updatedAt: now };
+  return { ...input, id, iconKey: null, createdAt: now, updatedAt: now };
+}
+
+export async function setIconKey(
+  db: D1Database,
+  id: string,
+  iconKey: string,
+): Promise<void> {
+  await db
+    .prepare("UPDATE clothing_items SET icon_key = ? WHERE id = ?")
+    .bind(iconKey, id)
+    .run();
 }
 
 export async function deleteItem(
