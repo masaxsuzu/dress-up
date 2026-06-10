@@ -1,5 +1,5 @@
 import { Miniflare } from "miniflare";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createItem, deleteItem, getItem, listItems, updateItem } from "@/lib/db";
@@ -35,17 +35,18 @@ beforeAll(async () => {
   });
   db = (await mf.getD1Database("DB")) as unknown as D1Database;
 
-  const sql = readFileSync(
-    resolve(__dirname, "../../migrations/0001_init.sql"),
-    "utf8",
-  );
-  const statements = sql
-    .replace(/--[^\n]*/g, "")
-    .split(";")
-    .map((s) => s.trim())
-    .filter(Boolean);
-  for (const stmt of statements) {
-    await db.prepare(stmt).run();
+  const migrationsDir = resolve(__dirname, "../../migrations");
+  const files = readdirSync(migrationsDir).filter((f) => f.endsWith(".sql")).sort();
+  for (const file of files) {
+    const sql = readFileSync(resolve(migrationsDir, file), "utf8");
+    const statements = sql
+      .replace(/--[^\n]*/g, "")
+      .split(";")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    for (const stmt of statements) {
+      await db.prepare(stmt).run();
+    }
   }
 });
 

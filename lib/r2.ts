@@ -13,6 +13,20 @@ function extensionForMimeType(mimeType: string): string {
   }
 }
 
+export async function putIcon(
+  bucket: R2Bucket,
+  itemId: string,
+  body: ArrayBuffer,
+  mimeType: string,
+): Promise<string> {
+  const ext = extensionForMimeType(mimeType);
+  const key = `icons/${itemId}.${ext}`;
+  await bucket.put(key, body, {
+    httpMetadata: { contentType: mimeType },
+  });
+  return key;
+}
+
 export async function putImage(
   bucket: R2Bucket,
   body: ArrayBuffer | ReadableStream,
