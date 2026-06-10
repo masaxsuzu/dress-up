@@ -1,15 +1,14 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { z } from "zod";
 import { listItems } from "@/lib/db";
-import { recommendOutfits, type ItemImage } from "@/lib/recommend";
+import { generateOutfitImage, type OutfitImageInput } from "@/lib/outfit-image";
 import type { ClothingItem, Season } from "@/schema/clothing";
-import { RecommendInputSchema } from "@/schema/recommend";
 
-const ALLOWED_MEDIA_TYPES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/gif",
-]);
+const InputSchema = z.object({
+  item_ids: z.array(z.string()).min(1).max(10),
+  tpo: z.string().min(1).max(200),
+  season: z.enum(["spring", "summer", "autumn", "winter"]).optional(),
+});
 
 function currentSeason(date = new Date()): Season {
   const m = date.getMonth() + 1;
@@ -22,11 +21,11 @@ function currentSeason(date = new Date()): Season {
 async function loadItemImage(
   bucket: R2Bucket,
   item: ClothingItem,
-): Promise<ItemImage | null> {
+): Promise<OutfitImageInput | null> {
   const obj = await bucket.get(item.imageKey).catch(() => null);
   if (!obj) return null;
   const mediaType = obj.httpMetadata?.contentType ?? "image/jpeg";
-  if (!ALLOWED_MEDIA_TYPES.has(mediaType)) return null;
+  if (!mediaType.startsWith("image/")) return null;
   const buf = await obj.arrayBuffer();
   return {
     id: item.id,
@@ -39,50 +38,41 @@ export async function POST(req: Request) {
   const { env } = await getCloudflareContext({ async: true });
 
   const body = await req.json();
-  const parsed = RecommendInputSchema.safeParse(body);
+  const parsed = InputSchema.safeParse(body);
   if (!parsed.success) {
     return Response.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const items = await listItems(env.DB);
+  const all = await listItems(env.DB);
+  const map = new Map(all.map((i) => [i.id, i]));
+  const items = parsed.data.item_ids
+    .map((id) => map.get(id))
+    .filter((x): x is NonNullable<typeof x> => x !== undefined);
+
   if (items.length === 0) {
     return Response.json(
-      { error: "ワードローブにアイテムがまだありません" },
+      { error: "アイテムが見つかりません" },
       { status: 400 },
     );
   }
 
-  const season = currentSeason();
-
   const settled = await Promise.all(items.map((i) => loadItemImage(env.IMAGES, i)));
-  const images = settled.filter((x): x is ItemImage => x !== null);
+  const images = settled.filter(
+    (x): x is OutfitImageInput => x !== null,
+  );
 
   try {
-    const draft = await recommendOutfits(env.GEMINI_API_KEY, items, {
-      season,
+    const image = await generateOutfitImage(env.GEMINI_API_KEY, items, images, {
       tpo: parsed.data.tpo,
-      images,
+      season: parsed.data.season ?? currentSeason(),
     });
 
-    if (draft.kind === "shopping") {
-      return Response.json({
-        season,
-        kind: "shopping" as const,
-        missing: draft.missing,
-        reason: draft.reason,
-      });
-    }
-
-    const itemMap = new Map(items.map((i) => [i.id, i]));
-    const hydratedItems = draft.item_ids
-      .map((id) => itemMap.get(id))
-      .filter((x): x is NonNullable<typeof x> => x !== undefined);
-
-    return Response.json({
-      season,
-      kind: "outfit" as const,
-      items: hydratedItems,
-      reason: draft.reason,
+    const bytes = Uint8Array.from(atob(image.base64), (c) => c.charCodeAt(0));
+    return new Response(bytes, {
+      headers: {
+        "Content-Type": image.mediaType,
+        "Cache-Control": "private, no-store",
+      },
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);

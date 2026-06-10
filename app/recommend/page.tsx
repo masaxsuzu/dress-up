@@ -1,16 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ClothingCategory, ClothingItem, Season } from "@/schema/clothing";
 import { primaryBtn } from "@/components/clothing-form";
 
 type MissingItem = { category: ClothingCategory; description: string };
-type OutfitImage = { mediaType: string; base64: string };
 type OutfitResult = {
   kind: "outfit";
   items: ClothingItem[];
   reason: string;
-  image: OutfitImage | null;
 };
 type ShoppingResult = {
   kind: "shopping";
@@ -39,6 +37,7 @@ const CATEGORY_LABEL: Record<ClothingCategory, string> = {
 
 export default function RecommendPage() {
   const [tpo, setTpo] = useState("");
+  const [submittedTpo, setSubmittedTpo] = useState("");
   const [loading, setLoading] = useState(false);
   const [season, setSeason] = useState<Season | null>(null);
   const [result, setResult] = useState<Result | null>(null);
@@ -51,6 +50,7 @@ export default function RecommendPage() {
     setError(null);
     setResult(null);
     setSeason(null);
+    setSubmittedTpo(trimmed);
     try {
       const res = await fetch("/api/recommend", {
         method: "POST",
@@ -63,7 +63,6 @@ export default function RecommendPage() {
         items?: ClothingItem[];
         missing?: MissingItem[];
         reason?: string;
-        image?: OutfitImage | null;
         error?: string | { formErrors?: string[] };
       };
       if (!res.ok) {
@@ -79,7 +78,6 @@ export default function RecommendPage() {
           kind: "outfit",
           items: data.items,
           reason: data.reason,
-          image: data.image ?? null,
         });
       } else if (data.kind === "shopping" && data.missing && data.reason) {
         setResult({
@@ -161,7 +159,7 @@ export default function RecommendPage() {
             {result.kind === "outfit" ? "コーデ提案" : "買い足し提案"}
           </p>
           {result.kind === "outfit" ? (
-            <OutfitCard outfit={result} />
+            <OutfitCard outfit={result} tpo={submittedTpo} season={season} />
           ) : (
             <ShoppingCard shopping={result} />
           )}
@@ -171,7 +169,15 @@ export default function RecommendPage() {
   );
 }
 
-function OutfitCard({ outfit }: { outfit: OutfitResult }) {
+function OutfitCard({
+  outfit,
+  tpo,
+  season,
+}: {
+  outfit: OutfitResult;
+  tpo: string;
+  season: Season;
+}) {
   return (
     <article
       style={{
@@ -181,35 +187,7 @@ function OutfitCard({ outfit }: { outfit: OutfitResult }) {
         background: "#fff",
       }}
     >
-      {outfit.image ? (
-        <img
-          src={`data:${outfit.image.mediaType};base64,${outfit.image.base64}`}
-          alt="全身コーデ"
-          style={{
-            width: "100%",
-            maxWidth: 480,
-            display: "block",
-            margin: "0 auto 0.75rem",
-            borderRadius: 8,
-            border: "1px solid #eee",
-          }}
-        />
-      ) : (
-        <div
-          style={{
-            padding: "0.75rem",
-            background: "#fafafa",
-            border: "1px solid #eee",
-            borderRadius: 8,
-            fontSize: "0.85rem",
-            color: "#666",
-            marginBottom: "0.75rem",
-            textAlign: "center",
-          }}
-        >
-          全身イメージの生成に失敗しました
-        </div>
-      )}
+      <OutfitFullBodyImage items={outfit.items} tpo={tpo} season={season} />
 
       <h2
         style={{
@@ -280,6 +258,113 @@ function OutfitCard({ outfit }: { outfit: OutfitResult }) {
         {outfit.reason}
       </p>
     </article>
+  );
+}
+
+function OutfitFullBodyImage({
+  items,
+  tpo,
+  season,
+}: {
+  items: ClothingItem[];
+  tpo: string;
+  season: Season;
+}) {
+  const [state, setState] = useState<"running" | "done" | "error">("running");
+  const [url, setUrl] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    let createdUrl: string | null = null;
+    setState("running");
+    setErrorMsg(null);
+
+    (async () => {
+      try {
+        const res = await fetch("/api/outfit-image", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            item_ids: items.map((i) => i.id),
+            tpo,
+            season,
+          }),
+          signal: controller.signal,
+        });
+        if (!res.ok) {
+          const ct = res.headers.get("Content-Type") ?? "";
+          const msg = ct.includes("json")
+            ? (((await res.json()) as { error?: string }).error ?? "生成失敗")
+            : `${res.status}`;
+          throw new Error(msg);
+        }
+        const blob = await res.blob();
+        createdUrl = URL.createObjectURL(blob);
+        setUrl(createdUrl);
+        setState("done");
+      } catch (e) {
+        if ((e as Error).name === "AbortError") return;
+        setErrorMsg((e as Error).message);
+        setState("error");
+      }
+    })();
+
+    return () => {
+      controller.abort();
+      if (createdUrl) URL.revokeObjectURL(createdUrl);
+    };
+  }, [items, tpo, season]);
+
+  if (state === "running") {
+    return (
+      <div
+        style={{
+          padding: "1.5rem 0.75rem",
+          background: "#fafafa",
+          border: "1px solid #eee",
+          borderRadius: 8,
+          fontSize: "0.85rem",
+          color: "#666",
+          marginBottom: "0.75rem",
+          textAlign: "center",
+        }}
+      >
+        全身イメージを生成中…
+      </div>
+    );
+  }
+  if (state === "error") {
+    return (
+      <div
+        style={{
+          padding: "0.75rem",
+          background: "#fafafa",
+          border: "1px solid #eee",
+          borderRadius: 8,
+          fontSize: "0.85rem",
+          color: "#c00",
+          marginBottom: "0.75rem",
+          textAlign: "center",
+        }}
+      >
+        全身イメージの生成に失敗しました: {errorMsg}
+      </div>
+    );
+  }
+  return (
+    <img
+      src={url ?? ""}
+      alt="全身コーデ"
+      style={{
+        width: "100%",
+        maxWidth: 480,
+        display: "block",
+        margin: "0 auto 0.75rem",
+        borderRadius: 8,
+        border: "1px solid #eee",
+      }}
+    />
   );
 }
 
