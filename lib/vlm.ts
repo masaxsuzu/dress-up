@@ -1,7 +1,11 @@
-import Anthropic from "@anthropic-ai/sdk";
+import {
+  GoogleGenAI,
+  FunctionCallingConfigMode,
+  Type,
+} from "@google/genai";
 import { VLMExtractionSchema, type VLMExtraction } from "@/schema/clothing";
 
-const MODEL = "claude-haiku-4-5-20251001";
+const MODEL = "gemini-2.5-flash";
 
 const SYSTEM_PROMPT = `You analyze photos of clothing items and extract structured attributes for a Japanese personal wardrobe app.
 
@@ -21,11 +25,11 @@ Rules:
 - The enum fields ("category", "pattern", "season") MUST use the English values defined in the tool schema; do not translate them.
 - Always call the extract_clothing_attributes tool. Never reply with plain text.`;
 
-const TOOL_INPUT_SCHEMA = {
-  type: "object",
+const TOOL_SCHEMA = {
+  type: Type.OBJECT,
   properties: {
     category: {
-      type: "string",
+      type: Type.STRING,
       enum: [
         "tops",
         "outerwear",
@@ -37,46 +41,38 @@ const TOOL_INPUT_SCHEMA = {
         "other",
       ],
     },
-    subcategory: { type: ["string", "null"] },
+    subcategory: { type: Type.STRING, nullable: true },
     colors: {
-      type: "array",
-      minItems: 1,
-      maxItems: 4,
+      type: Type.ARRAY,
+      minItems: "1",
+      maxItems: "4",
       items: {
-        type: "object",
+        type: Type.OBJECT,
         properties: {
-          name: { type: "string" },
-          hex: { type: "string", pattern: "^#[0-9A-Fa-f]{6}$" },
+          name: { type: Type.STRING },
+          hex: { type: Type.STRING, pattern: "^#[0-9A-Fa-f]{6}$" },
         },
         required: ["name", "hex"],
       },
     },
     pattern: {
-      type: ["string", "null"],
-      enum: [
-        "solid",
-        "stripe",
-        "check",
-        "dot",
-        "floral",
-        "graphic",
-        "other",
-        null,
-      ],
+      type: Type.STRING,
+      nullable: true,
+      enum: ["solid", "stripe", "check", "dot", "floral", "graphic", "other"],
     },
-    material: { type: ["string", "null"] },
-    silhouette: { type: ["string", "null"] },
+    material: { type: Type.STRING, nullable: true },
+    silhouette: { type: Type.STRING, nullable: true },
     season: {
-      type: "array",
-      minItems: 1,
+      type: Type.ARRAY,
+      minItems: "1",
       items: {
-        type: "string",
+        type: Type.STRING,
         enum: ["spring", "summer", "autumn", "winter"],
       },
     },
-    formality: { type: "integer", minimum: 1, maximum: 5 },
-    occasion: { type: "array", items: { type: "string" } },
-    tags: { type: "array", items: { type: "string" } },
+    formality: { type: Type.INTEGER, minimum: 1, maximum: 5 },
+    occasion: { type: Type.ARRAY, items: { type: Type.STRING } },
+    tags: { type: Type.ARRAY, items: { type: Type.STRING } },
   },
   required: [
     "category",
@@ -90,58 +86,51 @@ const TOOL_INPUT_SCHEMA = {
     "occasion",
     "tags",
   ],
-} as const;
+};
 
 export async function extractClothing(
   apiKey: string,
   image: { mediaType: string; base64: string },
 ): Promise<VLMExtraction> {
-  const client = new Anthropic({ apiKey });
+  const ai = new GoogleGenAI({ apiKey });
 
-  const response = await client.messages.create({
+  const response = await ai.models.generateContent({
     model: MODEL,
-    max_tokens: 1024,
-    system: [
-      {
-        type: "text",
-        text: SYSTEM_PROMPT,
-        cache_control: { type: "ephemeral" },
-      },
-    ],
-    tools: [
-      {
-        name: "extract_clothing_attributes",
-        description:
-          "Record structured attributes extracted from a clothing photo.",
-        input_schema: TOOL_INPUT_SCHEMA as never,
-      },
-    ],
-    tool_choice: { type: "tool", name: "extract_clothing_attributes" },
-    messages: [
+    contents: [
       {
         role: "user",
-        content: [
-          {
-            type: "image",
-            source: {
-              type: "base64",
-              media_type: image.mediaType as
-                | "image/jpeg"
-                | "image/png"
-                | "image/webp"
-                | "image/gif",
-              data: image.base64,
-            },
-          },
-          { type: "text", text: "Extract attributes from this clothing photo." },
+        parts: [
+          { inlineData: { mimeType: image.mediaType, data: image.base64 } },
+          { text: "Extract attributes from this clothing photo." },
         ],
       },
     ],
+    config: {
+      systemInstruction: SYSTEM_PROMPT,
+      tools: [
+        {
+          functionDeclarations: [
+            {
+              name: "extract_clothing_attributes",
+              description:
+                "Record structured attributes extracted from a clothing photo.",
+              parameters: TOOL_SCHEMA as never,
+            },
+          ],
+        },
+      ],
+      toolConfig: {
+        functionCallingConfig: {
+          mode: FunctionCallingConfigMode.ANY,
+          allowedFunctionNames: ["extract_clothing_attributes"],
+        },
+      },
+    },
   });
 
-  const toolUse = response.content.find((b) => b.type === "tool_use");
-  if (!toolUse || toolUse.type !== "tool_use") {
+  const call = response.functionCalls?.[0];
+  if (!call || call.name !== "extract_clothing_attributes") {
     throw new Error("VLM did not call the extraction tool");
   }
-  return VLMExtractionSchema.parse(toolUse.input);
+  return VLMExtractionSchema.parse(call.args);
 }

@@ -1,12 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ClothingItem } from "@/schema/clothing";
 
-const createMock = vi.fn();
-vi.mock("@anthropic-ai/sdk", () => ({
-  default: vi.fn().mockImplementation(() => ({
-    messages: { create: createMock },
-  })),
-}));
+const generateContentMock = vi.fn();
+vi.mock("@google/genai", async (importOriginal) => {
+  const actual = (await importOriginal()) as Record<string, unknown>;
+  return {
+    ...actual,
+    GoogleGenAI: vi.fn().mockImplementation(() => ({
+      models: { generateContent: generateContentMock },
+    })),
+  };
+});
 
 const { recommendOutfits } = await import("@/lib/recommend");
 
@@ -38,24 +42,23 @@ const ITEMS: ClothingItem[] = [
   item({ id: "shoes-1", category: "shoes", subcategory: "スニーカー" }),
 ];
 
+function mockCall(args: unknown) {
+  return { functionCalls: [{ name: "recommend_outfit", args }] };
+}
+
 beforeEach(() => {
-  createMock.mockReset();
+  generateContentMock.mockReset();
 });
 
 describe("recommendOutfits", () => {
   it("kind='outfit' のレスポンスをパースして返す", async () => {
-    createMock.mockResolvedValue({
-      content: [
-        {
-          type: "tool_use",
-          input: {
-            kind: "outfit",
-            item_ids: ["tops-1", "bottoms-1", "shoes-1"],
-            reason: "白Tにデニムでカジュアル。",
-          },
-        },
-      ],
-    });
+    generateContentMock.mockResolvedValue(
+      mockCall({
+        kind: "outfit",
+        item_ids: ["tops-1", "bottoms-1", "shoes-1"],
+        reason: "白Tにデニムでカジュアル。",
+      }),
+    );
 
     const result = await recommendOutfits("sk-test", ITEMS, {
       season: "spring",
@@ -68,21 +71,16 @@ describe("recommendOutfits", () => {
   });
 
   it("kind='shopping' のレスポンスをそのまま返す", async () => {
-    createMock.mockResolvedValue({
-      content: [
-        {
-          type: "tool_use",
-          input: {
-            kind: "shopping",
-            missing: [
-              { category: "shoes", description: "黒のレザーパンプス" },
-              { category: "dress", description: "ネイビーのミディ丈ワンピース" },
-            ],
-            reason: "結婚式の二次会には足元と一着の主役が必要です。",
-          },
-        },
-      ],
-    });
+    generateContentMock.mockResolvedValue(
+      mockCall({
+        kind: "shopping",
+        missing: [
+          { category: "shoes", description: "黒のレザーパンプス" },
+          { category: "dress", description: "ネイビーのミディ丈ワンピース" },
+        ],
+        reason: "結婚式の二次会には足元と一着の主役が必要です。",
+      }),
+    );
 
     const result = await recommendOutfits("sk-test", ITEMS, {
       season: "autumn",
@@ -96,18 +94,13 @@ describe("recommendOutfits", () => {
   });
 
   it("outfit でハルシネーションされた未知のidは除外される", async () => {
-    createMock.mockResolvedValue({
-      content: [
-        {
-          type: "tool_use",
-          input: {
-            kind: "outfit",
-            item_ids: ["tops-1", "ghost-item"],
-            reason: "test",
-          },
-        },
-      ],
-    });
+    generateContentMock.mockResolvedValue(
+      mockCall({
+        kind: "outfit",
+        item_ids: ["tops-1", "ghost-item"],
+        reason: "test",
+      }),
+    );
 
     const result = await recommendOutfits("sk-test", ITEMS, {
       season: "spring",
@@ -119,28 +112,21 @@ describe("recommendOutfits", () => {
   });
 
   it("outfit で有効なidが残らない場合はthrowする", async () => {
-    createMock.mockResolvedValue({
-      content: [
-        {
-          type: "tool_use",
-          input: {
-            kind: "outfit",
-            item_ids: ["ghost-1", "ghost-2"],
-            reason: "x",
-          },
-        },
-      ],
-    });
+    generateContentMock.mockResolvedValue(
+      mockCall({
+        kind: "outfit",
+        item_ids: ["ghost-1", "ghost-2"],
+        reason: "x",
+      }),
+    );
 
     await expect(
       recommendOutfits("sk-test", ITEMS, { season: "spring", tpo: "x" }),
     ).rejects.toThrow(/一致しません/);
   });
 
-  it("tool_useブロックが無いとthrowする", async () => {
-    createMock.mockResolvedValue({
-      content: [{ type: "text", text: "sorry" }],
-    });
+  it("function_call が無いとthrowする", async () => {
+    generateContentMock.mockResolvedValue({ functionCalls: [] });
 
     await expect(
       recommendOutfits("sk-test", ITEMS, { season: "spring", tpo: "x" }),
@@ -151,37 +137,27 @@ describe("recommendOutfits", () => {
     await expect(
       recommendOutfits("sk-test", [], { season: "spring", tpo: "x" }),
     ).rejects.toThrow(/アイテムがありません/);
-    expect(createMock).not.toHaveBeenCalled();
+    expect(generateContentMock).not.toHaveBeenCalled();
   });
 
-  it("apiKey, season, tpo, アイテムがClaudeに渡される", async () => {
-    createMock.mockResolvedValue({
-      content: [
-        {
-          type: "tool_use",
-          input: {
-            kind: "outfit",
-            item_ids: ["tops-1"],
-            reason: "ok",
-          },
-        },
-      ],
-    });
+  it("apiKey, season, tpo, アイテムが Gemini に渡される", async () => {
+    generateContentMock.mockResolvedValue(
+      mockCall({ kind: "outfit", item_ids: ["tops-1"], reason: "ok" }),
+    );
 
     await recommendOutfits("sk-test-xyz", ITEMS, {
       season: "winter",
       tpo: "通勤",
     });
 
-    expect(createMock).toHaveBeenCalledOnce();
-    const args = createMock.mock.calls[0][0];
-    expect(args.tool_choice).toEqual({
-      type: "tool",
-      name: "recommend_outfit",
-    });
-    const userMsg = args.messages[0];
-    expect(userMsg.role).toBe("user");
-    const text = userMsg.content[0].text as string;
+    expect(generateContentMock).toHaveBeenCalledOnce();
+    const args = generateContentMock.mock.calls[0][0];
+    expect(args.model).toBe("gemini-2.5-pro");
+    expect(args.config.toolConfig.functionCallingConfig.allowedFunctionNames).toEqual([
+      "recommend_outfit",
+    ]);
+    const userParts = args.contents[0].parts;
+    const text = userParts[0].text as string;
     expect(text).toContain("Season: winter");
     expect(text).toContain("TPO: 通勤");
     expect(text).toContain("tops-1");
@@ -190,15 +166,10 @@ describe("recommendOutfits", () => {
     expect(text).not.toContain("#ffffff");
   });
 
-  it("images を渡すと各アイテムの image ブロック + id ラベルが順に並ぶ", async () => {
-    createMock.mockResolvedValue({
-      content: [
-        {
-          type: "tool_use",
-          input: { kind: "outfit", item_ids: ["tops-1"], reason: "ok" },
-        },
-      ],
-    });
+  it("images を渡すと各アイテムの inlineData + id ラベルが順に並ぶ", async () => {
+    generateContentMock.mockResolvedValue(
+      mockCall({ kind: "outfit", item_ids: ["tops-1"], reason: "ok" }),
+    );
 
     await recommendOutfits("sk", ITEMS, {
       season: "spring",
@@ -209,36 +180,25 @@ describe("recommendOutfits", () => {
       ],
     });
 
-    const content = createMock.mock.calls[0][0].messages[0].content;
-    // 先頭は wardrobe JSON のテキスト、末尾は指示テキスト。間に image + id ラベルが並ぶ。
-    expect(content[0].type).toBe("text");
-    expect(content[1].type).toBe("image");
-    expect(content[1].source.media_type).toBe("image/jpeg");
-    expect(content[1].source.data).toBe("AAA");
-    expect(content[2]).toEqual({ type: "text", text: "^ id: tops-1" });
-    expect(content[3].type).toBe("image");
-    expect(content[3].source.media_type).toBe("image/png");
-    expect(content[3].source.data).toBe("BBB");
-    expect(content[4]).toEqual({ type: "text", text: "^ id: bottoms-1" });
-    expect(content[5].type).toBe("text");
-    expect(content[5].text).toMatch(/Propose/);
+    const parts = generateContentMock.mock.calls[0][0].contents[0].parts;
+    expect(parts[0].text).toMatch(/Season:/);
+    expect(parts[1].inlineData).toEqual({ mimeType: "image/jpeg", data: "AAA" });
+    expect(parts[2]).toEqual({ text: "^ id: tops-1" });
+    expect(parts[3].inlineData).toEqual({ mimeType: "image/png", data: "BBB" });
+    expect(parts[4]).toEqual({ text: "^ id: bottoms-1" });
+    expect(parts[5].text).toMatch(/Propose/);
   });
 
-  it("images を渡さない場合は画像ブロックが入らない", async () => {
-    createMock.mockResolvedValue({
-      content: [
-        {
-          type: "tool_use",
-          input: { kind: "outfit", item_ids: ["tops-1"], reason: "ok" },
-        },
-      ],
-    });
+  it("images を渡さない場合は inlineData が入らない", async () => {
+    generateContentMock.mockResolvedValue(
+      mockCall({ kind: "outfit", item_ids: ["tops-1"], reason: "ok" }),
+    );
 
     await recommendOutfits("sk", ITEMS, { season: "spring", tpo: "x" });
 
-    const content = createMock.mock.calls[0][0].messages[0].content;
-    const hasImage = content.some(
-      (b: { type: string }) => b.type === "image",
+    const parts = generateContentMock.mock.calls[0][0].contents[0].parts;
+    const hasImage = parts.some(
+      (p: { inlineData?: unknown }) => p.inlineData !== undefined,
     );
     expect(hasImage).toBe(false);
   });

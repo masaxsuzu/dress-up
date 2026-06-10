@@ -37,14 +37,15 @@ const { env } = await getCloudflareContext({ async: true });
 |---------|------|---------|
 | `env.DB` | D1Database | Clothing item metadata (SQLite) |
 | `env.IMAGES` | R2Bucket | Uploaded clothing photos |
-| `env.ANTHROPIC_API_KEY` | string (secret) | Claude API key for VLM extraction |
+| `env.GEMINI_API_KEY` | string (secret) | Gemini API key (VLM, recommendation, image generation) |
+| `env.PHOTOROOM_API_KEY` | string (optional secret) | Photoroom background-removal at upload |
 | `env.ASSETS` | Fetcher | Static asset serving |
 
-**Never use `process.env` for these** — they are Cloudflare bindings, not Node.js env vars. `ANTHROPIC_API_KEY` must be set as a Wrangler secret (`wrangler secret put ANTHROPIC_API_KEY`).
+**Never use `process.env` for these** — they are Cloudflare bindings, not Node.js env vars. `GEMINI_API_KEY` must be set as a Wrangler secret (`wrangler secret put GEMINI_API_KEY`). `PHOTOROOM_API_KEY` is optional; when unset, the upload route skips background removal.
 
 ### Data flow for item registration
 
-1. `POST /api/extract` — receives a multipart form with the image file, stores it in R2 (`lib/r2.ts:putImage`), then calls `lib/vlm.ts:extractClothing` which sends the image to Claude Haiku via the Anthropic SDK using forced tool use (`extract_clothing_attributes`). Returns `{ imageKey, extraction }`.
+1. `POST /api/extract` — receives a multipart form with the image file, optionally runs Photoroom background removal, stores the (cleaned) image in R2 (`lib/r2.ts:putImage`), then calls `lib/vlm.ts:extractClothing` which sends the image to Gemini 2.5 Flash via `@google/genai` using forced function calling (`extract_clothing_attributes`). Returns `{ imageKey, extraction }`.
 2. The client (`app/add/page.tsx`) lets the user review and edit the extracted attributes. If VLM fails, an empty form is shown for manual entry.
 3. `POST /api/items` — validates the payload against `ClothingItemInputSchema` (Zod) and inserts into D1.
 
@@ -52,11 +53,11 @@ const { env } = await getCloudflareContext({ async: true });
 
 `schema/clothing.ts` is the single source of truth for all data shapes. It defines three layered Zod schemas:
 
-- `VLMExtractionSchema` — what Claude returns (no imageKey, no timestamps)
+- `VLMExtractionSchema` — what Gemini returns (no imageKey, no timestamps)
 - `ClothingItemInputSchema` — extends VLM with `brand`, `notes`, `imageKey` (what the client POSTs)
 - `ClothingItemSchema` — extends input with `id`, `createdAt`, `updatedAt` (what D1 returns)
 
-The VLM tool input schema in `lib/vlm.ts` must be kept in sync with `VLMExtractionSchema` manually (it's a plain JSON Schema object for the Anthropic SDK, not derived from Zod).
+The VLM tool input schema in `lib/vlm.ts` must be kept in sync with `VLMExtractionSchema` manually (it's a plain JSON Schema object for Gemini's function declarations, not derived from Zod).
 
 ### D1 serialization
 

@@ -1,12 +1,16 @@
-import Anthropic from "@anthropic-ai/sdk";
+import {
+  GoogleGenAI,
+  FunctionCallingConfigMode,
+  Type,
+} from "@google/genai";
 import type { ClothingItem, Season } from "@/schema/clothing";
 import { RecommendDraftSchema, type RecommendDraft } from "@/schema/recommend";
 
-const MODEL = "claude-opus-4-8";
+const MODEL = "gemini-2.5-pro";
 
 export type ItemImage = {
   id: string;
-  mediaType: "image/jpeg" | "image/png" | "image/webp" | "image/gif";
+  mediaType: string;
   base64: string;
 };
 
@@ -27,29 +31,28 @@ Rules:
 - "reason" is in Japanese, 1-3 sentences, concrete. For outfit, mention key items and why they suit the TPO. For shopping, explain what's missing and why it matters for this TPO.
 - Always call the recommend_outfit tool. Never reply with plain text.`;
 
-const TOOL_INPUT_SCHEMA = {
-  type: "object",
+const TOOL_SCHEMA = {
+  type: Type.OBJECT,
   properties: {
     kind: {
-      type: "string",
+      type: Type.STRING,
       enum: ["outfit", "shopping"],
       description:
         "outfit: the wardrobe is sufficient. shopping: items must be purchased.",
     },
     item_ids: {
-      type: "array",
-      items: { type: "string" },
-      description:
-        "Required when kind='outfit'. Ids from the provided wardrobe.",
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: "Required when kind='outfit'. Ids from the provided wardrobe.",
     },
     missing: {
-      type: "array",
-      maxItems: 5,
+      type: Type.ARRAY,
+      maxItems: "5",
       items: {
-        type: "object",
+        type: Type.OBJECT,
         properties: {
           category: {
-            type: "string",
+            type: Type.STRING,
             enum: [
               "tops",
               "outerwear",
@@ -62,21 +65,20 @@ const TOOL_INPUT_SCHEMA = {
             ],
           },
           description: {
-            type: "string",
+            type: Type.STRING,
             description: "Japanese, concrete. e.g. '黒のレザーパンプス'",
           },
         },
         required: ["category", "description"],
       },
-      description:
-        "Required when kind='shopping'. Items the user should buy.",
+      description: "Required when kind='shopping'. Items the user should buy.",
     },
-    reason: { type: "string" },
+    reason: { type: Type.STRING },
   },
   required: ["kind", "reason"],
-} as const;
+};
 
-// Claude に渡す軽量 view。imageKey, hex, notes, タイムスタンプは不要。
+// Gemini に渡す軽量 view。imageKey, hex, notes, タイムスタンプは不要。
 function compactItem(item: ClothingItem) {
   return {
     id: item.id,
@@ -101,7 +103,7 @@ export async function recommendOutfits(
     throw new Error("ワードローブにアイテムがありません");
   }
 
-  const client = new Anthropic({ apiKey });
+  const ai = new GoogleGenAI({ apiKey });
   const compact = items.map(compactItem);
   const images = context.images ?? [];
 
@@ -109,56 +111,54 @@ export async function recommendOutfits(
   //   1. ヘッダー（季節 / TPO / JSON）
   //   2. 各アイテムについて [画像] + [id ラベル]
   //   3. 末尾の指示
-  const content: Anthropic.Messages.ContentBlockParam[] = [
+  const parts: Array<
+    | { text: string }
+    | { inlineData: { mimeType: string; data: string } }
+  > = [
     {
-      type: "text",
       text: `Season: ${context.season}\nTPO: ${context.tpo}\n\nWardrobe (JSON):\n${JSON.stringify(compact)}`,
     },
   ];
   for (const img of images) {
-    content.push({
-      type: "image",
-      source: {
-        type: "base64",
-        media_type: img.mediaType,
-        data: img.base64,
-      },
-    });
-    content.push({ type: "text", text: `^ id: ${img.id}` });
+    parts.push({ inlineData: { mimeType: img.mediaType, data: img.base64 } });
+    parts.push({ text: `^ id: ${img.id}` });
   }
-  content.push({
-    type: "text",
+  parts.push({
     text: "Propose one outfit, or a shopping list if the wardrobe is insufficient.",
   });
 
-  const response = await client.messages.create({
+  const response = await ai.models.generateContent({
     model: MODEL,
-    max_tokens: 2048,
-    system: [
-      {
-        type: "text",
-        text: SYSTEM_PROMPT,
-        cache_control: { type: "ephemeral" },
+    contents: [{ role: "user", parts }],
+    config: {
+      systemInstruction: SYSTEM_PROMPT,
+      tools: [
+        {
+          functionDeclarations: [
+            {
+              name: "recommend_outfit",
+              description:
+                "Record one outfit recommendation, or shopping suggestions if the wardrobe is insufficient.",
+              parameters: TOOL_SCHEMA as never,
+            },
+          ],
+        },
+      ],
+      toolConfig: {
+        functionCallingConfig: {
+          mode: FunctionCallingConfigMode.ANY,
+          allowedFunctionNames: ["recommend_outfit"],
+        },
       },
-    ],
-    tools: [
-      {
-        name: "recommend_outfit",
-        description:
-          "Record one outfit recommendation, or shopping suggestions if the wardrobe is insufficient.",
-        input_schema: TOOL_INPUT_SCHEMA as never,
-      },
-    ],
-    tool_choice: { type: "tool", name: "recommend_outfit" },
-    messages: [{ role: "user", content }],
+    },
   });
 
-  const toolUse = response.content.find((b) => b.type === "tool_use");
-  if (!toolUse || toolUse.type !== "tool_use") {
-    throw new Error("Claude did not call the recommendation tool");
+  const call = response.functionCalls?.[0];
+  if (!call || call.name !== "recommend_outfit") {
+    throw new Error("Gemini did not call the recommendation tool");
   }
 
-  const draft = RecommendDraftSchema.parse(toolUse.input);
+  const draft = RecommendDraftSchema.parse(call.args);
 
   if (draft.kind === "shopping") {
     return draft;
