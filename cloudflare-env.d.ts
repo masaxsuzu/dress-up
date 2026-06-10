@@ -5,4 +5,5 @@ interface CloudflareEnv {
   ASSETS: Fetcher;
   AI: Ai;
   ANTHROPIC_API_KEY: string;
+  PHOTOROOM_API_KEY?: string;
 }

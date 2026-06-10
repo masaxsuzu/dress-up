@@ -4,8 +4,14 @@ import { RecommendDraftSchema, type RecommendDraft } from "@/schema/recommend";
 
 const MODEL = "claude-sonnet-4-6";
 
+export type ItemImage = {
+  id: string;
+  mediaType: "image/jpeg" | "image/png" | "image/webp" | "image/gif";
+  base64: string;
+};
+
 const SYSTEM_PROMPT = `You are a fashion stylist for a Japanese personal wardrobe app.
-You receive the user's wardrobe (a JSON list of items with attributes), the current season, and a TPO description.
+You receive the user's wardrobe — both the structured attributes (JSON) and the actual photos of each item — together with the current season and a TPO description. Use the images to judge color tone, texture, fit and styling cues that the JSON cannot fully convey.
 
 Your job: propose ONE recommendation. The result is one of two kinds:
 
@@ -89,7 +95,7 @@ function compactItem(item: ClothingItem) {
 export async function recommendOutfits(
   apiKey: string,
   items: ClothingItem[],
-  context: { season: Season; tpo: string },
+  context: { season: Season; tpo: string; images?: ItemImage[] },
 ): Promise<RecommendDraft> {
   if (items.length === 0) {
     throw new Error("ワードローブにアイテムがありません");
@@ -97,6 +103,33 @@ export async function recommendOutfits(
 
   const client = new Anthropic({ apiKey });
   const compact = items.map(compactItem);
+  const images = context.images ?? [];
+
+  // ユーザーメッセージ:
+  //   1. ヘッダー（季節 / TPO / JSON）
+  //   2. 各アイテムについて [画像] + [id ラベル]
+  //   3. 末尾の指示
+  const content: Anthropic.Messages.ContentBlockParam[] = [
+    {
+      type: "text",
+      text: `Season: ${context.season}\nTPO: ${context.tpo}\n\nWardrobe (JSON):\n${JSON.stringify(compact)}`,
+    },
+  ];
+  for (const img of images) {
+    content.push({
+      type: "image",
+      source: {
+        type: "base64",
+        media_type: img.mediaType,
+        data: img.base64,
+      },
+    });
+    content.push({ type: "text", text: `^ id: ${img.id}` });
+  }
+  content.push({
+    type: "text",
+    text: "Propose one outfit, or a shopping list if the wardrobe is insufficient.",
+  });
 
   const response = await client.messages.create({
     model: MODEL,
@@ -117,17 +150,7 @@ export async function recommendOutfits(
       },
     ],
     tool_choice: { type: "tool", name: "recommend_outfit" },
-    messages: [
-      {
-        role: "user",
-        content: [
-          {
-            type: "text",
-            text: `Season: ${context.season}\nTPO: ${context.tpo}\n\nWardrobe (JSON):\n${JSON.stringify(compact)}\n\nPropose one outfit, or a shopping list if the wardrobe is insufficient.`,
-          },
-        ],
-      },
-    ],
+    messages: [{ role: "user", content }],
   });
 
   const toolUse = response.content.find((b) => b.type === "tool_use");

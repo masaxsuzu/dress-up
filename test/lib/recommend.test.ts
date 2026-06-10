@@ -189,4 +189,57 @@ describe("recommendOutfits", () => {
     expect(text).not.toContain("items/x.jpg");
     expect(text).not.toContain("#ffffff");
   });
+
+  it("images を渡すと各アイテムの image ブロック + id ラベルが順に並ぶ", async () => {
+    createMock.mockResolvedValue({
+      content: [
+        {
+          type: "tool_use",
+          input: { kind: "outfit", item_ids: ["tops-1"], reason: "ok" },
+        },
+      ],
+    });
+
+    await recommendOutfits("sk", ITEMS, {
+      season: "spring",
+      tpo: "週末",
+      images: [
+        { id: "tops-1", mediaType: "image/jpeg", base64: "AAA" },
+        { id: "bottoms-1", mediaType: "image/png", base64: "BBB" },
+      ],
+    });
+
+    const content = createMock.mock.calls[0][0].messages[0].content;
+    // 先頭は wardrobe JSON のテキスト、末尾は指示テキスト。間に image + id ラベルが並ぶ。
+    expect(content[0].type).toBe("text");
+    expect(content[1].type).toBe("image");
+    expect(content[1].source.media_type).toBe("image/jpeg");
+    expect(content[1].source.data).toBe("AAA");
+    expect(content[2]).toEqual({ type: "text", text: "^ id: tops-1" });
+    expect(content[3].type).toBe("image");
+    expect(content[3].source.media_type).toBe("image/png");
+    expect(content[3].source.data).toBe("BBB");
+    expect(content[4]).toEqual({ type: "text", text: "^ id: bottoms-1" });
+    expect(content[5].type).toBe("text");
+    expect(content[5].text).toMatch(/Propose/);
+  });
+
+  it("images を渡さない場合は画像ブロックが入らない", async () => {
+    createMock.mockResolvedValue({
+      content: [
+        {
+          type: "tool_use",
+          input: { kind: "outfit", item_ids: ["tops-1"], reason: "ok" },
+        },
+      ],
+    });
+
+    await recommendOutfits("sk", ITEMS, { season: "spring", tpo: "x" });
+
+    const content = createMock.mock.calls[0][0].messages[0].content;
+    const hasImage = content.some(
+      (b: { type: string }) => b.type === "image",
+    );
+    expect(hasImage).toBe(false);
+  });
 });
