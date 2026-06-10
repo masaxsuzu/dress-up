@@ -1,0 +1,31 @@
+// Photoroom Sandbox API で背景除去。失敗時は null を返し、呼び出し側で元画像にフォールバックする。
+// https://docs.photoroom.com/image-editing-api/removing-the-background-with-the-image-editing-api
+
+const ENDPOINT = "https://image-api.photoroom.com/v2/edit";
+
+export async function removeBackground(
+  apiKey: string,
+  imageBytes: ArrayBuffer,
+  mimeType: string,
+): Promise<{ bytes: ArrayBuffer; mimeType: string } | null> {
+  const form = new FormData();
+  form.append("imageFile", new Blob([imageBytes], { type: mimeType }), "input");
+  // 単色背景（白・不透明）にすると JPEG 出力が使えてサイズが膨らまない。
+  form.append("background.color", "FFFFFFFF");
+  form.append("export.format", "jpg");
+  form.append("export.compression.quality", "85");
+
+  const res = await fetch(ENDPOINT, {
+    method: "POST",
+    headers: { "x-api-key": apiKey, Accept: "image/jpeg" },
+    body: form,
+  });
+
+  if (!res.ok) return null;
+
+  const outMime = res.headers.get("Content-Type") ?? "image/jpeg";
+  if (!outMime.startsWith("image/")) return null;
+
+  const bytes = await res.arrayBuffer();
+  return { bytes, mimeType: outMime };
+}

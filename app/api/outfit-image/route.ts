@@ -10,7 +10,7 @@ const InputSchema = z.object({
   season: z.enum(["spring", "summer", "autumn", "winter"]).optional(),
 });
 
-const MODEL = "@cf/leonardo/lucid-origin";
+const MODEL = "@cf/black-forest-labs/flux-2-dev";
 
 function currentSeason(date = new Date()): Season {
   const m = date.getMonth() + 1;
@@ -48,12 +48,18 @@ export async function POST(req: Request) {
   });
 
   try {
+    // flux-2-dev は multipart 入力。body には text-to-image パラメタを JSON で渡す。
     const result = (await env.AI.run(MODEL, {
-      prompt,
-      width: 768,
-      height: 1152,
-      num_steps: 30,
-      guidance: 6.5,
+      multipart: {
+        contentType: "application/json",
+        body: {
+          prompt,
+          width: 768,
+          height: 1152,
+          steps: 28,
+          guidance: 3.5,
+        },
+      },
     })) as { image: string };
 
     if (!result.image) {

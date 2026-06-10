@@ -1,8 +1,15 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { listItems } from "@/lib/db";
-import { recommendOutfits } from "@/lib/recommend";
-import type { Season } from "@/schema/clothing";
+import { recommendOutfits, type ItemImage } from "@/lib/recommend";
+import type { ClothingItem, Season } from "@/schema/clothing";
 import { RecommendInputSchema } from "@/schema/recommend";
+
+const ALLOWED_MEDIA_TYPES = new Set<ItemImage["mediaType"]>([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+]);
 
 function currentSeason(date = new Date()): Season {
   const m = date.getMonth() + 1;
@@ -10,6 +17,23 @@ function currentSeason(date = new Date()): Season {
   if (m >= 6 && m <= 8) return "summer";
   if (m >= 9 && m <= 11) return "autumn";
   return "winter";
+}
+
+async function loadItemImage(
+  bucket: R2Bucket,
+  item: ClothingItem,
+): Promise<ItemImage | null> {
+  const obj = await bucket.get(item.imageKey).catch(() => null);
+  if (!obj) return null;
+  const mediaType = (obj.httpMetadata?.contentType ??
+    "image/jpeg") as ItemImage["mediaType"];
+  if (!ALLOWED_MEDIA_TYPES.has(mediaType)) return null;
+  const buf = await obj.arrayBuffer();
+  return {
+    id: item.id,
+    mediaType,
+    base64: Buffer.from(buf).toString("base64"),
+  };
 }
 
 export async function POST(req: Request) {
@@ -31,10 +55,14 @@ export async function POST(req: Request) {
 
   const season = currentSeason();
 
+  const settled = await Promise.all(items.map((i) => loadItemImage(env.IMAGES, i)));
+  const images = settled.filter((x): x is ItemImage => x !== null);
+
   try {
     const draft = await recommendOutfits(env.ANTHROPIC_API_KEY, items, {
       season,
       tpo: parsed.data.tpo,
+      images,
     });
 
     if (draft.kind === "shopping") {
