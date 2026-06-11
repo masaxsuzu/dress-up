@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { actionBtnStyle } from "@/lib/ui";
 
 export function IconizeButton({ id, hasIcon }: { id: string; hasIcon: boolean }) {
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">(
@@ -33,18 +34,11 @@ export function IconizeButton({ id, hasIcon }: { id: string; hasIcon: boolean })
     <button
       onClick={handleClick}
       disabled={status === "loading"}
-      style={{
-        display: "block",
-        padding: "0.7rem 1.2rem",
-        background: status === "error" ? "#c00" : "#555",
-        color: "#fff",
-        border: "none",
-        borderRadius: 8,
-        fontSize: "1rem",
-        width: "100%",
+      style={actionBtnStyle({
+        variant: status === "error" ? "danger" : "secondary",
+        disabled: status === "loading",
         cursor: status === "loading" ? "wait" : "pointer",
-        boxSizing: "border-box",
-      }}
+      })}
     >
       {label}
     </button>

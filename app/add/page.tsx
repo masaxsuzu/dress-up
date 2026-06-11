@@ -9,6 +9,7 @@ import {
 import { takePendingFile } from "@/components/add-button";
 import { resizeImageForUpload } from "@/lib/resize-image";
 import { ClothingForm, primaryBtn } from "@/components/clothing-form";
+import { pageStyle } from "@/lib/ui";
 import { sanitizeToUpdate } from "@/lib/sanitize";
 
 export default function AddPage() {
@@ -92,13 +93,7 @@ export default function AddPage() {
   }
 
   return (
-    <main
-      style={{
-        padding: "1rem",
-        maxWidth: 640,
-        margin: "0 auto",
-      }}
-    >
+    <main style={pageStyle(640)}>
       <p style={{ margin: "0 0 1rem" }}>
         <a href="/" style={{ color: "#666" }}>
           ← 一覧に戻る

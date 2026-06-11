@@ -3,6 +3,7 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { listItems } from "@/lib/db";
 import { AddButton } from "@/components/add-button";
 import { Gallery } from "@/components/gallery";
+import { pageStyle, pillLinkStyle, pillLinkFilledStyle } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -11,13 +12,7 @@ export default async function Home() {
   const items = await listItems(env.DB);
 
   return (
-    <main
-      style={{
-        padding: "1rem",
-        maxWidth: 1100,
-        margin: "0 auto",
-      }}
-    >
+    <main style={pageStyle(1100)}>
       <header
         style={{
           display: "flex",
@@ -29,32 +24,10 @@ export default async function Home() {
       >
         <h1 style={{ margin: 0, fontSize: "1.4rem" }}>dress-up</h1>
         <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-          <a
-            href="/recommend"
-            style={{
-              padding: "0.6rem 1rem",
-              background: "#fff",
-              color: "#111",
-              border: "1px solid #111",
-              borderRadius: 999,
-              textDecoration: "none",
-              fontSize: "0.95rem",
-              whiteSpace: "nowrap",
-            }}
-          >
+          <a href="/recommend" style={pillLinkStyle}>
             提案
           </a>
-          <AddButton
-            style={{
-              padding: "0.6rem 1rem",
-              background: "#111",
-              color: "#fff",
-              borderRadius: 999,
-              textDecoration: "none",
-              fontSize: "0.95rem",
-              whiteSpace: "nowrap",
-            }}
-          />
+          <AddButton style={pillLinkFilledStyle} />
         </div>
       </header>
 

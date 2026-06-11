@@ -7,6 +7,7 @@ import {
   type ClothingItemUpdate,
 } from "@/schema/clothing";
 import { ClothingForm, primaryBtn } from "@/components/clothing-form";
+import { pageStyle } from "@/lib/ui";
 import { sanitizeToUpdate } from "@/lib/sanitize";
 
 export default function EditPage({
@@ -64,7 +65,7 @@ export default function EditPage({
 
   if (loading) {
     return (
-      <main style={{ padding: "1rem", maxWidth: 640, margin: "0 auto" }}>
+      <main style={pageStyle(640)}>
         <p style={{ color: "#888" }}>読み込み中...</p>
       </main>
     );
@@ -72,7 +73,7 @@ export default function EditPage({
 
   if (error && !draft) {
     return (
-      <main style={{ padding: "1rem", maxWidth: 640, margin: "0 auto" }}>
+      <main style={pageStyle(640)}>
         <p style={{ color: "#c00" }}>{error}</p>
         <a href="/" style={{ color: "#666" }}>← 一覧に戻る</a>
       </main>
@@ -80,7 +81,7 @@ export default function EditPage({
   }
 
   return (
-    <main style={{ padding: "1rem", maxWidth: 640, margin: "0 auto" }}>
+    <main style={pageStyle(640)}>
       <p style={{ margin: "0 0 1rem" }}>
         <a href={`/items/${id}`} style={{ color: "#666" }}>
           ← 詳細に戻る

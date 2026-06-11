@@ -10,6 +10,7 @@ import {
 } from "@/lib/labels";
 import { DeleteButton } from "./delete-button";
 import { IconizeButton } from "./iconize-button";
+import { pageStyle, actionBtnStyle } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -24,13 +25,7 @@ export default async function ItemPage({
   if (!item) notFound();
 
   return (
-    <main
-      style={{
-        padding: "1rem",
-        maxWidth: 640,
-        margin: "0 auto",
-      }}
-    >
+    <main style={pageStyle(640)}>
       <p style={{ margin: "0 0 1rem" }}>
         <Link href="/" style={{ color: "#666" }}>
           ← 一覧に戻る
@@ -175,19 +170,7 @@ export default async function ItemPage({
       <div style={{ marginTop: "1.5rem", display: "grid", gap: "0.75rem" }}>
         <Link
           href={`/items/${item.id}/edit`}
-          style={{
-            display: "block",
-            padding: "0.7rem 1.2rem",
-            background: "#111",
-            color: "#fff",
-            border: "none",
-            borderRadius: 8,
-            fontSize: "1rem",
-            width: "100%",
-            textAlign: "center",
-            textDecoration: "none",
-            boxSizing: "border-box",
-          }}
+          style={{ ...actionBtnStyle(), textAlign: "center", textDecoration: "none" }}
         >
           編集
         </Link>
