@@ -3,13 +3,11 @@
 import { useEffect, useState } from "react";
 import { use } from "react";
 import {
-  ClothingCategorySchema,
-  PatternSchema,
-  SeasonSchema,
   type ClothingItem,
   type ClothingItemUpdate,
 } from "@/schema/clothing";
 import { ClothingForm, primaryBtn } from "@/components/clothing-form";
+import { sanitizeToUpdate } from "@/lib/sanitize";
 
 export default function EditPage({
   params,
@@ -34,7 +32,7 @@ export default function EditPage({
           return;
         }
         setItem(data.item);
-        const { sanitized, hadInvalidFields } = sanitizeForEdit(data.item);
+        const { sanitized, hadInvalidFields } = sanitizeToUpdate(data.item);
         setDraft(sanitized);
         setInvalidFieldWarning(hadInvalidFields);
       })
@@ -128,45 +126,3 @@ export default function EditPage({
   );
 }
 
-function sanitizeForEdit(item: ClothingItem): {
-  sanitized: ClothingItemUpdate;
-  hadInvalidFields: boolean;
-} {
-  const validCategories = ClothingCategorySchema.options as readonly string[];
-  const validPatterns = PatternSchema.options as readonly string[];
-  const validSeasons = SeasonSchema.options as readonly string[];
-
-  let hadInvalidFields = false;
-
-  const category = validCategories.includes(item.category)
-    ? item.category
-    : (hadInvalidFields = true, "tops" as const);
-
-  const pattern = item.pattern === null || validPatterns.includes(item.pattern)
-    ? item.pattern
-    : (hadInvalidFields = true, null);
-
-  const validatedSeasons = item.season.filter((s) => validSeasons.includes(s)) as ClothingItemUpdate["season"];
-  if (validatedSeasons.length !== item.season.length || validatedSeasons.length === 0) {
-    hadInvalidFields = true;
-  }
-  const season = validatedSeasons.length > 0 ? validatedSeasons : ["spring" as const];
-
-  return {
-    sanitized: {
-      category,
-      subcategory: item.subcategory,
-      colors: item.colors,
-      pattern,
-      material: item.material,
-      silhouette: item.silhouette,
-      season,
-      formality: item.formality,
-      occasion: item.occasion,
-      tags: item.tags,
-      brand: item.brand,
-      notes: item.notes,
-    },
-    hadInvalidFields,
-  };
-}
