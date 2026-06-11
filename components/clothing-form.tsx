@@ -1,12 +1,10 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
 import {
   ClothingCategorySchema,
   PatternSchema,
   SeasonSchema,
   type ClothingItemUpdate,
-  type Color,
 } from "@/schema/clothing";
 import {
   CATEGORY_LABEL,
@@ -14,6 +12,8 @@ import {
   PATTERN_LABEL,
   SEASON_LABEL,
 } from "@/lib/labels";
+import { ColorEditor } from "@/components/color-editor";
+import { TagChipInput } from "@/components/tag-chip-input";
 
 const CATEGORIES = ClothingCategorySchema.options;
 const PATTERNS = PatternSchema.options;
@@ -220,203 +220,6 @@ export function ClothingForm({
           style={inputStyle}
         />
       </Field>
-    </div>
-  );
-}
-
-// ---- Color picker rows ----
-
-function ColorEditor({
-  colors,
-  onChange,
-}: {
-  colors: Color[];
-  onChange: (c: Color[]) => void;
-}) {
-  function update(i: number, patch: Partial<Color>) {
-    const next = colors.map((c, idx) => (idx === i ? { ...c, ...patch } : c));
-    onChange(next);
-  }
-
-  function remove(i: number) {
-    onChange(colors.filter((_, idx) => idx !== i));
-  }
-
-  function add() {
-    onChange([...colors, { name: "", hex: "#000000" }]);
-  }
-
-  return (
-    <div style={{ display: "grid", gap: "0.5rem" }}>
-      {colors.map((c, i) => (
-        <div
-          key={i}
-          style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}
-        >
-          <input
-            type="color"
-            value={c.hex}
-            onChange={(e) => update(i, { hex: e.target.value })}
-            style={{
-              width: 36,
-              height: 36,
-              padding: 2,
-              border: "1px solid #ddd",
-              borderRadius: 4,
-              cursor: "pointer",
-              flexShrink: 0,
-            }}
-          />
-          <input
-            value={c.name}
-            onChange={(e) => update(i, { name: e.target.value })}
-            placeholder="色の名前"
-            style={{ ...inputStyle, flex: 1 }}
-          />
-          <button
-            type="button"
-            onClick={() => remove(i)}
-            disabled={colors.length <= 1}
-            aria-label="この色を削除"
-            style={{
-              flexShrink: 0,
-              padding: "0.35rem 0.6rem",
-              background: colors.length <= 1 ? "#eee" : "#fee",
-              color: colors.length <= 1 ? "#aaa" : "#c00",
-              border: "1px solid #ddd",
-              borderRadius: 6,
-              cursor: colors.length <= 1 ? "not-allowed" : "pointer",
-              fontSize: "0.85rem",
-            }}
-          >
-            削除
-          </button>
-        </div>
-      ))}
-      {colors.length < 4 && (
-        <button
-          type="button"
-          onClick={add}
-          style={{
-            padding: "0.4rem 0.75rem",
-            background: "#f5f5f5",
-            border: "1px solid #ddd",
-            borderRadius: 6,
-            cursor: "pointer",
-            fontSize: "0.85rem",
-            alignSelf: "start",
-          }}
-        >
-          + 色を追加
-        </button>
-      )}
-    </div>
-  );
-}
-
-// ---- Tag chip input ----
-
-function TagChipInput({
-  tags,
-  onChange,
-  placeholder,
-}: {
-  tags: string[];
-  onChange: (t: string[]) => void;
-  placeholder?: string;
-}) {
-  const [input, setInput] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const commit = useCallback(
-    (raw: string) => {
-      const trimmed = raw.trim();
-      if (trimmed && !tags.includes(trimmed)) {
-        onChange([...tags, trimmed]);
-      }
-      setInput("");
-    },
-    [tags, onChange],
-  );
-
-  function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter" || e.key === ",") {
-      e.preventDefault();
-      commit(input);
-    } else if (e.key === "Backspace" && input === "" && tags.length > 0) {
-      onChange(tags.slice(0, -1));
-    }
-  }
-
-  function onBlur() {
-    if (input.trim()) commit(input);
-  }
-
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexWrap: "wrap",
-        gap: "0.35rem",
-        padding: "0.4rem 0.5rem",
-        border: "1px solid #ddd",
-        borderRadius: 6,
-        background: "#fff",
-        cursor: "text",
-      }}
-      onClick={() => inputRef.current?.focus()}
-    >
-      {tags.map((t) => (
-        <span
-          key={t}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 4,
-            padding: "2px 8px",
-            background: "#f0f0f0",
-            borderRadius: 999,
-            fontSize: "0.85rem",
-          }}
-        >
-          {t}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onChange(tags.filter((x) => x !== t));
-            }}
-            aria-label={`${t}を削除`}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              padding: 0,
-              lineHeight: 1,
-              color: "#888",
-              fontSize: "0.9rem",
-            }}
-          >
-            ×
-          </button>
-        </span>
-      ))}
-      <input
-        ref={inputRef}
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        onKeyDown={onKeyDown}
-        onBlur={onBlur}
-        placeholder={tags.length === 0 ? placeholder : ""}
-        style={{
-          border: "none",
-          outline: "none",
-          fontSize: "1rem",
-          background: "transparent",
-          minWidth: 80,
-          flex: 1,
-        }}
-      />
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { getItem, setIconKey } from "@/lib/db";
 import { buildIconPrompt } from "@/lib/icon-prompt";
 import { removeBackground } from "@/lib/photoroom";
-import { putIcon } from "@/lib/r2";
+import { loadImageBase64, putIcon } from "@/lib/r2";
 
 const MODEL = "gemini-2.5-flash-image";
 
@@ -16,12 +16,11 @@ export async function POST(_req: Request, { params }: Params) {
   const item = await getItem(env.DB, id);
   if (!item) return Response.json({ error: "not found" }, { status: 404 });
 
-  const obj = await env.IMAGES.get(item.imageKey).catch(() => null);
-  if (!obj) {
+  const img = await loadImageBase64(env.IMAGES, item.imageKey);
+  if (!img) {
     return Response.json({ error: "元画像が見つかりません" }, { status: 404 });
   }
-  const mediaType = obj.httpMetadata?.contentType ?? "image/jpeg";
-  const base64 = Buffer.from(await obj.arrayBuffer()).toString("base64");
+  const { mediaType, base64 } = img;
 
   const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
   const prompt = buildIconPrompt(item.category);
