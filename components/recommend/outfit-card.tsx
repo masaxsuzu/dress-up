@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { Season } from "@/schema/clothing";
 import type { OutfitResult } from "./types";
 import { OutfitFullBodyImage } from "./outfit-full-body-image";
+import { cardStyle } from "@/lib/ui";
 
 export function OutfitCard({
   outfit,
@@ -15,14 +16,7 @@ export function OutfitCard({
   season: Season;
 }) {
   return (
-    <article
-      style={{
-        border: "1px solid #e5e5e5",
-        borderRadius: 10,
-        padding: "0.75rem",
-        background: "#fff",
-      }}
-    >
+    <article style={cardStyle}>
       <OutfitFullBodyImage items={outfit.items} tpo={tpo} season={season} />
 
       <h2

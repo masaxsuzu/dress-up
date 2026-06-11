@@ -1,6 +1,7 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { z } from "zod";
 import { listItems } from "@/lib/db";
+import { errorResponse, validationError } from "@/lib/api-response";
 import { generateOutfitImage, type OutfitImageInput } from "@/lib/outfit-image";
 import { loadImageBase64 } from "@/lib/r2";
 import { currentSeason } from "@/lib/season";
@@ -27,7 +28,7 @@ export async function POST(req: Request) {
   const body = await req.json();
   const parsed = InputSchema.safeParse(body);
   if (!parsed.success) {
-    return Response.json({ error: parsed.error.flatten() }, { status: 400 });
+    return validationError(parsed.error);
   }
 
   const all = await listItems(env.DB);
@@ -37,10 +38,7 @@ export async function POST(req: Request) {
     .filter((x): x is NonNullable<typeof x> => x !== undefined);
 
   if (items.length === 0) {
-    return Response.json(
-      { error: "アイテムが見つかりません" },
-      { status: 400 },
-    );
+    return errorResponse("アイテムが見つかりません", 400);
   }
 
   const settled = await Promise.all(items.map((i) => loadItemImage(env.IMAGES, i)));
@@ -63,6 +61,6 @@ export async function POST(req: Request) {
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
-    return Response.json({ error: message }, { status: 500 });
+    return errorResponse(message, 500);
   }
 }

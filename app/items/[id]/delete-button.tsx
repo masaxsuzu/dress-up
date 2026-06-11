@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { actionBtnStyle } from "@/lib/ui";
 
 export function DeleteButton({ id }: { id: string }) {
   const [deleting, setDeleting] = useState(false);
@@ -30,16 +31,7 @@ export function DeleteButton({ id }: { id: string }) {
       <button
         onClick={onDelete}
         disabled={deleting}
-        style={{
-          padding: "0.7rem 1.2rem",
-          background: deleting ? "#999" : "#c00",
-          color: "#fff",
-          border: "none",
-          borderRadius: 8,
-          cursor: deleting ? "not-allowed" : "pointer",
-          fontSize: "1rem",
-          width: "100%",
-        }}
+        style={actionBtnStyle({ variant: "danger", disabled: deleting })}
       >
         {deleting ? "削除中..." : "削除"}
       </button>
