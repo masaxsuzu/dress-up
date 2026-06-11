@@ -48,7 +48,9 @@ test.describe("/api/items", () => {
     const res = await request.post("/api/items", { data: {} });
     expect(res.status()).toBe(400);
     const body = await res.json();
-    expect(body.error.fieldErrors.category).toBeDefined();
+    // エラー形状は { error: string } に統一されている (lib/api-response.ts)。
+    expect(typeof body.error).toBe("string");
+    expect(body.error).toMatch(/category/);
   });
 
   test("POST rejects bad enum with 400", async ({ request }) => {
