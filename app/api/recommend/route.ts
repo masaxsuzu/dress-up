@@ -1,5 +1,6 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { listItems } from "@/lib/db";
+import { errorResponse, validationError } from "@/lib/api-response";
 import { loadImageBase64 } from "@/lib/r2";
 import { recommendOutfits, type ItemImage } from "@/lib/recommend";
 import { currentSeason } from "@/lib/season";
@@ -21,15 +22,12 @@ export async function POST(req: Request) {
   const body = await req.json();
   const parsed = RecommendInputSchema.safeParse(body);
   if (!parsed.success) {
-    return Response.json({ error: parsed.error.flatten() }, { status: 400 });
+    return validationError(parsed.error);
   }
 
   const items = await listItems(env.DB);
   if (items.length === 0) {
-    return Response.json(
-      { error: "ワードローブにアイテムがまだありません" },
-      { status: 400 },
-    );
+    return errorResponse("ワードローブにアイテムがまだありません", 400);
   }
 
   const season = currentSeason();
@@ -66,6 +64,6 @@ export async function POST(req: Request) {
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
-    return Response.json({ error: message }, { status: 500 });
+    return errorResponse(message, 500);
   }
 }

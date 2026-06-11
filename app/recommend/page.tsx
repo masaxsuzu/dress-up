@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import type { ClothingItem, Season } from "@/schema/clothing";
 import { primaryBtn } from "@/components/clothing-form";
+import { pageStyle } from "@/lib/ui";
 import { SEASON_LABEL } from "@/lib/labels";
 import { OutfitCard } from "@/components/recommend/outfit-card";
 import { ShoppingCard } from "@/components/recommend/shopping-card";
@@ -68,7 +69,7 @@ export default function RecommendPage() {
   }
 
   return (
-    <main style={{ padding: "1rem", maxWidth: 900, margin: "0 auto" }}>
+    <main style={pageStyle(900)}>
       <p style={{ margin: "0 0 1rem" }}>
         <Link href="/" style={{ color: "#666" }}>
           ← 一覧に戻る

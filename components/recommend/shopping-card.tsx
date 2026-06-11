@@ -2,17 +2,11 @@
 
 import { CATEGORY_LABEL } from "@/lib/labels";
 import type { ShoppingResult } from "./types";
+import { cardStyle } from "@/lib/ui";
 
 export function ShoppingCard({ shopping }: { shopping: ShoppingResult }) {
   return (
-    <article
-      style={{
-        border: "1px solid #e5e5e5",
-        borderRadius: 10,
-        padding: "0.75rem",
-        background: "#fff",
-      }}
-    >
+    <article style={cardStyle}>
       <h2 style={{ fontSize: "0.95rem", margin: "0 0 0.5rem" }}>
         買い足したいアイテム
       </h2>

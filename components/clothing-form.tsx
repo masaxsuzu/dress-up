@@ -14,6 +14,7 @@ import {
 } from "@/lib/labels";
 import { ColorEditor } from "@/components/color-editor";
 import { TagChipInput } from "@/components/tag-chip-input";
+import { actionBtnStyle } from "@/lib/ui";
 
 const CATEGORIES = ClothingCategorySchema.options;
 const PATTERNS = PatternSchema.options;
@@ -253,14 +254,8 @@ export const inputStyle: React.CSSProperties = {
 
 export function primaryBtn(disabled: boolean): React.CSSProperties {
   return {
+    ...actionBtnStyle({ disabled }),
     padding: "0.85rem 1.2rem",
-    background: disabled ? "#999" : "#111",
-    color: "#fff",
-    border: "none",
-    borderRadius: 8,
-    cursor: disabled ? "not-allowed" : "pointer",
-    fontSize: "1rem",
-    width: "100%",
     marginBottom: "0.75rem",
   };
 }
