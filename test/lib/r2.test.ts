@@ -1,6 +1,6 @@
 import { Miniflare } from "miniflare";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { deleteImage, getImage, putIcon, putImage } from "@/lib/r2";
+import { deleteImage, loadImageBase64, putIcon, putImage } from "@/lib/r2";
 
 let mf: Miniflare;
 let bucket: R2Bucket;
@@ -70,24 +70,35 @@ describe("putIcon", () => {
   });
 });
 
-describe("getImage", () => {
-  it("存在するkeyでR2ObjectBodyを返す", async () => {
+describe("loadImageBase64", () => {
+  it("存在するキーで mediaType と base64 を返す", async () => {
     const key = await putImage(bucket, PAYLOAD, "image/png");
-    const obj = await getImage(bucket, key);
-    expect(obj).not.toBeNull();
+    const result = await loadImageBase64(bucket, key);
+    expect(result).not.toBeNull();
+    expect(result!.mediaType).toBe("image/png");
+    expect(result!.base64).toBe(Buffer.from(PAYLOAD).toString("base64"));
   });
 
-  it("存在しないkeyでnullを返す", async () => {
-    const obj = await getImage(bucket, "items/no-such-key.jpg");
-    expect(obj).toBeNull();
+  it("存在しないキーで null を返す", async () => {
+    const result = await loadImageBase64(bucket, "items/no-such-key.jpg");
+    expect(result).toBeNull();
+  });
+
+  it("許可されていない Content-Type で null を返す", async () => {
+    // bucket に直接 application/pdf のオブジェクトを置いて確認する
+    await bucket.put("items/test.pdf", PAYLOAD, {
+      httpMetadata: { contentType: "application/pdf" },
+    });
+    const result = await loadImageBase64(bucket, "items/test.pdf");
+    expect(result).toBeNull();
   });
 });
 
 describe("deleteImage", () => {
-  it("削除後にgetがnullを返す", async () => {
+  it("削除後に bucket.get が null を返す", async () => {
     const key = await putImage(bucket, PAYLOAD, "image/png");
     await deleteImage(bucket, key);
-    expect(await getImage(bucket, key)).toBeNull();
+    expect(await bucket.get(key)).toBeNull();
   });
 
   it("存在しないkeyの削除はthrowしない", async () => {

@@ -2,7 +2,9 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { z } from "zod";
 import { listItems } from "@/lib/db";
 import { generateOutfitImage, type OutfitImageInput } from "@/lib/outfit-image";
-import type { ClothingItem, Season } from "@/schema/clothing";
+import { loadImageBase64 } from "@/lib/r2";
+import { currentSeason } from "@/lib/season";
+import type { ClothingItem } from "@/schema/clothing";
 
 const InputSchema = z.object({
   item_ids: z.array(z.string()).min(1).max(10),
@@ -10,28 +12,13 @@ const InputSchema = z.object({
   season: z.enum(["spring", "summer", "autumn", "winter"]).optional(),
 });
 
-function currentSeason(date = new Date()): Season {
-  const m = date.getMonth() + 1;
-  if (m >= 3 && m <= 5) return "spring";
-  if (m >= 6 && m <= 8) return "summer";
-  if (m >= 9 && m <= 11) return "autumn";
-  return "winter";
-}
-
 async function loadItemImage(
   bucket: R2Bucket,
   item: ClothingItem,
 ): Promise<OutfitImageInput | null> {
-  const obj = await bucket.get(item.imageKey).catch(() => null);
-  if (!obj) return null;
-  const mediaType = obj.httpMetadata?.contentType ?? "image/jpeg";
-  if (!mediaType.startsWith("image/")) return null;
-  const buf = await obj.arrayBuffer();
-  return {
-    id: item.id,
-    mediaType,
-    base64: Buffer.from(buf).toString("base64"),
-  };
+  const img = await loadImageBase64(bucket, item.imageKey);
+  if (!img) return null;
+  return { id: item.id, ...img };
 }
 
 export async function POST(req: Request) {
