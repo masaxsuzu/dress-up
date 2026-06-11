@@ -1,6 +1,7 @@
 import { GoogleGenAI, Modality } from "@google/genai";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { getItem, setIconKey } from "@/lib/db";
+import { errorResponse } from "@/lib/api-response";
 import { buildIconPrompt } from "@/lib/icon-prompt";
 import { removeBackground } from "@/lib/photoroom";
 import { loadImageBase64, putIcon } from "@/lib/r2";
@@ -14,11 +15,11 @@ export async function POST(_req: Request, { params }: Params) {
   const { env } = await getCloudflareContext({ async: true });
 
   const item = await getItem(env.DB, id);
-  if (!item) return Response.json({ error: "not found" }, { status: 404 });
+  if (!item) return errorResponse("not found", 404);
 
   const img = await loadImageBase64(env.IMAGES, item.imageKey);
   if (!img) {
-    return Response.json({ error: "元画像が見つかりません" }, { status: 404 });
+    return errorResponse("元画像が見つかりません", 404);
   }
   const { mediaType, base64 } = img;
 
@@ -52,7 +53,7 @@ export async function POST(_req: Request, { params }: Params) {
     mimeType = part.inlineData.mimeType ?? "image/png";
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
-    return Response.json({ error: message }, { status: 500 });
+    return errorResponse(message, 500);
   }
 
   let bytes: ArrayBuffer = Uint8Array.from(atob(data), (c) => c.charCodeAt(0))

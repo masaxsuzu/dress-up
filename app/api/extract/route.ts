@@ -1,4 +1,5 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { errorResponse } from "@/lib/api-response";
 import { putImage } from "@/lib/r2";
 import { extractClothing } from "@/lib/vlm";
 import { removeBackground } from "@/lib/photoroom";
@@ -20,20 +21,15 @@ export async function POST(req: Request) {
   const form = await req.formData();
   const file = form.get("file");
   if (!(file instanceof File)) {
-    return Response.json({ error: "missing file" }, { status: 400 });
+    return errorResponse("missing file", 400);
   }
   if (!ALLOWED_TYPES.has(file.type)) {
-    return Response.json(
-      { error: `unsupported content type: ${file.type}` },
-      { status: 400 },
-    );
+    return errorResponse(`unsupported content type: ${file.type}`, 400);
   }
   if (file.size > MAX_IMAGE_BYTES) {
-    return Response.json(
-      {
-        error: `image too large: ${file.size} bytes (max ${MAX_IMAGE_BYTES})`,
-      },
-      { status: 413 },
+    return errorResponse(
+      `image too large: ${file.size} bytes (max ${MAX_IMAGE_BYTES})`,
+      413,
     );
   }
 

@@ -1,5 +1,6 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { deleteItem, getItem, updateItem } from "@/lib/db";
+import { errorResponse, validationError } from "@/lib/api-response";
 import { deleteImage } from "@/lib/r2";
 import { ClothingItemUpdateSchema } from "@/schema/clothing";
 
@@ -9,7 +10,7 @@ export async function GET(_req: Request, { params }: Params) {
   const { id } = await params;
   const { env } = await getCloudflareContext({ async: true });
   const item = await getItem(env.DB, id);
-  if (!item) return Response.json({ error: "not found" }, { status: 404 });
+  if (!item) return errorResponse("not found", 404);
   return Response.json({ item });
 }
 
@@ -20,11 +21,11 @@ export async function PATCH(req: Request, { params }: Params) {
   const body = await req.json();
   const parsed = ClothingItemUpdateSchema.safeParse(body);
   if (!parsed.success) {
-    return Response.json({ error: parsed.error.flatten() }, { status: 400 });
+    return validationError(parsed.error);
   }
 
   const updated = await updateItem(env.DB, id, parsed.data);
-  if (!updated) return Response.json({ error: "not found" }, { status: 404 });
+  if (!updated) return errorResponse("not found", 404);
   return Response.json({ item: updated });
 }
 
@@ -33,7 +34,7 @@ export async function DELETE(_req: Request, { params }: Params) {
   const { env } = await getCloudflareContext({ async: true });
 
   const item = await getItem(env.DB, id);
-  if (!item) return Response.json({ error: "not found" }, { status: 404 });
+  if (!item) return errorResponse("not found", 404);
 
   await deleteItem(env.DB, id);
   await deleteImage(env.IMAGES, item.imageKey);
