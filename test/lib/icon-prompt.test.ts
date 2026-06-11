@@ -37,19 +37,20 @@ describe("buildIconPrompt", () => {
     }
   });
 
-  it("shoes は 3/4 angle で pair / V-shape (ハの字) を指定する", () => {
+  it("shoes は 3/4 angle で pair を並行に並べる (V字にしない) ことを指定する", () => {
     const prompt = buildIconPrompt("shoes");
     expect(prompt).toMatch(/3\/4/);
     expect(prompt).toMatch(/pair/i);
-    expect(prompt).toMatch(/V-shape|ハの字/);
-    expect(prompt).toMatch(/heels close together/i);
-    expect(prompt).toMatch(/toes pointed outward/i);
+    expect(prompt).toMatch(/PARALLEL/);
+    expect(prompt).toMatch(/same diagonal direction/i);
+    // V字 / ハの字 にしない否定指示が入っていること
+    expect(prompt).toMatch(/do NOT.*V-shape|do NOT.*ハの字|NOT.*splay/i);
   });
 
-  it("outerwear は前が開いている (unbuttoned / open) ことを明示する", () => {
+  it("outerwear は閉じた自然な着用形 (中央を切り抜かない) を指示する", () => {
     const prompt = buildIconPrompt("outerwear");
-    expect(prompt).toMatch(/UNBUTTONED|open at the front|worn open|front parted/i);
-    expect(prompt).toMatch(/center vertical axis|drape outward|inner clothes/i);
+    expect(prompt).toMatch(/closed at the front|buttoned|zipped|naturally overlapping/i);
+    expect(prompt).toMatch(/do NOT cut out|do NOT.*center axis empty/i);
   });
 
   it("bag は hanging を指定する", () => {
