@@ -2,9 +2,6 @@
 
 import { useState, useEffect } from "react";
 import {
-  ClothingCategorySchema,
-  PatternSchema,
-  SeasonSchema,
   type ClothingItemInput,
   type ClothingItemUpdate,
   type VLMExtraction,
@@ -12,6 +9,7 @@ import {
 import { takePendingFile } from "@/components/add-button";
 import { resizeImageForUpload } from "@/lib/resize-image";
 import { ClothingForm, primaryBtn } from "@/components/clothing-form";
+import { sanitizeToUpdate } from "@/lib/sanitize";
 
 export default function AddPage() {
   const [file, setFile] = useState<File | null>(null);
@@ -55,7 +53,7 @@ export default function AddPage() {
       };
       if (data.imageKey) setImageKey(data.imageKey);
       if (data.extraction) {
-        setDraft(sanitizeExtraction(data.extraction));
+        setDraft(sanitizeToUpdate({ ...data.extraction, brand: null, notes: null }).sanitized);
       } else {
         setError(data.error ?? "属性の自動抽出に失敗しました。手動で入力してください。");
         setDraft(emptyDraft());
@@ -194,28 +192,3 @@ function emptyDraft(): ClothingItemUpdate {
   };
 }
 
-function sanitizeExtraction(extraction: VLMExtraction): ClothingItemUpdate {
-  const validCategories = ClothingCategorySchema.options as readonly string[];
-  const validPatterns = PatternSchema.options as readonly string[];
-  const validSeasons = SeasonSchema.options as readonly string[];
-
-  return {
-    category: validCategories.includes(extraction.category)
-      ? extraction.category
-      : "tops",
-    subcategory: extraction.subcategory,
-    colors: extraction.colors,
-    pattern:
-      extraction.pattern === null || validPatterns.includes(extraction.pattern)
-        ? extraction.pattern
-        : null,
-    material: extraction.material,
-    silhouette: extraction.silhouette,
-    season: extraction.season.filter((s) => validSeasons.includes(s)) as ClothingItemUpdate["season"],
-    formality: extraction.formality,
-    occasion: extraction.occasion,
-    tags: extraction.tags,
-    brand: null,
-    notes: null,
-  };
-}
