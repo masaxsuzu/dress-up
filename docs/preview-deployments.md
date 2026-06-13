@@ -38,6 +38,16 @@ wrangler secret put PHOTOROOM_API_KEY --env preview   # 任意
 wrangler d1 migrations apply dress-up-preview --remote --env preview
 ```
 
+### 6. Cloudflare ダッシュボードで Preview URLs を有効化
+
+`wrangler.toml` の `preview_urls = true` だけでは効かないことがある (反映遅延 / 既存 Worker への上書き不可)。確実にやるには:
+
+1. [Cloudflare ダッシュボード](https://dash.cloudflare.com) → Workers & Pages → `dress-up-preview`
+2. **Settings** → **Domains & Routes** → **Preview URLs** を **Enabled** に
+3. 以降の `versions upload` で `Version Preview URL: https://<id>-dress-up-preview.<acct>.workers.dev` が出力されるようになる
+
+これを有効化していない場合、CI は Version ID だけを PR にコメントし、URL は手動で構築する必要がある (`https://<version-id>-dress-up-preview.<your-workers-subdomain>.workers.dev`)。
+
 以降は PR を出すたびにワークフローが自動で `versions upload` する。
 
 ## 認証

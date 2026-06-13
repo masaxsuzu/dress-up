@@ -46,13 +46,15 @@ jobs:
             --tag "pr-${{ github.event.pull_request.number }}" \
             --message "PR #${{ github.event.pull_request.number }} (${GITHUB_SHA::7})" \
             2>&1 | tee /dev/stderr)
-          # wrangler 4.100+ は `Version Preview URL: https://...` 行を出す。
-          # その行を最優先で拾い、無ければ任意の workers.dev URL にフォールバック。
-          url=$(echo "$out" | grep -oE 'Version Preview URL: https://[^[:space:]]+' | head -n1 | sed 's/^Version Preview URL: //')
+          # grep が何もマッチしないと exit 1 を返し set -e で workflow が落ちるので
+          # `|| true` で許容、後段の if で空判定する。
+          # wrangler 4.100+ は preview_urls = true (& Worker 側でも有効化済み) なら
+          # `Version Preview URL: https://...` を出力する。
+          url=$(echo "$out" | grep -oE 'Version Preview URL: https://[^[:space:]]+' | head -n1 | sed 's/^Version Preview URL: //' || true)
           if [ -z "$url" ]; then
-            url=$(echo "$out" | grep -oE 'https://[a-zA-Z0-9-]+\.workers\.dev' | head -n1)
+            url=$(echo "$out" | grep -oE 'https://[a-zA-Z0-9-]+\.workers\.dev' | head -n1 || true)
           fi
-          version_id=$(echo "$out" | grep -oE 'Worker Version ID: [a-f0-9-]+' | head -n1 | sed 's/^Worker Version ID: //')
+          version_id=$(echo "$out" | grep -oE 'Worker Version ID: [a-f0-9-]+' | head -n1 | sed 's/^Worker Version ID: //' || true)
           echo "url=$url" >> "$GITHUB_OUTPUT"
           echo "version_id=$version_id" >> "$GITHUB_OUTPUT"
 
