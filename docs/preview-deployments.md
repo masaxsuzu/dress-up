@@ -7,21 +7,21 @@
 | | 本番 | プレビュー |
 |---|---|---|
 | Worker | `dress-up` | `dress-up-preview` |
-| D1 | `dress-up` | `dress-up-staging` (全 PR で共有) |
-| R2 | `dress-up-images` | `dress-up-images-staging` (全 PR で共有) |
+| D1 | `dress-up` | `dress-up-preview` (全 PR で共有) |
+| R2 | `dress-up-images` | `dress-up-images-preview` (全 PR で共有) |
 | デプロイ契機 | main への push | PR の opened / synchronize / reopened |
 | URL | カスタムドメイン (Cloudflare Access 越し) | `https://<version-id>-dress-up-preview.<acct>.workers.dev` (**保護なし**) |
 
-全 PR で staging リソースを共有しているので、**同時並行 PR ではデータが混ざる**。個人開発スケールでは許容、複数人で使うなら PR ごとに環境を切るほうがよい。
+全 PR で preview リソースを共有しているので、**同時並行 PR ではデータが混ざる**。個人開発スケールでは許容、複数人で使うなら PR ごとに環境を切るほうがよい。
 
 ## 初期セットアップ (1 回だけ)
 
 ```bash
-# 1. staging リソースを作る
-wrangler d1 create dress-up-staging
+# 1. preview リソースを作る
+wrangler d1 create dress-up-preview
 # → 出力された database_id を控える
 
-wrangler r2 bucket create dress-up-images-staging
+wrangler r2 bucket create dress-up-images-preview
 
 # 2. wrangler.toml の [env.preview] にある REPLACE_ME_PREVIEW_DB_ID を
 #    手順1の database_id に置き換えてコミット
@@ -34,8 +34,8 @@ npx wrangler deploy --env preview
 wrangler secret put GEMINI_API_KEY --env preview
 wrangler secret put PHOTOROOM_API_KEY --env preview   # 任意
 
-# 5. staging D1 にスキーマを当てる
-wrangler d1 migrations apply dress-up-staging --remote --env preview
+# 5. preview D1 にスキーマを当てる
+wrangler d1 migrations apply dress-up-preview --remote --env preview
 ```
 
 以降は PR を出すたびにワークフローが自動で `versions upload` する。
