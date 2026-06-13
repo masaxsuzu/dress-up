@@ -21,6 +21,12 @@ test("/add でアップロード→VLM失敗→手動入力→保存→一覧に
 }) => {
   await clear(request);
 
+  // 保存時に裏で自動 iconize が走るので、本物 Gemini に届かないようモック。
+  // fire-and-forget なのでレスポンスは何でもよい。
+  await page.route(/\/api\/items\/[^/]+\/iconize$/, (route) =>
+    route.fulfill({ status: 200, body: "{}" }),
+  );
+
   await page.goto("/add");
   await expect(page.getByRole("heading", { name: "服を追加" })).toBeVisible();
 

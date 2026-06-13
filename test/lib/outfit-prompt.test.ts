@@ -168,6 +168,11 @@ describe("buildOutfitPrompt", () => {
     expect(prompt).toContain("full body");
   });
 
+  it("被写体は男性 (young adult man) で生成するよう指示する", () => {
+    const prompt = buildOutfitPrompt([item({ id: "t" })], { tpo: "x" });
+    expect(prompt).toMatch(/young adult man/);
+  });
+
   it("subcategoryがnullならカテゴリ名を使う", () => {
     const prompt = buildOutfitPrompt(
       [
