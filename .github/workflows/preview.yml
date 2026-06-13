@@ -35,8 +35,10 @@ jobs:
       - name: Apply migrations to preview D1
         run: npx wrangler d1 migrations apply dress-up-preview --remote --env preview
 
-      # Worker の dress-up-preview に新バージョンをアップロードして preview URL を取得。
-      # versions upload は本番トラフィックを切り替えない (deploy と違って promote しない)。
+      # Worker `dress-up` に新バージョンを upload (本番トラフィックは切り替わらない:
+      # versions upload は deploy と違って promote しない)。
+      # `--env preview` により、上がるバージョンには [env.preview] の binding
+      # (dress-up-preview D1 / dress-up-images-preview R2) が付く。
       - name: Upload preview version
         id: upload
         run: |
@@ -69,7 +71,7 @@ jobs:
 
             | | |
             |---|---|
-            | Worker | `dress-up-preview` |
+            | Worker | `dress-up` (preview バージョン) |
             | D1 | `dress-up-preview` (shared) |
             | R2 | `dress-up-images-preview` (shared) |
             | Commit | `${{ github.event.pull_request.head.sha }}` |
