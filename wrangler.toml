@@ -21,3 +21,38 @@ migrations_dir = "migrations"
 [[r2_buckets]]
 binding = "IMAGES"
 bucket_name = "dress-up-images"
+
+# ---------------------------------------------------------------------------
+# PR プレビュー環境 (Worker は本番と同一、binding と URL だけ変える)
+#
+# - name は本番と同じ `dress-up` を指定 → 同じ Worker に preview バージョンが
+#   積まれ、URL は `<version-id>-dress-up.<acct>.workers.dev` になる
+# - D1 / R2 だけ別物 (dress-up-preview / dress-up-images-preview) を指す
+#   ことで、preview バージョンが本番データを破壊しないよう隔離
+# - `wrangler versions upload --env preview` で uploaded されたバージョンは
+#   この env の binding を保持する
+#
+# 初期セットアップ手順は docs/preview-deployments.md を参照。
+# ---------------------------------------------------------------------------
+[env.preview]
+name = "dress-up"
+# preview バージョン用の <version-id>-dress-up.<acct>.workers.dev URL を有効化。
+# これがないと wrangler が Version Preview URL を出力せず、CI が URL を拾えない。
+preview_urls = true
+
+[env.preview.assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
+
+[env.preview.observability]
+enabled = true
+
+[[env.preview.d1_databases]]
+binding = "DB"
+database_name = "dress-up-preview"
+database_id = "5320cbe8-4ebb-49da-9b4f-df6cbbb6cb7f"
+migrations_dir = "migrations"
+
+[[env.preview.r2_buckets]]
+binding = "IMAGES"
+bucket_name = "dress-up-images-preview"
