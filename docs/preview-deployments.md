@@ -23,8 +23,8 @@ wrangler d1 create dress-up-preview
 
 wrangler r2 bucket create dress-up-images-preview
 
-# 2. wrangler.toml の [env.preview] にある REPLACE_ME_PREVIEW_DB_ID を
-#    手順1の database_id に置き換えてコミット
+# 2. wrangler.toml の [env.preview] にある database_id を
+#    手順1の database_id に置き換えてコミット (本リポは既設定済み)
 
 # 3. Worker 本体を作る (空でよい。以後はこれにバージョンが積まれる)
 npx opennextjs-cloudflare build

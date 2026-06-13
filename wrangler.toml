@@ -45,7 +45,7 @@ enabled = true
 [[env.preview.d1_databases]]
 binding = "DB"
 database_name = "dress-up-preview"
-database_id = "REPLACE_ME_PREVIEW_DB_ID"
+database_id = "5320cbe8-4ebb-49da-9b4f-df6cbbb6cb7f"
 migrations_dir = "migrations"
 
 [[env.preview.r2_buckets]]
