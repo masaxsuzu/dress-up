@@ -84,6 +84,14 @@ export default function AddPage() {
         const text = await res.text();
         throw new Error(text);
       }
+      // 登録直後にアイコン化を fire-and-forget で投げる。完了を待たずに一覧へ
+      // 戻るので、戻った頃にはサムネイルが入っている。失敗しても本体は登録
+      // 済みなので、詳細ページの「アイコン化」ボタンから手動で再生できる。
+      const { item } = (await res.json()) as { item: { id: string } };
+      void fetch(`/api/items/${item.id}/iconize`, {
+        method: "POST",
+        keepalive: true,
+      });
       window.location.href = "/";
     } catch (e) {
       setError((e as Error).message);

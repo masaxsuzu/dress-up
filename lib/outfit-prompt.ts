@@ -196,7 +196,7 @@ export function buildOutfitPrompt(
 
   return [
     "Professional fashion photograph, full body, front view, neutral light gray seamless studio background.",
-    "Subject: a young adult standing naturally, arms relaxed, looking at camera with a soft expression.",
+    "Subject: a young adult man standing naturally, arms relaxed, looking at camera with a soft expression.",
     seasonClause,
     tpoClause,
     "",
