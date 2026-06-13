@@ -34,6 +34,9 @@ bucket_name = "dress-up-images"
 # ---------------------------------------------------------------------------
 [env.preview]
 name = "dress-up-preview"
+# preview バージョン用の <version-id>-dress-up-preview.<acct>.workers.dev URL を有効化。
+# これがないと wrangler が Version Preview URL を出力せず、CI が URL を拾えない。
+preview_urls = true
 
 [env.preview.assets]
 directory = ".open-next/assets"

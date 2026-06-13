@@ -41,24 +41,29 @@ jobs:
         id: upload
         run: |
           set -o pipefail
-          out=$(npx wrangler versions upload \
+          out=$(npx wrangler@latest versions upload \
             --env preview \
             --tag "pr-${{ github.event.pull_request.number }}" \
             --message "PR #${{ github.event.pull_request.number }} (${GITHUB_SHA::7})" \
             2>&1 | tee /dev/stderr)
-          url=$(echo "$out" | grep -oE 'https://[a-zA-Z0-9-]+\.workers\.dev' | head -n1)
+          # wrangler 4.100+ は `Version Preview URL: https://...` 行を出す。
+          # その行を最優先で拾い、無ければ任意の workers.dev URL にフォールバック。
+          url=$(echo "$out" | grep -oE 'Version Preview URL: https://[^[:space:]]+' | head -n1 | sed 's/^Version Preview URL: //')
           if [ -z "$url" ]; then
-            echo "Could not parse preview URL from wrangler output"
-            exit 1
+            url=$(echo "$out" | grep -oE 'https://[a-zA-Z0-9-]+\.workers\.dev' | head -n1)
           fi
+          version_id=$(echo "$out" | grep -oE 'Worker Version ID: [a-f0-9-]+' | head -n1 | sed 's/^Worker Version ID: //')
           echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "version_id=$version_id" >> "$GITHUB_OUTPUT"
 
       - name: Comment preview URL on PR
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: preview
           message: |
-            🚀 **Preview deployed**: ${{ steps.upload.outputs.url }}
+            🚀 **Preview deployed**
+
+            ${{ steps.upload.outputs.url && format('URL: {0}', steps.upload.outputs.url) || format('Version ID: `{0}` (URL は Cloudflare ダッシュボードから確認)', steps.upload.outputs.version_id) }}
 
             | | |
             |---|---|
