@@ -21,3 +21,33 @@ migrations_dir = "migrations"
 [[r2_buckets]]
 binding = "IMAGES"
 bucket_name = "dress-up-images"
+
+# ---------------------------------------------------------------------------
+# PR プレビュー環境 (本番から完全分離)
+#
+# 別 Worker (dress-up-preview) + 別 D1 (dress-up-staging) + 別 R2
+# (dress-up-images-staging) を使うので、PR で何をしても本番データには触れない。
+# 全 PR で同じ staging リソースを共有 (同時 PR でデータが混ざる可能性あり、
+# 個人開発スケールでは許容)。
+#
+# 初期セットアップ手順は docs/preview-deployments.md を参照。
+# ---------------------------------------------------------------------------
+[env.preview]
+name = "dress-up-preview"
+
+[env.preview.assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
+
+[env.preview.observability]
+enabled = true
+
+[[env.preview.d1_databases]]
+binding = "DB"
+database_name = "dress-up-staging"
+database_id = "REPLACE_ME_PREVIEW_DB_ID"
+migrations_dir = "migrations"
+
+[[env.preview.r2_buckets]]
+binding = "IMAGES"
+bucket_name = "dress-up-images-staging"

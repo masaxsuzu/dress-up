@@ -99,3 +99,4 @@ No auth code exists in the app. The app is protected by Cloudflare Access (Zero 
 - `open-next.config.ts` and `wrangler.toml` configure the Cloudflare Workers deployment
 - `wrangler.toml` has `database_id = "REPLACE_ME"` — the real D1 database ID must be substituted before deploying
 - CI (`.github/workflows/`) runs unit + e2e on PRs and deploys `main` via wrangler
+- `.github/workflows/preview.yml` uploads a preview version to a separate `dress-up-preview` Worker on each PR push; staging D1 / R2 are shared across PRs. One-time setup is in `docs/preview-deployments.md`
