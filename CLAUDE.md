@@ -43,10 +43,9 @@ const { env } = await getCloudflareContext({ async: true });
 | `env.DB` | D1Database | Clothing item metadata (SQLite) |
 | `env.IMAGES` | R2Bucket | Uploaded photos (`items/<uuid>.<ext>`) and icons (`icons/<item-id>.<ext>`) |
 | `env.GEMINI_API_KEY` | string (secret) | Gemini API key (VLM, recommendation, image generation) |
-| `env.PHOTOROOM_API_KEY` | string (optional secret) | Photoroom background removal (upload + icon cutout) |
 | `env.ASSETS` | Fetcher | Static asset serving |
 
-**Never use `process.env` for these** — they are Cloudflare bindings, not Node.js env vars. `GEMINI_API_KEY` must be set as a Wrangler secret (`wrangler secret put GEMINI_API_KEY`). `PHOTOROOM_API_KEY` is optional; when unset, background removal is skipped and icon transparency falls back to CSS `mix-blend-mode: multiply`.
+**Never use `process.env` for these** — they are Cloudflare bindings, not Node.js env vars. `GEMINI_API_KEY` must be set as a Wrangler secret (`wrangler secret put GEMINI_API_KEY`).
 
 ### Gemini usage (all via `@google/genai`)
 
@@ -60,7 +59,7 @@ No retry on Gemini 503/429 — long waits would hit the Worker response deadline
 
 ### API routes
 
-- `POST /api/extract` — multipart image → optional Photoroom cleanup → R2 → VLM extraction. On VLM failure still returns 200 with `extraction: null` (image is kept; user fills the form manually).
+- `POST /api/extract` — multipart image → R2 → VLM extraction. On VLM failure still returns 200 with `extraction: null` (image is kept; user fills the form manually).
 - `POST /api/items`, `GET/PATCH/DELETE /api/items/[id]` — CRUD. DELETE also removes the R2 image and icon.
 - `POST /api/items/[id]/iconize` — generates a ghost-mannequin icon from the stored photo, saves to R2, sets `icon_key` in D1.
 - `POST /api/recommend` — wardrobe + TPO → outfit (`item_ids`) or shopping list (discriminated union `kind`). Hallucinated item ids are filtered out.

@@ -4,5 +4,4 @@ interface CloudflareEnv {
   IMAGES: R2Bucket;
   ASSETS: Fetcher;
   GEMINI_API_KEY: string;
-  PHOTOROOM_API_KEY?: string;
 }
