@@ -37,15 +37,3 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: echo "$GEMINI_API_KEY" | npx wrangler secret put GEMINI_API_KEY
-
-      - name: Set Photoroom API key secret (optional; skipped when unset)
-        env:
-          PHOTOROOM_API_KEY: ${{ secrets.PHOTOROOM_API_KEY }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          if [ -n "$PHOTOROOM_API_KEY" ]; then
-            echo "$PHOTOROOM_API_KEY" | npx wrangler secret put PHOTOROOM_API_KEY
-          else
-            echo "PHOTOROOM_API_KEY not set; skipping"
-          fi

@@ -20,7 +20,6 @@
 |VLM (属性抽出)|Gemini 2.5 Flash                              |                            |
 |コーデ推論    |Gemini 2.5 Pro                                |マルチモーダル                    |
 |画像生成     |Gemini 2.5 Flash Image (Nano Banana)          |アイコン化と全身イメージ                |
-|背景除去 (任意)|Photoroom                                     |未設定なら CSS multiply にフォールバック |
 
 ### 認証戦略
 
@@ -34,14 +33,12 @@
 - **VLM 失敗時**: 画像は R2 に残し、空フォームを出して手動入力できるようにする
 - **Gemini 503/429**: アプリ側でリトライしない (Worker のレスポンス時間制限で接続切れする方が UX が悪い)。ユーザがボタンを押し直す
 - **画像配信**: R2 への直接アクセスなし。`/api/images/[...key]` 経由
-- **アイコンの背景透過**: Photoroom があれば真の透過 PNG、なければ CSS の `mix-blend-mode: multiply` でベージュ canvas に溶け込ませる
 - **エラーレスポンス形状**: 全 API ルートで `{ error: string }` に統一 (`lib/api-response.ts`)
 
 ## 4. コスト
 
 - Cloudflare 一式: **0円** (Workers/D1/R2/Access すべて無料枠内)
 - Gemini API: Pro/Flash Image を 1 日数回叩く程度なら**月数百円**
-- Photoroom (任意): 月数千円
 - ドメイン: 任意
 
 ---

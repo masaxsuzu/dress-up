@@ -29,10 +29,9 @@ wrangler r2 bucket create dress-up-images-preview
 # 3. preview D1 にスキーマを当てる
 wrangler d1 migrations apply dress-up-preview --remote --env preview
 
-# 4. (任意) シークレットを Worker にセット。本番 deploy.yml が既に
-#    GEMINI_API_KEY / PHOTOROOM_API_KEY を put しているので、preview
-#    バージョンも同じ値を共有する。preview 専用にしたければ別の
-#    手段で上書きする (シークレットは Worker 単位、バージョン単位ではない)。
+# 4. シークレットは Worker 単位 (バージョン単位ではない) なので、本番
+#    deploy.yml が put した GEMINI_API_KEY を preview バージョンも共有する。
+#    追加の手作業は不要。
 ```
 
 ### 5. Cloudflare ダッシュボードで Preview URLs を有効化

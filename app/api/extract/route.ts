@@ -2,7 +2,6 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { errorResponse } from "@/lib/api-response";
 import { putImage } from "@/lib/r2";
 import { extractClothing } from "@/lib/vlm";
-import { removeBackground } from "@/lib/photoroom";
 
 const ALLOWED_TYPES = new Set([
   "image/jpeg",
@@ -33,31 +32,13 @@ export async function POST(req: Request) {
     );
   }
 
-  const original = await file.arrayBuffer();
-
-  // Photoroom で背景除去。失敗時は元画像で続行。
-  let storedBytes: ArrayBuffer = original;
-  let storedMime: string = file.type;
-  if (env.PHOTOROOM_API_KEY) {
-    const cutout = await removeBackground(
-      env.PHOTOROOM_API_KEY,
-      original,
-      file.type,
-    ).catch(() => null);
-    if (cutout) {
-      storedBytes = cutout.bytes;
-      storedMime = cutout.mimeType;
-    }
-  }
-
-  const imageKey = await putImage(env.IMAGES, storedBytes, storedMime);
-
-  // VLM には背景除去後の画像を渡す（属性抽出の精度が上がる）。
-  const base64 = Buffer.from(storedBytes).toString("base64");
+  const bytes = await file.arrayBuffer();
+  const imageKey = await putImage(env.IMAGES, bytes, file.type);
+  const base64 = Buffer.from(bytes).toString("base64");
 
   try {
     const extraction = await extractClothing(env.GEMINI_API_KEY, {
-      mediaType: storedMime,
+      mediaType: file.type,
       base64,
     });
     return Response.json({ imageKey, extraction });
