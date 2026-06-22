@@ -146,6 +146,96 @@ describe("recommendOutfits", () => {
     expect(result.proposals[0].items[0]).toMatchObject({ kind: "buy" });
   });
 
+  it("buy アイテムで category/description が欠落していてもエラーにせず placeholder で埋める", async () => {
+    // Gemini Pro が conditional required を理解せず、kind:'buy' のまま
+    // category や description を omit してくる現実のケース。
+    generateContentMock.mockResolvedValue(
+      mockCall([
+        {
+          items: [
+            { kind: "owned", id: "tops-1" },
+            { kind: "buy" }, // 完全欠落
+            { kind: "buy", category: "shoes" }, // description 欠落
+            { kind: "buy", category: "not-a-category", description: "謎カテゴリ" }, // enum 外
+          ],
+          reason: "1",
+        },
+        SAMPLE_THREE[1],
+        SAMPLE_THREE[2],
+      ]),
+    );
+
+    const result = await recommendOutfits("sk", ITEMS, {
+      season: "spring",
+      tpo: "x",
+    });
+
+    const items = result.proposals[0].items;
+    expect(items).toHaveLength(4);
+    expect(items[0]).toMatchObject({ kind: "owned" });
+    expect(items[1]).toMatchObject({ kind: "buy", category: "other" });
+    expect(items[2]).toMatchObject({ kind: "buy", category: "shoes" });
+    // enum 外は "other" にフォールバック
+    expect(items[3]).toMatchObject({ kind: "buy", category: "other", description: "謎カテゴリ" });
+  });
+
+  it("kind が無くてもフィールドの有無から推定する (owned/buy)", async () => {
+    generateContentMock.mockResolvedValue(
+      mockCall([
+        {
+          items: [
+            { id: "tops-1" }, // kind 無し、id だけ → owned 扱い
+            { category: "shoes", description: "白スニーカー" }, // kind 無し → buy 扱い
+            {}, // 完全に空 → 除外
+          ],
+          reason: "1",
+        },
+        SAMPLE_THREE[1],
+        SAMPLE_THREE[2],
+      ]),
+    );
+
+    const result = await recommendOutfits("sk", ITEMS, {
+      season: "spring",
+      tpo: "x",
+    });
+
+    expect(result.proposals[0].items).toHaveLength(2);
+    expect(result.proposals[0].items[0]).toMatchObject({ kind: "owned", id: "tops-1" });
+    expect(result.proposals[0].items[1]).toMatchObject({
+      kind: "buy",
+      category: "shoes",
+      description: "白スニーカー",
+    });
+  });
+
+  it("proposals が 3 未満なら placeholder で 3 に揃える", async () => {
+    generateContentMock.mockResolvedValue(mockCall([SAMPLE_THREE[0]]));
+
+    const result = await recommendOutfits("sk", ITEMS, {
+      season: "spring",
+      tpo: "x",
+    });
+
+    expect(result.proposals).toHaveLength(3);
+    expect(result.proposals[0]).toMatchObject({ reason: "1: シンプル" });
+    expect(result.proposals[1].items).toHaveLength(1);
+    expect(result.proposals[1].items[0]).toMatchObject({ kind: "buy" });
+  });
+
+  it("proposals が 3 を超えたら先頭 3 件に切り詰める", async () => {
+    generateContentMock.mockResolvedValue(
+      mockCall([...SAMPLE_THREE, SAMPLE_THREE[0], SAMPLE_THREE[1]]),
+    );
+
+    const result = await recommendOutfits("sk", ITEMS, {
+      season: "spring",
+      tpo: "x",
+    });
+
+    expect(result.proposals).toHaveLength(3);
+  });
+
   it("function_call が無いとthrowする", async () => {
     generateContentMock.mockResolvedValue({ functionCalls: [] });
     await expect(

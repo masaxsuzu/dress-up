@@ -3,8 +3,17 @@ import {
   FunctionCallingConfigMode,
   Type,
 } from "@google/genai";
-import type { ClothingItem, Season } from "@/schema/clothing";
-import { RecommendDraftSchema, type RecommendDraft } from "@/schema/recommend";
+import { z } from "zod";
+import {
+  ClothingCategorySchema,
+  type ClothingItem,
+  type Season,
+} from "@/schema/clothing";
+import {
+  RecommendDraftSchema,
+  type ProposalItemDraft,
+  type RecommendDraft,
+} from "@/schema/recommend";
 
 const MODEL = "gemini-2.5-pro";
 
@@ -19,9 +28,15 @@ You receive the user's wardrobe — both the structured attributes (JSON) and th
 
 Your job: propose THREE distinct full outfit coordinations for this TPO and season. Each proposal is a complete outfit (tops + bottoms + shoes at minimum; outerwear / bag / accessory may be added; a "dress" replaces tops + bottoms). Across the three proposals try to vary the vibe (e.g. one safer, one bolder, one more polished).
 
-For each proposal, each item is either:
-- {kind: "owned", id: "<id from the provided wardrobe>"} — use ONLY ids that exist in the provided list, never invent ids
-- {kind: "buy", category, description} — when no suitable owned item fills a slot, suggest a specific item the user should buy (description is a concrete Japanese phrase, e.g. "黒のレザーパンプス")
+For each item, emit EXACTLY one of these two shapes — never mix the fields:
+
+  {"kind": "owned", "id": "<id from the provided wardrobe>"}
+    — use ONLY ids that appear in the provided wardrobe list, never invent
+    — DO NOT include category or description for owned items
+
+  {"kind": "buy", "category": "<one of: tops, outerwear, bottoms, dress, shoes, bag, accessory, other>", "description": "<concrete Japanese phrase>"}
+    — REQUIRED: both category AND description. If you cannot fill both, do not emit a buy item at all
+    — DO NOT include id for buy items
 
 Rules:
 - Always return exactly 3 proposals, even if the wardrobe is small — fill the gaps with kind="buy" items rather than dropping the slot.
@@ -108,6 +123,51 @@ function compactItem(item: ClothingItem) {
   };
 }
 
+// Pro の function_call は条件付き required を理解しないので、buy なのに
+// category/description を欠落させたり、kind を omit してくることがある。
+// strict Zod に入れる前にここで救えるものを救う。
+const LooseItemSchema = z.object({
+  kind: z.string().optional(),
+  id: z.string().optional(),
+  category: z.string().optional(),
+  description: z.string().optional(),
+}).passthrough();
+
+const LooseDraftSchema = z.object({
+  proposals: z
+    .array(
+      z.object({
+        items: z.array(LooseItemSchema).optional(),
+        reason: z.string().optional(),
+      }).passthrough(),
+    )
+    .optional(),
+}).passthrough();
+
+function normalizeItem(
+  it: z.infer<typeof LooseItemSchema>,
+): ProposalItemDraft | null {
+  // kind が無くてもフィールドの有無から推定する
+  let kind = it.kind;
+  if (!kind) {
+    if (it.id && !it.category && !it.description) kind = "owned";
+    else if (it.category || it.description) kind = "buy";
+    else return null;
+  }
+  if (kind === "owned") {
+    return it.id ? { kind: "owned", id: it.id } : null;
+  }
+  if (kind === "buy") {
+    // category が enum 外でも "other" にフォールバック、description が無ければ
+    // placeholder を入れて schema を保つ (実運用では Pro はだいたい埋めてくる)。
+    const catParse = ClothingCategorySchema.safeParse(it.category);
+    const category = catParse.success ? catParse.data : "other";
+    const description = it.description?.trim() || "(モデルが説明を返しませんでした)";
+    return { kind: "buy", category, description };
+  }
+  return null;
+}
+
 export async function recommendOutfits(
   apiKey: string,
   items: ClothingItem[],
@@ -117,10 +177,6 @@ export async function recommendOutfits(
   const compact = items.map(compactItem);
   const images = context.images ?? [];
 
-  // ユーザーメッセージ:
-  //   1. ヘッダー (season / TPO / wardrobe JSON; empty なら明示)
-  //   2. 各アイテムの画像 + id ラベル
-  //   3. 末尾の指示
   const wardrobeText = compact.length > 0
     ? `Wardrobe (JSON):\n${JSON.stringify(compact)}`
     : "Wardrobe: (empty — every item in every proposal must be kind=\"buy\")";
@@ -172,28 +228,41 @@ export async function recommendOutfits(
     throw new Error("Gemini did not call the recommendation tool");
   }
 
-  const draft = RecommendDraftSchema.parse(call.args);
-
-  // ハルシネーション防止: owned の id が wardrobe に無ければ buy にフォールバック。
-  // ProposalDraft は最低 1 アイテム持つので、全部消えると invalid になる。
-  // 1 案ぶんが空になりうるが、実際そうなることは Pro の指示上ほぼない。
+  // 緩いスキーマで一旦受けて手で正規化する。
+  const raw = LooseDraftSchema.parse(call.args ?? {});
   const validIds = new Set(items.map((i) => i.id));
-  const proposals = draft.proposals.map((p) => ({
-    ...p,
-    items: p.items.filter((i) => i.kind === "buy" || validIds.has(i.id)),
-  }));
 
-  // 空の items は無効なのでフィルタするのではなく、最低 1 個の "buy" placeholder を
-  // 入れて schema を満たす。実運用では Pro はちゃんと埋めてくるはずなのでセーフネット。
-  for (const p of proposals) {
-    if (p.items.length === 0) {
-      p.items.push({
+  const proposals = (raw.proposals ?? []).map((p) => {
+    const normalized = (p.items ?? [])
+      .map(normalizeItem)
+      .filter((x): x is ProposalItemDraft => x !== null)
+      // owned のハルシ id (wardrobe に無いもの) は除外
+      .filter((x) => x.kind === "buy" || validIds.has(x.id));
+
+    // 各 proposal に最低 1 個確保 (Zod の min(1) を満たすため)
+    if (normalized.length === 0) {
+      normalized.push({
         kind: "buy",
         category: "other",
         description: "(モデルが有効な提案を返しませんでした)",
       });
     }
-  }
 
-  return { proposals } as RecommendDraft;
+    return {
+      items: normalized,
+      reason: p.reason?.trim() || "(理由なし)",
+    };
+  });
+
+  // 3 案に揃える: 足りなければ placeholder で埋め、余れば切り詰め
+  while (proposals.length < 3) {
+    proposals.push({
+      reason: "(モデルが追加の提案を返しませんでした)",
+      items: [{ kind: "buy", category: "other", description: "(該当なし)" }],
+    });
+  }
+  if (proposals.length > 3) proposals.length = 3;
+
+  // 厳密スキーマでもう一度通して、形が正しいことを保証する。
+  return RecommendDraftSchema.parse({ proposals });
 }
