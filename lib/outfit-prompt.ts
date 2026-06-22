@@ -1,4 +1,5 @@
 import type { ClothingCategory, ClothingItem, Pattern, Season } from "@/schema/clothing";
+import type { Profile } from "@/schema/profile";
 
 const CATEGORY_LABEL_EN: Record<ClothingCategory, string> = {
   tops: "Top",
@@ -187,9 +188,42 @@ function describePromptItem(p: PromptItem): string {
   return p.kind === "owned" ? describeItem(p.item) : p.description;
 }
 
+// プロフィールから Flash Image の Subject 行を組み立てる。
+// 参考画像を渡している場合は、その人を被写体にする旨も明記する
+// (画像自体は呼び出し側が inlineData で添付する)。
+export function buildSubjectClause(
+  profile: Profile | null,
+  hasReferenceImage: boolean,
+): string {
+  // gender → 名詞。未設定/other は中性的に "person"。
+  const noun =
+    profile?.gender === "male"
+      ? "man"
+      : profile?.gender === "female"
+        ? "woman"
+        : "person";
+
+  const physique: string[] = [];
+  if (profile?.heightCm) physique.push(`${profile.heightCm}cm tall`);
+  if (profile?.weightKg) physique.push(`${profile.weightKg}kg`);
+  if (profile?.bodyType) physique.push(profile.bodyType);
+  const physiqueClause = physique.length > 0 ? ` (${physique.join(", ")})` : "";
+
+  const refClause = hasReferenceImage
+    ? " Match the face and physique of the reference photo provided."
+    : "";
+
+  return `Subject: a young adult ${noun}${physiqueClause} standing naturally, arms relaxed, looking at camera with a soft expression.${refClause}`;
+}
+
 export function buildOutfitPrompt(
   rawItems: Array<ClothingItem | PromptItem>,
-  context: { tpo?: string; season?: Season } = {},
+  context: {
+    tpo?: string;
+    season?: Season;
+    profile?: Profile | null;
+    hasReferenceImage?: boolean;
+  } = {},
 ): string {
   const items = rawItems.map(normalize);
   const wearOrder: ClothingCategory[] = [
@@ -217,7 +251,7 @@ export function buildOutfitPrompt(
 
   return [
     "Professional fashion photograph, full body, front view, neutral light gray seamless studio background.",
-    "Subject: a young adult man standing naturally, arms relaxed, looking at camera with a soft expression.",
+    buildSubjectClause(context.profile ?? null, context.hasReferenceImage ?? false),
     seasonClause,
     tpoClause,
     "",

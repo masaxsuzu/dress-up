@@ -274,6 +274,38 @@ describe("recommendOutfits", () => {
     expect(text).not.toContain("#ffffff");
   });
 
+  it("profile を渡すと Pro のメッセージに User profile 行が入る", async () => {
+    generateContentMock.mockResolvedValue(mockCall(SAMPLE_THREE));
+
+    await recommendOutfits("sk", ITEMS, {
+      season: "spring",
+      tpo: "x",
+      profile: {
+        gender: "female",
+        heightCm: 160,
+        weightKg: null,
+        bodyType: "細身",
+        referenceImageKey: null,
+        updatedAt: "",
+      },
+    });
+
+    const text = generateContentMock.mock.calls[0][0].contents[0].parts[0].text;
+    expect(text).toMatch(/User profile:/);
+    expect(text).toMatch(/gender: female/);
+    expect(text).toMatch(/160cm/);
+    expect(text).toMatch(/細身/);
+  });
+
+  it("profile を渡さない場合は User profile 行が入らない", async () => {
+    generateContentMock.mockResolvedValue(mockCall(SAMPLE_THREE));
+
+    await recommendOutfits("sk", ITEMS, { season: "spring", tpo: "x" });
+
+    const text = generateContentMock.mock.calls[0][0].contents[0].parts[0].text;
+    expect(text).not.toMatch(/User profile:/);
+  });
+
   it("images を渡すと各アイテムの inlineData + id ラベルが順に並ぶ", async () => {
     generateContentMock.mockResolvedValue(mockCall(SAMPLE_THREE));
 

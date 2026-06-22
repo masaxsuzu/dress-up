@@ -2,8 +2,13 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { z } from "zod";
 import { errorResponse, validationError } from "@/lib/api-response";
 import { getItem } from "@/lib/db";
-import { generateOutfitImage, type OutfitImageInput } from "@/lib/outfit-image";
+import {
+  generateOutfitImage,
+  type OutfitImageInput,
+  type ReferenceImageInput,
+} from "@/lib/outfit-image";
 import type { PromptItem } from "@/lib/outfit-prompt";
+import { getProfile } from "@/lib/profile";
 import { loadImageBase64 } from "@/lib/r2";
 import { currentSeason } from "@/lib/season";
 import { ClothingCategorySchema } from "@/schema/clothing";
@@ -53,10 +58,20 @@ export async function POST(req: Request) {
     return errorResponse("アイテムが見つかりません", 400);
   }
 
+  // プロフィール (性別・体型) と参考画像を Flash Image に同梱する。
+  const profile = await getProfile(env.DB);
+  let referenceImage: ReferenceImageInput | null = null;
+  if (profile?.referenceImageKey) {
+    const ref = await loadImageBase64(env.IMAGES, profile.referenceImageKey);
+    if (ref) referenceImage = ref;
+  }
+
   try {
     const image = await generateOutfitImage(env.GEMINI_API_KEY, promptItems, images, {
       tpo: parsed.data.tpo,
       season: parsed.data.season ?? currentSeason(),
+      profile,
+      referenceImage,
     });
 
     const bytes = Uint8Array.from(atob(image.base64), (c) => c.charCodeAt(0));
