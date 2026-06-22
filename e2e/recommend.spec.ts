@@ -28,202 +28,148 @@ const DUMMY_ITEM = {
   updatedAt: "2024-01-01T00:00:00.000Z",
 };
 
-// outfit 提案の成功レスポンス
-const OUTFIT_RESPONSE = {
+// 3 案レスポンス。1 案目は全 owned、2 案目は owned+buy 混在、3 案目は全 buy。
+const THREE_PROPOSALS = {
   season: "spring",
-  kind: "outfit",
-  items: [DUMMY_ITEM],
-  reason: "このコーデはカジュアルなランチに最適です。",
-};
-
-// shopping 提案の成功レスポンス
-const SHOPPING_RESPONSE = {
-  season: "spring",
-  kind: "shopping",
-  missing: [
+  proposals: [
     {
-      category: "bottoms",
-      description: "カジュアルなシーンに合うチノパンツ",
+      items: [{ kind: "owned", item: DUMMY_ITEM }],
+      reason: "1: シンプルなランチ向け。",
+    },
+    {
+      items: [
+        { kind: "owned", item: DUMMY_ITEM },
+        { kind: "buy", category: "bottoms", description: "ベージュのチノパン" },
+      ],
+      reason: "2: 明るく仕上げる。",
+    },
+    {
+      items: [
+        { kind: "buy", category: "tops", description: "ネイビーのポロシャツ" },
+        { kind: "buy", category: "bottoms", description: "黒のスラックス" },
+      ],
+      reason: "3: 全部新しく揃える案。",
     },
   ],
-  reason: "既存のワードローブからコーデを組むには、ボトムスが不足しています。",
 };
 
 test.describe("/recommend", () => {
-  test("outfit 提案フロー: コーデ提案が表示される", async ({ page }) => {
-    // /api/recommend を outfit レスポンスでモック
-    await page.route("/api/recommend", async (route) => {
-      await route.fulfill({
+  test("3 案表示: それぞれ全身画像と構成と説明が出る", async ({ page }) => {
+    await page.route("/api/recommend", (route) =>
+      route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify(OUTFIT_RESPONSE),
-      });
-    });
-
-    await page.goto("/recommend");
-
-    // シーン入力
-    await page.locator("textarea").fill("同僚と週末ランチ");
-
-    // ボタンをクリック
-    await page.getByRole("button", { name: "コーデを見つける" }).click();
-
-    // 「コーデ提案」のラベルが出る
-    await expect(page.getByText("コーデ提案")).toBeVisible();
-
-    // 「使ったアイテム」見出しが出る
-    await expect(page.getByRole("heading", { name: "使ったアイテム" })).toBeVisible();
-
-    // アイテムサムネイル画像が 1 枚以上ある
-    const thumbnails = page.locator(`img[src*="/api/images/"]`);
-    await expect(thumbnails).toHaveCount(1);
-
-    // 「説明」見出しが出る
-    await expect(page.getByRole("heading", { name: "説明" })).toBeVisible();
-
-    // reason テキストが出る
-    await expect(
-      page.getByText("このコーデはカジュアルなランチに最適です。"),
-    ).toBeVisible();
-  });
-
-  test("shopping 提案フロー: 買い足し提案が表示される", async ({ page }) => {
-    // /api/recommend を shopping レスポンスでモック
-    await page.route("/api/recommend", async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify(SHOPPING_RESPONSE),
-      });
-    });
-
-    await page.goto("/recommend");
-
-    await page.locator("textarea").fill("結婚式の二次会");
-    await page.getByRole("button", { name: "コーデを見つける" }).click();
-
-    // 「買い足し提案」ラベルが出る（コーデ提案ではなくこちら）
-    await expect(page.getByText("買い足し提案")).toBeVisible();
-
-    // 「買い足したいアイテム」見出し
-    await expect(
-      page.getByRole("heading", { name: "買い足したいアイテム" }),
-    ).toBeVisible();
-
-    // missing.description が表示される
-    await expect(
-      page.getByText("カジュアルなシーンに合うチノパンツ"),
-    ).toBeVisible();
-  });
-
-  test("全身イメージ生成: ボタン押下で画像が表示される", async ({ page }) => {
-    // /api/recommend を outfit レスポンスでモック
-    await page.route("/api/recommend", async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify(OUTFIT_RESPONSE),
-      });
-    });
-
-    // /api/outfit-image を 1x1 PNG バイナリで返すモック
-    await page.route("/api/outfit-image", async (route) => {
-      await route.fulfill({
+        body: JSON.stringify(THREE_PROPOSALS),
+      }),
+    );
+    // 3 つの提案が並列に /api/outfit-image を叩く。すべて成功扱い。
+    await page.route("/api/outfit-image", (route) =>
+      route.fulfill({
         status: 200,
         contentType: "image/png",
         body: TINY_PNG,
-      });
-    });
+      }),
+    );
 
     await page.goto("/recommend");
+    await page.locator("textarea").fill("同僚と週末ランチ");
+    await page.getByRole("button", { name: "コーデを 3 案出す" }).click();
 
-    await page.locator("textarea").fill("カジュアルなお出かけ");
-    await page.getByRole("button", { name: "コーデを見つける" }).click();
+    // 季節+案数の見出し
+    await expect(page.getByText(/季節:.+3 案/)).toBeVisible();
 
-    // outfit カードが出るまで待つ
-    await expect(page.getByText("コーデ提案")).toBeVisible();
+    // 3 つの提案ヘッダー
+    await expect(page.getByRole("heading", { name: "提案 1" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "提案 2" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "提案 3" })).toBeVisible();
 
-    // 「全身イメージを生成」ボタンを押す
-    await page
-      .getByRole("button", { name: "全身イメージを生成（AI 画像、~10 秒）" })
-      .click();
-
-    // 生成完了後: alt="全身コーデ" の img が表示される
-    await expect(page.locator('img[alt="全身コーデ"]')).toBeVisible({
+    // 3 枚の全身画像
+    await expect(page.locator('img[alt="全身コーデ"]')).toHaveCount(3, {
       timeout: 15_000,
     });
 
-    // ボタンが「作り直す」に切り替わる
-    await expect(
-      page.getByRole("button", { name: "全身イメージを作り直す" }),
-    ).toBeVisible();
+    // 説明テキストが全部見える
+    await expect(page.getByText("1: シンプルなランチ向け。")).toBeVisible();
+    await expect(page.getByText("2: 明るく仕上げる。")).toBeVisible();
+    await expect(page.getByText("3: 全部新しく揃える案。")).toBeVisible();
   });
 
-  test("全身イメージ生成失敗: エラーメッセージと再試行ボタンが表示される", async ({
+  test("買い足し点数バッジと買い足しアイテムの description が出る", async ({
     page,
   }) => {
-    // /api/recommend を outfit レスポンスでモック
-    await page.route("/api/recommend", async (route) => {
-      await route.fulfill({
+    await page.route("/api/recommend", (route) =>
+      route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify(OUTFIT_RESPONSE),
-      });
-    });
-
-    // /api/outfit-image を 500 エラーでモック
-    await page.route("/api/outfit-image", async (route) => {
-      await route.fulfill({
-        status: 500,
-        contentType: "application/json",
-        body: JSON.stringify({ error: "画像生成サービスが利用できません" }),
-      });
-    });
+        body: JSON.stringify(THREE_PROPOSALS),
+      }),
+    );
+    await page.route("/api/outfit-image", (route) =>
+      route.fulfill({ status: 200, contentType: "image/png", body: TINY_PNG }),
+    );
 
     await page.goto("/recommend");
+    await page.locator("textarea").fill("週末カフェ");
+    await page.getByRole("button", { name: "コーデを 3 案出す" }).click();
 
+    // 提案 2 の買い足しが 1 点
+    await expect(page.getByText("買い足し 1 点")).toBeVisible();
+    // 提案 3 の買い足しが 2 点
+    await expect(page.getByText("買い足し 2 点")).toBeVisible();
+
+    // buy アイテムの description が表示される
+    await expect(page.getByText("ベージュのチノパン")).toBeVisible();
+    await expect(page.getByText("ネイビーのポロシャツ")).toBeVisible();
+    await expect(page.getByText("黒のスラックス")).toBeVisible();
+  });
+
+  test("画像生成失敗: 該当案だけエラー表示と再試行ボタン", async ({ page }) => {
+    await page.route("/api/recommend", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(THREE_PROPOSALS),
+      }),
+    );
+    // すべての画像生成を 500 で落とす
+    await page.route("/api/outfit-image", (route) =>
+      route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "Flash Image が混雑中" }),
+      }),
+    );
+
+    await page.goto("/recommend");
     await page.locator("textarea").fill("雨の通勤");
-    await page.getByRole("button", { name: "コーデを見つける" }).click();
+    await page.getByRole("button", { name: "コーデを 3 案出す" }).click();
 
-    // outfit カードが出るまで待つ
-    await expect(page.getByText("コーデ提案")).toBeVisible();
-
-    // 「全身イメージを生成」ボタンを押す
-    await page
-      .getByRole("button", { name: "全身イメージを生成（AI 画像、~10 秒）" })
-      .click();
-
-    // エラーメッセージが表示される
+    // 3 件分のエラーメッセージ
     await expect(
-      page.getByText("画像生成サービスが利用できません"),
-    ).toBeVisible({ timeout: 15_000 });
+      page.getByText(/画像の生成に失敗しました: Flash Image が混雑中/),
+    ).toHaveCount(3, { timeout: 15_000 });
 
-    // 「再試行」ボタンが表示される
-    await expect(
-      page.getByRole("button", { name: "全身イメージを再試行" }),
-    ).toBeVisible();
+    // 再試行ボタンが 3 つ
+    await expect(page.getByRole("button", { name: "再試行" })).toHaveCount(3);
   });
 
   test("エラー伝搬: /api/recommend が 500 を返すとエラーが表示される", async ({
     page,
   }) => {
-    // /api/recommend を 500 エラーでモック
-    await page.route("/api/recommend", async (route) => {
-      await route.fulfill({
+    await page.route("/api/recommend", (route) =>
+      route.fulfill({
         status: 500,
         contentType: "application/json",
         body: JSON.stringify({ error: "Gemini API が利用できません" }),
-      });
-    });
+      }),
+    );
 
     await page.goto("/recommend");
-
     await page.locator("textarea").fill("カフェでの作業");
-    await page.getByRole("button", { name: "コーデを見つける" }).click();
+    await page.getByRole("button", { name: "コーデを 3 案出す" }).click();
 
-    // error 文字列が画面に表示される
-    await expect(
-      page.getByText("Gemini API が利用できません"),
-    ).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText("Gemini API が利用できません")).toBeVisible({
+      timeout: 10_000,
+    });
   });
 });

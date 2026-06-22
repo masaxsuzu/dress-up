@@ -1,26 +1,28 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { z } from "zod";
-import { listItems } from "@/lib/db";
 import { errorResponse, validationError } from "@/lib/api-response";
+import { getItem } from "@/lib/db";
 import { generateOutfitImage, type OutfitImageInput } from "@/lib/outfit-image";
+import type { PromptItem } from "@/lib/outfit-prompt";
 import { loadImageBase64 } from "@/lib/r2";
 import { currentSeason } from "@/lib/season";
-import type { ClothingItem } from "@/schema/clothing";
+import { ClothingCategorySchema } from "@/schema/clothing";
+
+// owned / buy 両方を受ける。owned は wardrobe の id、buy は category + description。
+const InputItemSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("owned"), id: z.string().min(1) }),
+  z.object({
+    kind: z.literal("buy"),
+    category: ClothingCategorySchema,
+    description: z.string().min(1),
+  }),
+]);
 
 const InputSchema = z.object({
-  item_ids: z.array(z.string()).min(1).max(10),
+  items: z.array(InputItemSchema).min(1).max(10),
   tpo: z.string().min(1).max(200),
   season: z.enum(["spring", "summer", "autumn", "winter"]).optional(),
 });
-
-async function loadItemImage(
-  bucket: R2Bucket,
-  item: ClothingItem,
-): Promise<OutfitImageInput | null> {
-  const img = await loadImageBase64(bucket, item.imageKey);
-  if (!img) return null;
-  return { id: item.id, ...img };
-}
 
 export async function POST(req: Request) {
   const { env } = await getCloudflareContext({ async: true });
@@ -31,23 +33,28 @@ export async function POST(req: Request) {
     return validationError(parsed.error);
   }
 
-  const all = await listItems(env.DB);
-  const map = new Map(all.map((i) => [i.id, i]));
-  const items = parsed.data.item_ids
-    .map((id) => map.get(id))
-    .filter((x): x is NonNullable<typeof x> => x !== undefined);
+  // owned は DB から fetch、画像を R2 から base64 化して Gemini に渡す。
+  // buy はテキストで渡すのみ。
+  const promptItems: PromptItem[] = [];
+  const images: OutfitImageInput[] = [];
+  for (const it of parsed.data.items) {
+    if (it.kind === "owned") {
+      const item = await getItem(env.DB, it.id);
+      if (!item) continue;
+      promptItems.push({ kind: "owned", item });
+      const img = await loadImageBase64(env.IMAGES, item.imageKey);
+      if (img) images.push({ id: item.id, ...img });
+    } else {
+      promptItems.push({ kind: "buy", category: it.category, description: it.description });
+    }
+  }
 
-  if (items.length === 0) {
+  if (promptItems.length === 0) {
     return errorResponse("アイテムが見つかりません", 400);
   }
 
-  const settled = await Promise.all(items.map((i) => loadItemImage(env.IMAGES, i)));
-  const images = settled.filter(
-    (x): x is OutfitImageInput => x !== null,
-  );
-
   try {
-    const image = await generateOutfitImage(env.GEMINI_API_KEY, items, images, {
+    const image = await generateOutfitImage(env.GEMINI_API_KEY, promptItems, images, {
       tpo: parsed.data.tpo,
       season: parsed.data.season ?? currentSeason(),
     });

@@ -5,7 +5,11 @@ import { loadImageBase64 } from "@/lib/r2";
 import { recommendOutfits, type ItemImage } from "@/lib/recommend";
 import { currentSeason } from "@/lib/season";
 import type { ClothingItem } from "@/schema/clothing";
-import { RecommendInputSchema } from "@/schema/recommend";
+import {
+  RecommendInputSchema,
+  type Proposal,
+  type ProposalItem,
+} from "@/schema/recommend";
 
 async function loadItemImage(
   bucket: R2Bucket,
@@ -25,14 +29,14 @@ export async function POST(req: Request) {
     return validationError(parsed.error);
   }
 
+  // ワードローブが空でも 3 案 (all buy) を返す方針なので、空判定でエラーにしない。
   const items = await listItems(env.DB);
-  if (items.length === 0) {
-    return errorResponse("ワードローブにアイテムがまだありません", 400);
-  }
-
   const season = currentSeason();
 
-  const settled = await Promise.all(items.map((i) => loadItemImage(env.IMAGES, i)));
+  // 画像はワードローブが空でない時のみロードする。
+  const settled = items.length > 0
+    ? await Promise.all(items.map((i) => loadItemImage(env.IMAGES, i)))
+    : [];
   const images = settled.filter((x): x is ItemImage => x !== null);
 
   try {
@@ -42,26 +46,22 @@ export async function POST(req: Request) {
       images,
     });
 
-    if (draft.kind === "shopping") {
-      return Response.json({
-        season,
-        kind: "shopping" as const,
-        missing: draft.missing,
-        reason: draft.reason,
-      });
-    }
-
+    // draft の owned アイテムを ClothingItem に hydrate。
+    // 万一 id が消滅していたら buy にフォールバック (description は元 item から推定難なので
+    // generic に。実運用ではほぼ起きない)。
     const itemMap = new Map(items.map((i) => [i.id, i]));
-    const hydratedItems = draft.item_ids
-      .map((id) => itemMap.get(id))
-      .filter((x): x is NonNullable<typeof x> => x !== undefined);
+    const proposals: Proposal[] = draft.proposals.map((p) => ({
+      reason: p.reason,
+      items: p.items.flatMap<ProposalItem>((it) => {
+        if (it.kind === "owned") {
+          const item = itemMap.get(it.id);
+          return item ? [{ kind: "owned", item }] : [];
+        }
+        return [{ kind: "buy", category: it.category, description: it.description }];
+      }),
+    }));
 
-    return Response.json({
-      season,
-      kind: "outfit" as const,
-      items: hydratedItems,
-      reason: draft.reason,
-    });
+    return Response.json({ season, proposals });
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     return errorResponse(message, 500);

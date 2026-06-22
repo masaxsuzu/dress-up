@@ -167,10 +167,31 @@ function describeItem(item: ClothingItem): string {
   return tokens.filter(Boolean).join(" ");
 }
 
+// アイテム描写用の入力 (所有 or 買うべき)。owned は ClothingItem から色や素材を
+// 取り出して描写、buy は description (日本語) をそのまま使う。
+export type PromptItem =
+  | { kind: "owned"; item: ClothingItem }
+  | { kind: "buy"; category: ClothingCategory; description: string };
+
+// テストやレガシー呼び出しを楽にするため、ClothingItem の配列もそのまま受ける。
+// `kind` プロパティの有無で判定 (ClothingItem は持たない)。
+function normalize(x: ClothingItem | PromptItem): PromptItem {
+  return "kind" in x ? x : { kind: "owned", item: x };
+}
+
+function itemCategory(p: PromptItem): ClothingCategory {
+  return p.kind === "owned" ? p.item.category : p.category;
+}
+
+function describePromptItem(p: PromptItem): string {
+  return p.kind === "owned" ? describeItem(p.item) : p.description;
+}
+
 export function buildOutfitPrompt(
-  items: ClothingItem[],
+  rawItems: Array<ClothingItem | PromptItem>,
   context: { tpo?: string; season?: Season } = {},
 ): string {
+  const items = rawItems.map(normalize);
   const wearOrder: ClothingCategory[] = [
     "outerwear",
     "tops",
@@ -182,11 +203,11 @@ export function buildOutfitPrompt(
     "other",
   ];
   const sorted = [...items].sort(
-    (a, b) => wearOrder.indexOf(a.category) - wearOrder.indexOf(b.category),
+    (a, b) => wearOrder.indexOf(itemCategory(a)) - wearOrder.indexOf(itemCategory(b)),
   );
 
   const outfitLines = sorted.map(
-    (item) => `- ${CATEGORY_LABEL_EN[item.category]}: ${describeItem(item)}`,
+    (p) => `- ${CATEGORY_LABEL_EN[itemCategory(p)]}: ${describePromptItem(p)}`,
   );
 
   const seasonClause = context.season
