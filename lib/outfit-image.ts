@@ -1,9 +1,10 @@
 import { GoogleGenAI, Modality } from "@google/genai";
-import { buildOutfitPrompt } from "@/lib/outfit-prompt";
+import { buildOutfitPrompt, type PromptItem } from "@/lib/outfit-prompt";
 import type { ClothingItem, Season } from "@/schema/clothing";
 
 const MODEL = "gemini-2.5-flash-image";
 
+// Owned アイテムを画像として渡すための実画像 (R2 から読んだ base64)。
 export type OutfitImageInput = {
   id: string;
   mediaType: string;
@@ -17,7 +18,7 @@ export type OutfitImage = {
 
 export async function generateOutfitImage(
   apiKey: string,
-  items: ClothingItem[],
+  items: Array<ClothingItem | PromptItem>,
   images: OutfitImageInput[],
   options: { tpo: string; season: Season },
 ): Promise<OutfitImage> {

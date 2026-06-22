@@ -17,65 +17,79 @@ export type ItemImage = {
 const SYSTEM_PROMPT = `You are a fashion stylist for a Japanese personal wardrobe app.
 You receive the user's wardrobe — both the structured attributes (JSON) and the actual photos of each item — together with the current season and a TPO description. Use the images to judge color tone, texture, fit and styling cues that the JSON cannot fully convey.
 
-Your job: propose ONE recommendation. The result is one of two kinds:
+Your job: propose THREE distinct full outfit coordinations for this TPO and season. Each proposal is a complete outfit (tops + bottoms + shoes at minimum; outerwear / bag / accessory may be added; a "dress" replaces tops + bottoms). Across the three proposals try to vary the vibe (e.g. one safer, one bolder, one more polished).
 
-1. kind="outfit": If the wardrobe has enough items to build a complete, season-appropriate, TPO-appropriate outfit, return the item_ids of that outfit (using ONLY items from the provided list).
-2. kind="shopping": If the wardrobe is missing key pieces required for the TPO/season (e.g. no formal shoes for a wedding, no warm coat in winter, no dress for a fancy dinner), DO NOT force a poor outfit from existing items. Instead, return a list of items the user should buy. Each missing item has a category and a Japanese description (e.g. "黒のレザーパンプス").
+For each proposal, each item is either:
+- {kind: "owned", id: "<id from the provided wardrobe>"} — use ONLY ids that exist in the provided list, never invent ids
+- {kind: "buy", category, description} — when no suitable owned item fills a slot, suggest a specific item the user should buy (description is a concrete Japanese phrase, e.g. "黒のレザーパンプス")
 
 Rules:
-- Output exactly one proposal (never both).
-- A typical outfit has tops + bottoms + shoes. Outerwear / bag / accessory may be added. A "dress" replaces tops + bottoms.
-- For kind="outfit": only reference item ids that exist in the provided list. NEVER invent ids. Each id used once.
-- For kind="shopping": list 1-5 missing items, each genuinely necessary for the TPO. Don't suggest items the user already owns.
-- Match the current season (avoid winter coats in summer, etc.) and the TPO (formality, vibe, color mood).
-- "reason" is in Japanese, 1-3 sentences, concrete. For outfit, mention key items and why they suit the TPO. For shopping, explain what's missing and why it matters for this TPO.
-- Always call the recommend_outfit tool. Never reply with plain text.`;
+- Always return exactly 3 proposals, even if the wardrobe is small — fill the gaps with kind="buy" items rather than dropping the slot.
+- Within a single outfit, prefer owned items when something suitable exists. Mix owned + buy freely.
+- Don't suggest a "buy" item the user clearly already owns.
+- Match the current season and TPO (formality, vibe, color mood).
+- "reason" is in Japanese, 1-3 concrete sentences explaining the coordination and why it suits the TPO. Mention key items.
+- Always call the recommend_outfits tool. Never reply with plain text.`;
 
-const TOOL_SCHEMA = {
+const PROPOSAL_ITEM_SCHEMA = {
   type: Type.OBJECT,
   properties: {
     kind: {
       type: Type.STRING,
-      enum: ["outfit", "shopping"],
+      enum: ["owned", "buy"],
       description:
-        "outfit: the wardrobe is sufficient. shopping: items must be purchased.",
+        "owned: reuse an existing wardrobe item by id. buy: suggest a new item with category+description.",
     },
-    item_ids: {
-      type: Type.ARRAY,
-      items: { type: Type.STRING },
-      description: "Required when kind='outfit'. Ids from the provided wardrobe.",
+    id: {
+      type: Type.STRING,
+      description: "Required when kind='owned'. Must be an id from the provided wardrobe.",
     },
-    missing: {
+    category: {
+      type: Type.STRING,
+      enum: [
+        "tops",
+        "outerwear",
+        "bottoms",
+        "dress",
+        "shoes",
+        "bag",
+        "accessory",
+        "other",
+      ],
+      description: "Required when kind='buy'.",
+    },
+    description: {
+      type: Type.STRING,
+      description: "Required when kind='buy'. Concrete Japanese, e.g. '黒のレザーパンプス'.",
+    },
+  },
+  required: ["kind"],
+};
+
+const TOOL_SCHEMA = {
+  type: Type.OBJECT,
+  properties: {
+    proposals: {
       type: Type.ARRAY,
-      maxItems: "5",
+      description: "Exactly three full outfit proposals.",
+      minItems: "3",
+      maxItems: "3",
       items: {
         type: Type.OBJECT,
         properties: {
-          category: {
-            type: Type.STRING,
-            enum: [
-              "tops",
-              "outerwear",
-              "bottoms",
-              "dress",
-              "shoes",
-              "bag",
-              "accessory",
-              "other",
-            ],
+          items: {
+            type: Type.ARRAY,
+            description:
+              "The garments that make up this outfit. Each item is owned (id) or buy (category+description).",
+            items: PROPOSAL_ITEM_SCHEMA,
           },
-          description: {
-            type: Type.STRING,
-            description: "Japanese, concrete. e.g. '黒のレザーパンプス'",
-          },
+          reason: { type: Type.STRING },
         },
-        required: ["category", "description"],
+        required: ["items", "reason"],
       },
-      description: "Required when kind='shopping'. Items the user should buy.",
     },
-    reason: { type: Type.STRING },
   },
-  required: ["kind", "reason"],
+  required: ["proposals"],
 };
 
 // Gemini に渡す軽量 view。imageKey, hex, notes, タイムスタンプは不要。
@@ -99,24 +113,24 @@ export async function recommendOutfits(
   items: ClothingItem[],
   context: { season: Season; tpo: string; images?: ItemImage[] },
 ): Promise<RecommendDraft> {
-  if (items.length === 0) {
-    throw new Error("ワードローブにアイテムがありません");
-  }
-
   const ai = new GoogleGenAI({ apiKey });
   const compact = items.map(compactItem);
   const images = context.images ?? [];
 
   // ユーザーメッセージ:
-  //   1. ヘッダー（季節 / TPO / JSON）
-  //   2. 各アイテムについて [画像] + [id ラベル]
+  //   1. ヘッダー (season / TPO / wardrobe JSON; empty なら明示)
+  //   2. 各アイテムの画像 + id ラベル
   //   3. 末尾の指示
+  const wardrobeText = compact.length > 0
+    ? `Wardrobe (JSON):\n${JSON.stringify(compact)}`
+    : "Wardrobe: (empty — every item in every proposal must be kind=\"buy\")";
+
   const parts: Array<
     | { text: string }
     | { inlineData: { mimeType: string; data: string } }
   > = [
     {
-      text: `Season: ${context.season}\nTPO: ${context.tpo}\n\nWardrobe (JSON):\n${JSON.stringify(compact)}`,
+      text: `Season: ${context.season}\nTPO: ${context.tpo}\n\n${wardrobeText}`,
     },
   ];
   for (const img of images) {
@@ -124,7 +138,7 @@ export async function recommendOutfits(
     parts.push({ text: `^ id: ${img.id}` });
   }
   parts.push({
-    text: "Propose one outfit, or a shopping list if the wardrobe is insufficient.",
+    text: "Propose three full outfit coordinations for this TPO and season.",
   });
 
   const response = await ai.models.generateContent({
@@ -136,9 +150,9 @@ export async function recommendOutfits(
         {
           functionDeclarations: [
             {
-              name: "recommend_outfit",
+              name: "recommend_outfits",
               description:
-                "Record one outfit recommendation, or shopping suggestions if the wardrobe is insufficient.",
+                "Record three full outfit coordinations. Each item is owned (id) or buy (category+description).",
               parameters: TOOL_SCHEMA as never,
             },
           ],
@@ -147,30 +161,39 @@ export async function recommendOutfits(
       toolConfig: {
         functionCallingConfig: {
           mode: FunctionCallingConfigMode.ANY,
-          allowedFunctionNames: ["recommend_outfit"],
+          allowedFunctionNames: ["recommend_outfits"],
         },
       },
     },
   });
 
   const call = response.functionCalls?.[0];
-  if (!call || call.name !== "recommend_outfit") {
+  if (!call || call.name !== "recommend_outfits") {
     throw new Error("Gemini did not call the recommendation tool");
   }
 
   const draft = RecommendDraftSchema.parse(call.args);
 
-  if (draft.kind === "shopping") {
-    return draft;
-  }
-
-  // ハルシネーション防止: 存在しない id を返してきたら除外。
+  // ハルシネーション防止: owned の id が wardrobe に無ければ buy にフォールバック。
+  // ProposalDraft は最低 1 アイテム持つので、全部消えると invalid になる。
+  // 1 案ぶんが空になりうるが、実際そうなることは Pro の指示上ほぼない。
   const validIds = new Set(items.map((i) => i.id));
-  const filtered = draft.item_ids.filter((id) => validIds.has(id));
+  const proposals = draft.proposals.map((p) => ({
+    ...p,
+    items: p.items.filter((i) => i.kind === "buy" || validIds.has(i.id)),
+  }));
 
-  if (filtered.length === 0) {
-    throw new Error("提案アイテムが既存のワードローブと一致しませんでした");
+  // 空の items は無効なのでフィルタするのではなく、最低 1 個の "buy" placeholder を
+  // 入れて schema を満たす。実運用では Pro はちゃんと埋めてくるはずなのでセーフネット。
+  for (const p of proposals) {
+    if (p.items.length === 0) {
+      p.items.push({
+        kind: "buy",
+        category: "other",
+        description: "(モデルが有効な提案を返しませんでした)",
+      });
+    }
   }
 
-  return { ...draft, item_ids: filtered };
+  return { proposals } as RecommendDraft;
 }

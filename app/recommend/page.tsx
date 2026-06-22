@@ -2,20 +2,25 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import type { ClothingItem, Season } from "@/schema/clothing";
+import type { Season } from "@/schema/clothing";
 import { primaryBtn } from "@/components/clothing-form";
 import { pageStyle } from "@/lib/ui";
 import { SEASON_LABEL } from "@/lib/labels";
-import { OutfitCard } from "@/components/recommend/outfit-card";
-import { ShoppingCard } from "@/components/recommend/shopping-card";
-import type { MissingItem, Result } from "@/components/recommend/types";
+import { ProposalCard } from "@/components/recommend/proposal-card";
+import type { Proposal } from "@/schema/recommend";
+
+type RecommendResponse = {
+  season?: Season;
+  proposals?: Proposal[];
+  error?: string;
+};
 
 export default function RecommendPage() {
   const [tpo, setTpo] = useState("");
   const [submittedTpo, setSubmittedTpo] = useState("");
   const [loading, setLoading] = useState(false);
   const [season, setSeason] = useState<Season | null>(null);
-  const [result, setResult] = useState<Result | null>(null);
+  const [proposals, setProposals] = useState<Proposal[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function onSubmit() {
@@ -23,7 +28,7 @@ export default function RecommendPage() {
     if (!trimmed || loading) return;
     setLoading(true);
     setError(null);
-    setResult(null);
+    setProposals(null);
     setSeason(null);
     setSubmittedTpo(trimmed);
     try {
@@ -32,35 +37,12 @@ export default function RecommendPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tpo: trimmed }),
       });
-      const data = (await res.json()) as {
-        season?: Season;
-        kind?: "outfit" | "shopping";
-        items?: ClothingItem[];
-        missing?: MissingItem[];
-        reason?: string;
-        error?: string | { formErrors?: string[] };
-      };
+      const data = (await res.json()) as RecommendResponse;
       if (!res.ok) {
-        const msg =
-          typeof data.error === "string"
-            ? data.error
-            : "提案に失敗しました";
-        throw new Error(msg);
+        throw new Error(data.error ?? "提案に失敗しました");
       }
       if (data.season) setSeason(data.season);
-      if (data.kind === "outfit" && data.items && data.reason) {
-        setResult({
-          kind: "outfit",
-          items: data.items,
-          reason: data.reason,
-        });
-      } else if (data.kind === "shopping" && data.missing && data.reason) {
-        setResult({
-          kind: "shopping",
-          missing: data.missing,
-          reason: data.reason,
-        });
-      }
+      if (data.proposals) setProposals(data.proposals);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -113,7 +95,7 @@ export default function RecommendPage() {
             marginTop: "0.75rem",
           }}
         >
-          {loading ? "提案中..." : "コーデを見つける"}
+          {loading ? "提案中..." : "コーデを 3 案出す"}
         </button>
       </section>
 
@@ -121,7 +103,7 @@ export default function RecommendPage() {
         <p style={{ color: "#c00", whiteSpace: "pre-wrap" }}>{error}</p>
       )}
 
-      {season && result && (
+      {season && proposals && (
         <section>
           <p
             style={{
@@ -130,14 +112,17 @@ export default function RecommendPage() {
               marginBottom: "0.75rem",
             }}
           >
-            季節: {SEASON_LABEL[season]} /{" "}
-            {result.kind === "outfit" ? "コーデ提案" : "買い足し提案"}
+            季節: {SEASON_LABEL[season]} / {proposals.length} 案
           </p>
-          {result.kind === "outfit" ? (
-            <OutfitCard outfit={result} tpo={submittedTpo} season={season} />
-          ) : (
-            <ShoppingCard shopping={result} />
-          )}
+          {proposals.map((p, i) => (
+            <ProposalCard
+              key={i}
+              proposal={p}
+              index={i}
+              tpo={submittedTpo}
+              season={season}
+            />
+          ))}
         </section>
       )}
     </main>

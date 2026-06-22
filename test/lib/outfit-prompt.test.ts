@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { ClothingItem } from "@/schema/clothing";
-import { buildOutfitPrompt } from "@/lib/outfit-prompt";
+import { buildOutfitPrompt, type PromptItem } from "@/lib/outfit-prompt";
+
+// テストヘルパ: ClothingItem を PromptItem (owned) に包む。
+function owned(i: ClothingItem): PromptItem {
+  return { kind: "owned", item: i };
+}
 
 function item(overrides: Partial<ClothingItem> = {}): ClothingItem {
   return {
