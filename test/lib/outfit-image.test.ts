@@ -107,6 +107,52 @@ describe("generateOutfitImage", () => {
     expect(args.config.responseModalities).toEqual(["IMAGE"]);
   });
 
+  it("referenceImage を渡すと先頭に inlineData + 説明テキストが入る", async () => {
+    generateContentMock.mockResolvedValue(mockImageResponse());
+
+    await generateOutfitImage(
+      "sk",
+      [item()],
+      [{ id: "tops-1", mediaType: "image/jpeg", base64: "ITEM" }],
+      {
+        tpo: "x",
+        season: "spring",
+        referenceImage: { mediaType: "image/png", base64: "REF" },
+      },
+    );
+
+    const parts = generateContentMock.mock.calls[0][0].contents[0].parts;
+    // [0] = 参考画像、[1] = 説明テキスト、[2] = アイテム画像、[3] = プロンプト
+    expect(parts[0].inlineData).toEqual({ mimeType: "image/png", data: "REF" });
+    expect(parts[1].text).toMatch(/reference photo/i);
+    expect(parts[2].inlineData).toEqual({ mimeType: "image/jpeg", data: "ITEM" });
+    expect(parts[3].text).toMatch(/Subject:/);
+    // Subject に "Match the face and physique of the reference photo" が入る
+    expect(parts[3].text).toMatch(/face and physique/i);
+  });
+
+  it("profile を渡すと Subject 行に反映される", async () => {
+    generateContentMock.mockResolvedValue(mockImageResponse());
+
+    await generateOutfitImage("sk", [item()], [], {
+      tpo: "x",
+      season: "spring",
+      profile: {
+        gender: "female",
+        heightCm: 160,
+        weightKg: null,
+        bodyType: null,
+        referenceImageKey: null,
+        updatedAt: "",
+      },
+    });
+
+    const parts = generateContentMock.mock.calls[0][0].contents[0].parts;
+    const promptText = parts[parts.length - 1].text;
+    expect(promptText).toMatch(/young adult woman/);
+    expect(promptText).toMatch(/160cm tall/);
+  });
+
   it("各アイテム画像をinlineDataとしてプロンプトと並んで渡す", async () => {
     generateContentMock.mockResolvedValue(mockImageResponse());
 

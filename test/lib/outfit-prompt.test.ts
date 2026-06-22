@@ -173,9 +173,63 @@ describe("buildOutfitPrompt", () => {
     expect(prompt).toContain("full body");
   });
 
-  it("被写体は男性 (young adult man) で生成するよう指示する", () => {
+  it("プロフィール未指定の被写体は中性 (young adult person)", () => {
     const prompt = buildOutfitPrompt([item({ id: "t" })], { tpo: "x" });
-    expect(prompt).toMatch(/young adult man/);
+    expect(prompt).toMatch(/young adult person/);
+  });
+
+  it("profile.gender=male なら 'man'、female なら 'woman'", () => {
+    const male = buildOutfitPrompt([item({ id: "t" })], {
+      tpo: "x",
+      profile: {
+        gender: "male",
+        heightCm: null,
+        weightKg: null,
+        bodyType: null,
+        referenceImageKey: null,
+        updatedAt: "",
+      },
+    });
+    expect(male).toMatch(/young adult man/);
+
+    const female = buildOutfitPrompt([item({ id: "t" })], {
+      tpo: "x",
+      profile: {
+        gender: "female",
+        heightCm: null,
+        weightKg: null,
+        bodyType: null,
+        referenceImageKey: null,
+        updatedAt: "",
+      },
+    });
+    expect(female).toMatch(/young adult woman/);
+  });
+
+  it("身長・体重・体型・gender=other はカッコ書きで Subject 行に入る", () => {
+    const prompt = buildOutfitPrompt([item({ id: "t" })], {
+      tpo: "x",
+      profile: {
+        gender: "other",
+        heightCm: 175,
+        weightKg: 65,
+        bodyType: "アスリート体型",
+        referenceImageKey: null,
+        updatedAt: "",
+      },
+    });
+    expect(prompt).toMatch(/young adult person/);
+    expect(prompt).toMatch(/175cm tall/);
+    expect(prompt).toMatch(/65kg/);
+    expect(prompt).toMatch(/アスリート体型/);
+  });
+
+  it("hasReferenceImage:true なら『参考写真の顔と体型に合わせろ』指示が入る", () => {
+    const prompt = buildOutfitPrompt([item({ id: "t" })], {
+      tpo: "x",
+      hasReferenceImage: true,
+    });
+    expect(prompt).toMatch(/reference photo|face and physique/i);
   });
 
   it("subcategoryがnullならカテゴリ名を使う", () => {

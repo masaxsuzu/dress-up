@@ -63,7 +63,8 @@ No retry on Gemini 503/429 — long waits would hit the Worker response deadline
 - `POST /api/items`, `GET/PATCH/DELETE /api/items/[id]` — CRUD. DELETE also removes the R2 image and icon.
 - `POST /api/items/[id]/iconize` — generates a ghost-mannequin icon from the stored photo, saves to R2, sets `icon_key` in D1.
 - `POST /api/recommend` — wardrobe + TPO → outfit (`item_ids`) or shopping list (discriminated union `kind`). Hallucinated item ids are filtered out.
-- `POST /api/outfit-image` — selected items → full-body outfit image (binary response).
+- `POST /api/outfit-image` — selected items → full-body outfit image (binary response). The user profile (gender, height/weight/body type, reference image) is loaded from D1 and folded into the prompt + a reference inlineData when present.
+- `GET/PUT /api/profile` — single-row profile (gender / heightCm / weightKg / bodyType / referenceImageKey). `POST /api/profile/reference-image` (multipart) uploads the reference photo and returns its R2 key.
 - `GET /api/images/[...key]` — R2 proxy; the frontend never accesses R2 directly.
 
 All error responses have the shape `{ error: string }` (`lib/api-response.ts`). Zod validation failures are flattened into a single readable string.

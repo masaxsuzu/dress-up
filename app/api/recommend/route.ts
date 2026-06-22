@@ -1,6 +1,7 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { listItems } from "@/lib/db";
 import { errorResponse, validationError } from "@/lib/api-response";
+import { getProfile } from "@/lib/profile";
 import { loadImageBase64 } from "@/lib/r2";
 import { recommendOutfits, type ItemImage } from "@/lib/recommend";
 import { currentSeason } from "@/lib/season";
@@ -30,7 +31,10 @@ export async function POST(req: Request) {
   }
 
   // ワードローブが空でも 3 案 (all buy) を返す方針なので、空判定でエラーにしない。
-  const items = await listItems(env.DB);
+  const [items, profile] = await Promise.all([
+    listItems(env.DB),
+    getProfile(env.DB),
+  ]);
   const season = currentSeason();
 
   // 画像はワードローブが空でない時のみロードする。
@@ -44,6 +48,7 @@ export async function POST(req: Request) {
       season,
       tpo: parsed.data.tpo,
       images,
+      profile,
     });
 
     // draft の owned アイテムを ClothingItem に hydrate。

@@ -24,6 +24,9 @@ export default async function Home() {
       >
         <h1 style={{ margin: 0, fontSize: "1.4rem" }}>dress-up</h1>
         <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+          <a href="/profile" style={pillLinkStyle}>
+            設定
+          </a>
           <a href="/recommend" style={pillLinkStyle}>
             提案
           </a>

@@ -49,6 +49,21 @@ export async function putImage(
   return key;
 }
 
+// プロフィール参考画像。`profile/<uuid>.<ext>`。items/ と分けて衝突回避。
+export async function putProfileImage(
+  bucket: R2Bucket,
+  body: ArrayBuffer,
+  mimeType: string,
+): Promise<string> {
+  const id = crypto.randomUUID();
+  const ext = extensionForMimeType(mimeType);
+  const key = `profile/${id}.${ext}`;
+  await bucket.put(key, body, {
+    httpMetadata: { contentType: mimeType },
+  });
+  return key;
+}
+
 // R2 から画像を読み込んで base64 エンコードした結果を返す。
 // key が存在しない場合、または許可されていない Content-Type の場合は null。
 export async function loadImageBase64(

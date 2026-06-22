@@ -9,6 +9,7 @@ import {
   type ClothingItem,
   type Season,
 } from "@/schema/clothing";
+import type { Profile } from "@/schema/profile";
 import {
   RecommendDraftSchema,
   type ProposalItemDraft,
@@ -168,10 +169,27 @@ function normalizeItem(
   return null;
 }
 
+// プロフィールから提案者ヒント文を組み立てる。Pro はこれを読んで
+// 体型に合うシルエットや、性別に応じたカテゴリ (e.g. dress) の使い分けを判断する。
+function formatProfile(profile: Profile | null | undefined): string {
+  if (!profile) return "";
+  const parts: string[] = [];
+  if (profile.gender) parts.push(`gender: ${profile.gender}`);
+  if (profile.heightCm) parts.push(`${profile.heightCm}cm`);
+  if (profile.weightKg) parts.push(`${profile.weightKg}kg`);
+  if (profile.bodyType) parts.push(profile.bodyType);
+  return parts.length > 0 ? `User profile: ${parts.join(", ")}.\n` : "";
+}
+
 export async function recommendOutfits(
   apiKey: string,
   items: ClothingItem[],
-  context: { season: Season; tpo: string; images?: ItemImage[] },
+  context: {
+    season: Season;
+    tpo: string;
+    images?: ItemImage[];
+    profile?: Profile | null;
+  },
 ): Promise<RecommendDraft> {
   const ai = new GoogleGenAI({ apiKey });
   const compact = items.map(compactItem);
@@ -181,12 +199,14 @@ export async function recommendOutfits(
     ? `Wardrobe (JSON):\n${JSON.stringify(compact)}`
     : "Wardrobe: (empty — every item in every proposal must be kind=\"buy\")";
 
+  const profileText = formatProfile(context.profile);
+
   const parts: Array<
     | { text: string }
     | { inlineData: { mimeType: string; data: string } }
   > = [
     {
-      text: `Season: ${context.season}\nTPO: ${context.tpo}\n\n${wardrobeText}`,
+      text: `Season: ${context.season}\nTPO: ${context.tpo}\n${profileText}\n${wardrobeText}`,
     },
   ];
   for (const img of images) {
