@@ -1,6 +1,7 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { listItems } from "@/lib/db";
 import { errorResponse, validationError } from "@/lib/api-response";
+import { getUserEmail } from "@/lib/auth";
+import { listItems } from "@/lib/db";
 import { getProfile } from "@/lib/profile";
 import { loadImageBase64 } from "@/lib/r2";
 import { recommendOutfits, type ItemImage } from "@/lib/recommend";
@@ -23,6 +24,7 @@ async function loadItemImage(
 
 export async function POST(req: Request) {
   const { env } = await getCloudflareContext({ async: true });
+  const userEmail = getUserEmail(req);
 
   const body = await req.json();
   const parsed = RecommendInputSchema.safeParse(body);
@@ -32,8 +34,8 @@ export async function POST(req: Request) {
 
   // ワードローブが空でも 3 案 (all buy) を返す方針なので、空判定でエラーにしない。
   const [items, profile] = await Promise.all([
-    listItems(env.DB),
-    getProfile(env.DB),
+    listItems(env.DB, userEmail),
+    getProfile(env.DB, userEmail),
   ]);
   const season = currentSeason();
 

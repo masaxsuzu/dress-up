@@ -1,7 +1,8 @@
 import { GoogleGenAI, Modality } from "@google/genai";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { getItem, setIconKey } from "@/lib/db";
 import { errorResponse } from "@/lib/api-response";
+import { getUserEmail } from "@/lib/auth";
+import { getItem, setIconKey } from "@/lib/db";
 import { buildIconPrompt } from "@/lib/icon-prompt";
 import { loadImageBase64, putIcon } from "@/lib/r2";
 
@@ -9,11 +10,12 @@ const MODEL = "gemini-2.5-flash-image";
 
 type Params = { params: Promise<{ id: string }> };
 
-export async function POST(_req: Request, { params }: Params) {
+export async function POST(req: Request, { params }: Params) {
   const { id } = await params;
   const { env } = await getCloudflareContext({ async: true });
+  const userEmail = getUserEmail(req);
 
-  const item = await getItem(env.DB, id);
+  const item = await getItem(env.DB, userEmail, id);
   if (!item) return errorResponse("not found", 404);
 
   const img = await loadImageBase64(env.IMAGES, item.imageKey);
@@ -59,7 +61,7 @@ export async function POST(_req: Request, { params }: Params) {
     .buffer as ArrayBuffer;
 
   const iconKey = await putIcon(env.IMAGES, id, bytes, mimeType);
-  await setIconKey(env.DB, id, iconKey);
+  await setIconKey(env.DB, userEmail, id, iconKey);
 
   return Response.json({ iconKey });
 }

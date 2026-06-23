@@ -35,7 +35,8 @@
 - **Gemini 503/429**: アプリ側でリトライしない (Worker のレスポンス時間制限で接続切れする方が UX が悪い)。ユーザがボタンを押し直す
 - **画像配信**: R2 への直接アクセスなし。`/api/images/[...key]` 経由
 - **エラーレスポンス形状**: 全 API ルートで `{ error: string }` に統一 (`lib/api-response.ts`)
-- **プロフィール**: D1 の `profile` テーブルに 1 行限定 (CHECK id=1 で強制)。未設定なら提案・画像生成は中性デフォルト (`a young adult person`) にフォールバック
+- **プロフィール**: D1 の `profile` テーブル、`user_email` を PRIMARY KEY とし、ユーザ毎 1 行。未設定なら提案・画像生成は中性デフォルト (`a young adult person`) にフォールバック
+- **マルチテナント**: Cloudflare Access の `Cf-Access-Authenticated-User-Email` ヘッダを `lib/auth.ts` で取り出し、全 D1 クエリは `user_email` で絞り込む。`/api/images` も owner check 付き。ローカル/E2E ではヘッダ無しなので `dev@local` にフォールバック
 
 ## 4. コスト
 

@@ -1,6 +1,7 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { z } from "zod";
 import { errorResponse, validationError } from "@/lib/api-response";
+import { getUserEmail } from "@/lib/auth";
 import { getItem } from "@/lib/db";
 import {
   generateOutfitImage,
@@ -31,6 +32,7 @@ const InputSchema = z.object({
 
 export async function POST(req: Request) {
   const { env } = await getCloudflareContext({ async: true });
+  const userEmail = getUserEmail(req);
 
   const body = await req.json();
   const parsed = InputSchema.safeParse(body);
@@ -44,7 +46,7 @@ export async function POST(req: Request) {
   const images: OutfitImageInput[] = [];
   for (const it of parsed.data.items) {
     if (it.kind === "owned") {
-      const item = await getItem(env.DB, it.id);
+      const item = await getItem(env.DB, userEmail, it.id);
       if (!item) continue;
       promptItems.push({ kind: "owned", item });
       const img = await loadImageBase64(env.IMAGES, item.imageKey);
@@ -59,7 +61,7 @@ export async function POST(req: Request) {
   }
 
   // プロフィール (性別・体型) と参考画像を Flash Image に同梱する。
-  const profile = await getProfile(env.DB);
+  const profile = await getProfile(env.DB, userEmail);
   let referenceImage: ReferenceImageInput | null = null;
   if (profile?.referenceImageKey) {
     const ref = await loadImageBase64(env.IMAGES, profile.referenceImageKey);

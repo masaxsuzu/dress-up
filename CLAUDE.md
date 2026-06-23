@@ -89,9 +89,9 @@ D1 is SQLite. Array fields (`colors`, `season`, `occasion`, `tags`) are stored a
 - Unit tests (`test/lib/**`) mock `@google/genai` (`GoogleGenAI` constructor → `generateContent` mock) and use Miniflare for real D1/R2 behavior.
 - E2E tests (`e2e/**`) never call real AI APIs: Gemini-dependent endpoints are mocked with Playwright `page.route()`. The dev server runs with real local D1/R2 bindings.
 
-### Authentication
+### Authentication & multi-tenancy
 
-No auth code exists in the app. The app is protected by Cloudflare Access (Zero Trust) configured externally, with an email allowlist. Do not add auth middleware to the codebase.
+The app is protected externally by Cloudflare Access (Zero Trust) with an email allowlist — there is no auth middleware in the codebase. Every authenticated request from Access carries the header `Cf-Access-Authenticated-User-Email`. `lib/auth.ts` (`getUserEmail` / `getUserEmailFromHeaders`) extracts and lowercases that email, falling back to `dev@local` when the header is absent (local dev, e2e). All clothing items and profiles are scoped by `user_email`; every D1 query in `lib/db.ts` and `lib/profile.ts` takes the user email as its first non-`db` argument. `GET /api/images/[...key]` also runs an ownership check (`imageKeyOwnedBy`) so users can't read each other's photos by URL guessing.
 
 ### OpenNext / Cloudflare Workers
 
