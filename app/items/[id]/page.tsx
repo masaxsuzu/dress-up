@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { getUserEmailFromHeaders } from "@/lib/auth";
 import { getItem } from "@/lib/db";
 import {
   CATEGORY_LABEL,
@@ -21,7 +23,8 @@ export default async function ItemPage({
 }) {
   const { id } = await params;
   const { env } = await getCloudflareContext({ async: true });
-  const item = await getItem(env.DB, id);
+  const userEmail = getUserEmailFromHeaders(await headers());
+  const item = await getItem(env.DB, userEmail, id);
   if (!item) notFound();
 
   return (

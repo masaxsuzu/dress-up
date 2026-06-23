@@ -1,5 +1,7 @@
 import { Suspense } from "react";
+import { headers } from "next/headers";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { getUserEmailFromHeaders } from "@/lib/auth";
 import { listItems } from "@/lib/db";
 import { AddButton } from "@/components/add-button";
 import { Gallery } from "@/components/gallery";
@@ -9,7 +11,8 @@ export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const { env } = await getCloudflareContext({ async: true });
-  const items = await listItems(env.DB);
+  const userEmail = getUserEmailFromHeaders(await headers());
+  const items = await listItems(env.DB, userEmail);
 
   return (
     <main style={pageStyle(1100)}>
