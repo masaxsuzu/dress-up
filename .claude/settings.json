@@ -33,7 +33,8 @@
       "mcp__github__subscribe_pr_activity",
       "mcp__github__unsubscribe_pr_activity",
       "mcp__github__add_issue_comment",
-      "mcp__github__resolve_review_thread"
+      "mcp__github__resolve_review_thread",
+      "mcp__github__merge_pull_request"
     ]
   }
 }
