@@ -1,3 +1,35 @@
 {
-  "model": "claude-sonnet-4-6"
+  "model": "claude-sonnet-4-6",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh"
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(npm test)",
+      "Bash(npm run build)",
+      "Bash(npm run test:coverage)",
+      "Bash(npm run test:e2e)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(npx vitest run)",
+      "Bash(npx vitest run *)",
+      "Bash(npx playwright test)",
+      "Bash(npx playwright test *)",
+      "mcp__github__list_pull_requests",
+      "mcp__github__actions_list",
+      "mcp__github__pull_request_read",
+      "mcp__github__get_commit",
+      "mcp__github__get_check_run",
+      "mcp__github__get_job_logs",
+      "mcp__github__get_file_contents"
+    ]
+  }
 }
