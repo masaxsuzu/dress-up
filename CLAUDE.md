@@ -4,7 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Loop / babysitter conventions
 
-**Always babysit PRs you open.** Immediately after every successful `mcp__github__create_pull_request` (or any PR creation in this session), call `mcp__github__subscribe_pr_activity` with the same `owner` / `repo` / `pullNumber`. Do NOT ask the user first — this is the default behavior in this repo. After subscribing, set a ~1 hour `ScheduleWakeup` fallback (webhooks miss merge / new-push / conflict transitions) using the `<<autonomous-loop-dynamic>>` sentinel.
+**Always babysit PRs you open.** Immediately after every successful `mcp__github__create_pull_request` (or any PR creation in this session), call `mcp__github__subscribe_pr_activity` with the same `owner` / `repo` / `pullNumber`. Do NOT ask the user first — this is the default behavior in this repo. After subscribing, set a `ScheduleWakeup` using the `<<autonomous-loop-dynamic>>` sentinel.
+
+**Wakeup interval.** Webhooks deliver CI failures / comments / reviews / merges, but NOT CI success transitions. To catch successful CI quickly without waiting an hour:
+
+- **90s burst while any check is in_progress / queued** — repeats on each autonomous wake. This repo's CI takes ~100s, so 1–3 burst cycles typically lands on completion. 90s sits in the ScheduleWakeup cache-preservation zone (<300s) so each wake is cheap.
+- **3600s fallback once all checks are completed** — covers merge / new push / conflict transitions that webhooks also miss.
+
+At each autonomous wake, call `mcp__github__pull_request_read` (method=`get_check_runs`) for each subscribed PR; pick the next delay accordingly. Do NOT do a tight loop in a single turn; let each wake cycle do one check and re-schedule.
 
 When the PR is merged or closed, the subscription is auto-cancelled; do not re-subscribe.
 
