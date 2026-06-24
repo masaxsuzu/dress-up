@@ -18,7 +18,11 @@ When the PR is merged or closed, the subscription is auto-cancelled; do not re-s
    - `clean` → proceed to step 4
    - `suspicious` → stop and `AskUserQuestion` with the concerns
    - `broken` → fix on the same branch, push, return to step 1
-4. **Merge.** Call `mcp__github__merge_pull_request` with `merge_method: "merge"` (this repo's convention). After the merge webhook arrives, you're done.
+4. **Tick the test plan, then merge.** Before merging:
+   - Fetch the current PR body via `mcp__github__pull_request_read` (method=`get`).
+   - In the `## Test plan` section, replace every `- [ ]` with `- [x]`. The gate is by definition completing the plan it wrote, so all items are checked.
+   - Call `mcp__github__update_pull_request` with the new body.
+   - Call `mcp__github__merge_pull_request` with `merge_method: "merge"` (this repo's convention). After the merge webhook arrives, you're done.
 
 If at any point the user posts a review comment, that takes priority over the auto-merge gate — address the comment first, then re-enter the gate.
 
