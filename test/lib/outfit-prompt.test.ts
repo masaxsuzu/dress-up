@@ -1,42 +1,14 @@
 import { describe, expect, it } from "vitest";
-import type { ClothingItem } from "@/schema/clothing";
-import { buildOutfitPrompt, type PromptItem } from "@/lib/outfit-prompt";
-
-// テストヘルパ: ClothingItem を PromptItem (owned) に包む。
-function owned(i: ClothingItem): PromptItem {
-  return { kind: "owned", item: i };
-}
-
-function item(overrides: Partial<ClothingItem> = {}): ClothingItem {
-  return {
-    id: "x",
-    category: "tops",
-    subcategory: "Tシャツ",
-    colors: [{ name: "白", hex: "#ffffff" }],
-    pattern: "solid",
-    material: "コットン",
-    silhouette: null,
-    season: ["spring"],
-    formality: 2,
-    occasion: [],
-    tags: [],
-    brand: null,
-    notes: null,
-    imageKey: "items/x.jpg",
-    iconKey: null,
-    createdAt: "2026-01-01T00:00:00Z",
-    updatedAt: "2026-01-01T00:00:00Z",
-    ...overrides,
-  };
-}
+import { buildOutfitPrompt } from "@/lib/outfit-prompt";
+import { makeItem, makeProfile } from "@/test/helpers/factories";
 
 describe("buildOutfitPrompt", () => {
   it("日本語の color/subcategory/material を英語に変換する", () => {
     const prompt = buildOutfitPrompt(
       [
-        item({ id: "t", colors: [{ name: "白", hex: "#fff" }], subcategory: "Tシャツ", material: "コットン" }),
-        item({ id: "b", category: "bottoms", colors: [{ name: "ネイビー", hex: "#001" }], subcategory: "デニム", material: "デニム" }),
-        item({ id: "s", category: "shoes", colors: [{ name: "白", hex: "#fff" }], subcategory: "スニーカー", material: null }),
+        makeItem({ id: "t", colors: [{ name: "白", hex: "#fff" }], subcategory: "Tシャツ", material: "コットン" }),
+        makeItem({ id: "b", category: "bottoms", colors: [{ name: "ネイビー", hex: "#001" }], subcategory: "デニム", material: "デニム" }),
+        makeItem({ id: "s", category: "shoes", colors: [{ name: "白", hex: "#fff" }], subcategory: "スニーカー", material: null }),
       ],
       { tpo: "週末ランチ" },
     );
@@ -51,8 +23,8 @@ describe("buildOutfitPrompt", () => {
   it("バッグ・アクセサリーも箇条書きに含まれる", () => {
     const prompt = buildOutfitPrompt(
       [
-        item({ id: "t", subcategory: "Tシャツ" }),
-        item({
+        makeItem({ id: "t", subcategory: "Tシャツ" }),
+        makeItem({
           id: "bag",
           category: "bag",
           subcategory: "トート",
@@ -67,17 +39,16 @@ describe("buildOutfitPrompt", () => {
 
   it("solid と other パターンは説明に含めない", () => {
     const prompt = buildOutfitPrompt(
-      [item({ id: "t", pattern: "solid" })],
+      [makeItem({ id: "t", pattern: "solid" })],
       { tpo: "x" },
     );
-    // "solid" は形容詞として描写に入らない
     expect(prompt).not.toContain("solid t-shirt");
     expect(prompt).not.toContain("solid white");
   });
 
   it("striped パターンは含める", () => {
     const prompt = buildOutfitPrompt(
-      [item({ id: "t", pattern: "stripe", subcategory: "シャツ" })],
+      [makeItem({ id: "t", pattern: "stripe", subcategory: "シャツ" })],
       { tpo: "x" },
     );
     expect(prompt).toContain("striped");
@@ -86,7 +57,7 @@ describe("buildOutfitPrompt", () => {
   it("未知の単語はそのまま使う (フォールバック)", () => {
     const prompt = buildOutfitPrompt(
       [
-        item({
+        makeItem({
           id: "t",
           subcategory: "オリジナル製品名",
           colors: [{ name: "謎色", hex: "#abc" }],
@@ -103,10 +74,10 @@ describe("buildOutfitPrompt", () => {
   it("着衣順 (outerwear→tops→dress→bottoms→shoes→bag→accessory) で並べる", () => {
     const prompt = buildOutfitPrompt(
       [
-        item({ id: "shoes", category: "shoes", subcategory: "スニーカー" }),
-        item({ id: "outer", category: "outerwear", subcategory: "コート" }),
-        item({ id: "tops", category: "tops", subcategory: "Tシャツ" }),
-        item({ id: "bottoms", category: "bottoms", subcategory: "デニム" }),
+        makeItem({ id: "shoes", category: "shoes", subcategory: "スニーカー" }),
+        makeItem({ id: "outer", category: "outerwear", subcategory: "コート" }),
+        makeItem({ id: "tops", category: "tops", subcategory: "Tシャツ" }),
+        makeItem({ id: "bottoms", category: "bottoms", subcategory: "デニム" }),
       ],
       { tpo: "x" },
     );
@@ -123,7 +94,7 @@ describe("buildOutfitPrompt", () => {
   it("素材が subcategory に既に含まれる場合は重複させない", () => {
     const prompt = buildOutfitPrompt(
       [
-        item({
+        makeItem({
           id: "b",
           category: "bottoms",
           subcategory: "デニム",
@@ -133,15 +104,13 @@ describe("buildOutfitPrompt", () => {
       ],
       { tpo: "x" },
     );
-    // jeans (←デニム) は material "denim" を含むが、subcategory に "denim" は無いので
-    // describeItem は "navy blue denim jeans" を返す。"denim denim" のような重複は無い。
     expect(prompt).not.toMatch(/denim denim/);
   });
 
   it("複数色は up to 2 まで使う", () => {
     const prompt = buildOutfitPrompt(
       [
-        item({
+        makeItem({
           id: "t",
           subcategory: "シャツ",
           colors: [
@@ -159,7 +128,7 @@ describe("buildOutfitPrompt", () => {
 
   it("TPO と season をプロンプトに含める", () => {
     const prompt = buildOutfitPrompt(
-      [item({ id: "t" })],
+      [makeItem({ id: "t" })],
       { tpo: "結婚式の二次会", season: "winter" },
     );
     expect(prompt).toContain("Scene: 結婚式の二次会");
@@ -167,56 +136,40 @@ describe("buildOutfitPrompt", () => {
   });
 
   it("photorealistic と studio background のスタイル指定が含まれる", () => {
-    const prompt = buildOutfitPrompt([item({ id: "t" })], { tpo: "x" });
+    const prompt = buildOutfitPrompt([makeItem({ id: "t" })], { tpo: "x" });
     expect(prompt).toContain("photorealistic");
     expect(prompt).toContain("studio");
     expect(prompt).toContain("full body");
   });
 
   it("プロフィール未指定の被写体は中性 (young adult person)", () => {
-    const prompt = buildOutfitPrompt([item({ id: "t" })], { tpo: "x" });
+    const prompt = buildOutfitPrompt([makeItem({ id: "t" })], { tpo: "x" });
     expect(prompt).toMatch(/young adult person/);
   });
 
   it("profile.gender=male なら 'man'、female なら 'woman'", () => {
-    const male = buildOutfitPrompt([item({ id: "t" })], {
+    const male = buildOutfitPrompt([makeItem({ id: "t" })], {
       tpo: "x",
-      profile: {
-        gender: "male",
-        heightCm: null,
-        weightKg: null,
-        bodyType: null,
-        referenceImageKey: null,
-        updatedAt: "",
-      },
+      profile: makeProfile({ gender: "male" }),
     });
     expect(male).toMatch(/young adult man/);
 
-    const female = buildOutfitPrompt([item({ id: "t" })], {
+    const female = buildOutfitPrompt([makeItem({ id: "t" })], {
       tpo: "x",
-      profile: {
-        gender: "female",
-        heightCm: null,
-        weightKg: null,
-        bodyType: null,
-        referenceImageKey: null,
-        updatedAt: "",
-      },
+      profile: makeProfile({ gender: "female" }),
     });
     expect(female).toMatch(/young adult woman/);
   });
 
   it("身長・体重・体型・gender=other はカッコ書きで Subject 行に入る", () => {
-    const prompt = buildOutfitPrompt([item({ id: "t" })], {
+    const prompt = buildOutfitPrompt([makeItem({ id: "t" })], {
       tpo: "x",
-      profile: {
+      profile: makeProfile({
         gender: "other",
         heightCm: 175,
         weightKg: 65,
         bodyType: "アスリート体型",
-        referenceImageKey: null,
-        updatedAt: "",
-      },
+      }),
     });
     expect(prompt).toMatch(/young adult person/);
     expect(prompt).toMatch(/175cm tall/);
@@ -225,7 +178,7 @@ describe("buildOutfitPrompt", () => {
   });
 
   it("hasReferenceImage:true なら『参考写真の顔と体型に合わせろ』指示が入る", () => {
-    const prompt = buildOutfitPrompt([item({ id: "t" })], {
+    const prompt = buildOutfitPrompt([makeItem({ id: "t" })], {
       tpo: "x",
       hasReferenceImage: true,
     });
@@ -235,7 +188,7 @@ describe("buildOutfitPrompt", () => {
   it("subcategoryがnullならカテゴリ名を使う", () => {
     const prompt = buildOutfitPrompt(
       [
-        item({
+        makeItem({
           id: "t",
           category: "tops",
           subcategory: null,
@@ -245,7 +198,6 @@ describe("buildOutfitPrompt", () => {
       ],
       { tpo: "x" },
     );
-    // CATEGORY_NOUN.tops = "top"
     expect(prompt).toContain("white top");
   });
 });

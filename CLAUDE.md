@@ -57,6 +57,25 @@ const { env } = await getCloudflareContext({ async: true });
 
 No retry on Gemini 503/429 — long waits would hit the Worker response deadline and surface as "Load failed" in the browser. Errors return immediately; the user retries via UI buttons.
 
+### API route wrapper
+
+Every route handler under `app/api/**` is wrapped by `route()` (`lib/route-handler.ts`). The wrapper auto-extracts `env` (Cloudflare bindings), `user` (from Cloudflare Access header), and awaited `params` so handlers focus on logic.
+
+```ts
+// Static route
+export const GET = route(async ({ env, user }) => { ... });
+
+// Dynamic route (params is typed)
+export const DELETE = route<{ id: string }>(async ({ env, user, params }) => { ... });
+
+// JSON body parsing
+const parsed = await parseJson(req, MyZodSchema);
+if (!parsed.ok) return parsed.res;  // 400 with { error: string }
+// use parsed.data
+```
+
+Do NOT call `getCloudflareContext`, `getUserEmail`, or `await args.params` manually inside route bodies — that's the wrapper's job.
+
 ### API routes
 
 - `POST /api/extract` — multipart image → R2 → VLM extraction. On VLM failure still returns 200 with `extraction: null` (image is kept; user fills the form manually).
@@ -87,8 +106,22 @@ D1 is SQLite. Array fields (`colors`, `season`, `occasion`, `tags`) are stored a
 
 ### Testing conventions
 
-- Unit tests (`test/lib/**`) mock `@google/genai` (`GoogleGenAI` constructor → `generateContent` mock) and use Miniflare for real D1/R2 behavior.
+- Unit tests (`test/lib/**`) cover `lib/*` and `schema/*` in isolation. Route handler integration tests live in `test/api/**` and exercise `route()` end to end (auth header → env → handler → Response).
 - E2E tests (`e2e/**`) never call real AI APIs: Gemini-dependent endpoints are mocked with Playwright `page.route()`. The dev server runs with real local D1/R2 bindings.
+
+#### Shared test helpers (`test/helpers/`)
+
+Use these instead of duplicating boilerplate:
+
+| Helper | What it gives you |
+|--------|-------------------|
+| `factories.ts` | `makeItem()`, `makeItemInput()`, `makeItemUpdate()`, `makeProfile()`, `makeProfileInput()`, `SAMPLE_PROPOSALS`, `ALICE`, `BOB` |
+| `d1.ts` | `createTestD1()` → `{ db, reset, dispose }` — Miniflare D1 with all migrations applied |
+| `r2.ts` | `createTestR2()` → `{ bucket, reset, dispose }` — Miniflare R2 |
+| `gemini.ts` | `installGenAIMock()` (hoisted `vi.mock` for `@google/genai`), `toolCallResponse(name, args)`, `imageResponse(mediaType?, base64?)` (default `"AAAA"` so `atob` doesn't blow up) |
+| `route-runner.ts` | `setTestEnv({ DB, IMAGES, ... })` + `callRoute(handler, { user?, body?, formData?, params? })` for integration tests against route handlers |
+
+Pattern: `beforeAll` creates D1/R2, `afterAll` disposes, `beforeEach` resets + `setTestEnv(...)`. Top-level `installGenAIMock()` (above any `import` from a Gemini-using module) is required because of `vi.mock` hoisting — use `const { foo } = await import("@/lib/foo")` to load the module after the mock is installed.
 
 ### Authentication & multi-tenancy
 

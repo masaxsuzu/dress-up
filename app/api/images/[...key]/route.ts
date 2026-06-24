@@ -1,18 +1,14 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { getUserEmail } from "@/lib/auth";
 import { imageKeyOwnedBy } from "@/lib/db";
+import { route } from "@/lib/route-handler";
 
-type Params = { params: Promise<{ key: string[] }> };
+type KeyParams = { key: string[] };
 
-export async function GET(req: Request, { params }: Params) {
-  const { key } = await params;
-  const objectKey = key.join("/");
-  const { env } = await getCloudflareContext({ async: true });
-  const userEmail = getUserEmail(req);
+export const GET = route<KeyParams>(async ({ env, user, params }) => {
+  const objectKey = params.key.join("/");
 
   // owner check: 他人のアイテム/プロフィール画像を URL 推測で取れないようにする。
-  // 404 ではなく 404 で返すのは情報漏洩を避けるため (存在/非所有が区別できないように)。
-  const owned = await imageKeyOwnedBy(env.DB, userEmail, objectKey);
+  // 存在/非所有を区別できないように常に 404 で返す。
+  const owned = await imageKeyOwnedBy(env.DB, user, objectKey);
   if (!owned) return new Response("not found", { status: 404 });
 
   let obj: R2ObjectBody | null;
@@ -31,4 +27,4 @@ export async function GET(req: Request, { params }: Params) {
       "Content-Length": obj.size.toString(),
     },
   });
-}
+});

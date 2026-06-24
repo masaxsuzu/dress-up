@@ -1,27 +1,20 @@
 import { GoogleGenAI, Modality } from "@google/genai";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { errorResponse } from "@/lib/api-response";
-import { getUserEmail } from "@/lib/auth";
 import { getItem, setIconKey } from "@/lib/db";
 import { buildIconPrompt } from "@/lib/icon-prompt";
 import { loadImageBase64, putIcon } from "@/lib/r2";
+import { route } from "@/lib/route-handler";
 
 const MODEL = "gemini-2.5-flash-image";
 
-type Params = { params: Promise<{ id: string }> };
+type IdParams = { id: string };
 
-export async function POST(req: Request, { params }: Params) {
-  const { id } = await params;
-  const { env } = await getCloudflareContext({ async: true });
-  const userEmail = getUserEmail(req);
-
-  const item = await getItem(env.DB, userEmail, id);
+export const POST = route<IdParams>(async ({ env, user, params }) => {
+  const item = await getItem(env.DB, user, params.id);
   if (!item) return errorResponse("not found", 404);
 
   const img = await loadImageBase64(env.IMAGES, item.imageKey);
-  if (!img) {
-    return errorResponse("元画像が見つかりません", 404);
-  }
+  if (!img) return errorResponse("元画像が見つかりません", 404);
   const { mediaType, base64 } = img;
 
   const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
@@ -60,8 +53,8 @@ export async function POST(req: Request, { params }: Params) {
   const bytes = Uint8Array.from(atob(data), (c) => c.charCodeAt(0))
     .buffer as ArrayBuffer;
 
-  const iconKey = await putIcon(env.IMAGES, id, bytes, mimeType);
-  await setIconKey(env.DB, userEmail, id, iconKey);
+  const iconKey = await putIcon(env.IMAGES, params.id, bytes, mimeType);
+  await setIconKey(env.DB, user, params.id, iconKey);
 
   return Response.json({ iconKey });
-}
+});

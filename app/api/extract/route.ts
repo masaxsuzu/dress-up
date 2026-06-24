@@ -1,6 +1,6 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { errorResponse } from "@/lib/api-response";
 import { putImage } from "@/lib/r2";
+import { route } from "@/lib/route-handler";
 import { extractClothing } from "@/lib/vlm";
 
 const ALLOWED_TYPES = new Set([
@@ -14,9 +14,7 @@ const ALLOWED_TYPES = new Set([
 // メモリと、フォームアップロードのレイテンシを考えて 5MB を上限にする。
 const MAX_IMAGE_BYTES = 5_000_000;
 
-export async function POST(req: Request) {
-  const { env } = await getCloudflareContext({ async: true });
-
+export const POST = route(async ({ req, env }) => {
   const form = await req.formData();
   const file = form.get("file");
   if (!(file instanceof File)) {
@@ -50,4 +48,4 @@ export async function POST(req: Request) {
       { status: 200 },
     );
   }
-}
+});

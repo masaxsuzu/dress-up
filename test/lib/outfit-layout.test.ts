@@ -1,27 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { ClothingCategory, ClothingItem } from "@/schema/clothing";
+import type { ClothingCategory } from "@/schema/clothing";
 import { layoutOutfitBoard } from "@/lib/outfit-layout";
+import { makeItem } from "@/test/helpers/factories";
 
-function item(id: string, category: ClothingCategory): ClothingItem {
-  return {
-    id,
-    category,
-    subcategory: null,
-    colors: [{ name: "白", hex: "#ffffff" }],
-    pattern: "solid",
-    material: null,
-    silhouette: null,
-    season: ["spring"],
-    formality: 2,
-    occasion: [],
-    tags: [],
-    brand: null,
-    notes: null,
-    imageKey: `items/${id}.jpg`,
-    iconKey: null,
-    createdAt: "2026-01-01T00:00:00Z",
-    updatedAt: "2026-01-01T00:00:00Z",
-  };
+function item(id: string, category: ClothingCategory) {
+  return makeItem({ id, category, imageKey: `items/${id}.jpg` });
 }
 
 describe("layoutOutfitBoard", () => {
