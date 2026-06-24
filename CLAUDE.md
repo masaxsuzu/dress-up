@@ -62,7 +62,8 @@ No retry on Gemini 503/429 — long waits would hit the Worker response deadline
 - `POST /api/extract` — multipart image → R2 → VLM extraction. On VLM failure still returns 200 with `extraction: null` (image is kept; user fills the form manually).
 - `POST /api/items`, `GET/PATCH/DELETE /api/items/[id]` — CRUD. DELETE also removes the R2 image and icon.
 - `POST /api/items/[id]/iconize` — generates a ghost-mannequin icon from the stored photo, saves to R2, sets `icon_key` in D1.
-- `POST /api/recommend` — wardrobe + TPO → outfit (`item_ids`) or shopping list (discriminated union `kind`). Hallucinated item ids are filtered out.
+- `POST /api/recommend` — wardrobe + TPO → 3 proposals (each item is owned/buy mixed). After generating, saves the draft (ids + descriptions only) to `latest_recommendation` for the user.
+- `GET /api/recommend/latest` — return the user's last saved recommendation, hydrating owned ids against the current wardrobe (deleted items get a "(アイテムが削除されました)" placeholder).
 - `POST /api/outfit-image` — selected items → full-body outfit image (binary response). The user profile (gender, height/weight/body type, reference image) is loaded from D1 and folded into the prompt + a reference inlineData when present.
 - `GET/PUT /api/profile` — single-row profile (gender / heightCm / weightKg / bodyType / referenceImageKey). `POST /api/profile/reference-image` (multipart) uploads the reference photo and returns its R2 key.
 - `GET /api/images/[...key]` — R2 proxy; the frontend never accesses R2 directly.
