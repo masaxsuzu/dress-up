@@ -2,16 +2,14 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { errorResponse, validationError } from "@/lib/api-response";
 import { getUserEmail } from "@/lib/auth";
 import { listItems } from "@/lib/db";
+import { setLatestRecommendation } from "@/lib/latest-recommendation";
 import { getProfile } from "@/lib/profile";
+import { hydrateProposals } from "@/lib/proposal-hydrate";
 import { loadImageBase64 } from "@/lib/r2";
 import { recommendOutfits, type ItemImage } from "@/lib/recommend";
 import { currentSeason } from "@/lib/season";
 import type { ClothingItem } from "@/schema/clothing";
-import {
-  RecommendInputSchema,
-  type Proposal,
-  type ProposalItem,
-} from "@/schema/recommend";
+import { RecommendInputSchema } from "@/schema/recommend";
 
 async function loadItemImage(
   bucket: R2Bucket,
@@ -53,21 +51,16 @@ export async function POST(req: Request) {
       profile,
     });
 
-    // draft の owned アイテムを ClothingItem に hydrate。
-    // 万一 id が消滅していたら buy にフォールバック (description は元 item から推定難なので
-    // generic に。実運用ではほぼ起きない)。
-    const itemMap = new Map(items.map((i) => [i.id, i]));
-    const proposals: Proposal[] = draft.proposals.map((p) => ({
-      reason: p.reason,
-      items: p.items.flatMap<ProposalItem>((it) => {
-        if (it.kind === "owned") {
-          const item = itemMap.get(it.id);
-          return item ? [{ kind: "owned", item }] : [];
-        }
-        return [{ kind: "buy", category: it.category, description: it.description }];
-      }),
-    }));
+    // 「最新の提案」として draft (owned: id だけの軽量形) を D1 に保存。
+    // hydrate 済みの ClothingItem を保存すると古い snapshot がずっと残るので
+    // あくまで id 参照。見返し時に現在のワードローブから hydrate する。
+    await setLatestRecommendation(env.DB, userEmail, {
+      tpo: parsed.data.tpo,
+      season,
+      proposals: draft.proposals,
+    });
 
+    const proposals = hydrateProposals(draft.proposals, items);
     return Response.json({ season, proposals });
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);

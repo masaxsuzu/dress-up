@@ -54,6 +54,18 @@ const THREE_PROPOSALS = {
 };
 
 test.describe("/recommend", () => {
+  // ページマウント時の GET /api/recommend/latest はデフォルト「保存無し」で
+  // 黙らせる。restored 表示の検証は専用テストで上書きする。
+  test.beforeEach(async ({ page }) => {
+    await page.route("/api/recommend/latest", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ latest: null }),
+      }),
+    );
+  });
+
   test("3 案表示: それぞれ全身画像と構成と説明が出る", async ({ page }) => {
     await page.route("/api/recommend", (route) =>
       route.fulfill({
@@ -75,8 +87,8 @@ test.describe("/recommend", () => {
     await page.locator("textarea").fill("同僚と週末ランチ");
     await page.getByRole("button", { name: "コーデを 3 案出す" }).click();
 
-    // 季節+案数の見出し
-    await expect(page.getByText(/季節:.+3 案/)).toBeVisible();
+    // シーン+季節+案数の見出し
+    await expect(page.getByText(/シーン:.+3 案/)).toBeVisible();
 
     // 3 つの提案ヘッダー
     await expect(page.getByRole("heading", { name: "提案 1" })).toBeVisible();
@@ -169,6 +181,61 @@ test.describe("/recommend", () => {
     await page.getByRole("button", { name: "コーデを 3 案出す" }).click();
 
     await expect(page.getByText("Gemini API が利用できません")).toBeVisible({
+      timeout: 10_000,
+    });
+  });
+
+  test("見返し: 最新の保存提案を復元 + 画像は『全身画像を生成』ボタン待ち", async ({
+    page,
+  }) => {
+    // beforeEach の latest:null をこのテストでは上書き
+    await page.unroute("/api/recommend/latest");
+    await page.route("/api/recommend/latest", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          latest: {
+            tpo: "前回の通勤",
+            season: "spring",
+            proposals: THREE_PROPOSALS.proposals,
+            createdAt: "2026-06-23T10:00:00.000Z",
+          },
+        }),
+      }),
+    );
+    // 画像 API が auto-fire 走ってないことを確認するため、呼ばれたら必ず失敗マークを残す
+    let imageCalled = false;
+    await page.route("/api/outfit-image", (route) => {
+      imageCalled = true;
+      return route.fulfill({
+        status: 200,
+        contentType: "image/png",
+        body: TINY_PNG,
+      });
+    });
+
+    await page.goto("/recommend");
+
+    // 「前回の提案」ラベルが出る + tpo が引き継がれる
+    await expect(page.getByText(/前回の提案/)).toBeVisible();
+    await expect(page.getByText(/前回の通勤/)).toBeVisible();
+
+    // 3 案分の「全身画像を生成」ボタンが出ている (auto fire していない)
+    await expect(
+      page.getByRole("button", { name: "全身画像を生成" }),
+    ).toHaveCount(3);
+
+    // 自動では発火しないので、画像 API は呼ばれていない
+    await page.waitForTimeout(500);
+    expect(imageCalled).toBe(false);
+
+    // ボタンを押すと 1 つだけ画像が出る
+    await page
+      .getByRole("button", { name: "全身画像を生成" })
+      .first()
+      .click();
+    await expect(page.locator('img[alt="全身コーデ"]')).toHaveCount(1, {
       timeout: 10_000,
     });
   });

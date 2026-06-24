@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Season } from "@/schema/clothing";
 import { primaryBtn } from "@/components/clothing-form";
@@ -15,22 +15,62 @@ type RecommendResponse = {
   error?: string;
 };
 
+type LatestResponse = {
+  latest: {
+    tpo: string;
+    season: Season;
+    proposals: Proposal[];
+    createdAt: string;
+  } | null;
+};
+
+// 「現在画面に出てる提案」セット。fresh = いま POST で返ってきたもの、
+// restored = D1 から復元したもの。前者は画像 auto-fire、後者はボタン待ち。
+type View = {
+  kind: "fresh" | "restored";
+  tpo: string;
+  season: Season;
+  proposals: Proposal[];
+  createdAt?: string;
+};
+
 export default function RecommendPage() {
   const [tpo, setTpo] = useState("");
-  const [submittedTpo, setSubmittedTpo] = useState("");
   const [loading, setLoading] = useState(false);
-  const [season, setSeason] = useState<Season | null>(null);
-  const [proposals, setProposals] = useState<Proposal[] | null>(null);
+  const [view, setView] = useState<View | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // 初回マウントで最新を読み込む
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/recommend/latest");
+        if (!res.ok) return;
+        const data = (await res.json()) as LatestResponse;
+        if (cancelled || !data.latest) return;
+        setView({
+          kind: "restored",
+          tpo: data.latest.tpo,
+          season: data.latest.season,
+          proposals: data.latest.proposals,
+          createdAt: data.latest.createdAt,
+        });
+      } catch {
+        // latest が無い / 取得失敗は静かに無視 (主機能ではない)
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function onSubmit() {
     const trimmed = tpo.trim();
     if (!trimmed || loading) return;
     setLoading(true);
     setError(null);
-    setProposals(null);
-    setSeason(null);
-    setSubmittedTpo(trimmed);
+    setView(null);
     try {
       const res = await fetch("/api/recommend", {
         method: "POST",
@@ -41,8 +81,14 @@ export default function RecommendPage() {
       if (!res.ok) {
         throw new Error(data.error ?? "提案に失敗しました");
       }
-      if (data.season) setSeason(data.season);
-      if (data.proposals) setProposals(data.proposals);
+      if (data.season && data.proposals) {
+        setView({
+          kind: "fresh",
+          tpo: trimmed,
+          season: data.season,
+          proposals: data.proposals,
+        });
+      }
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -103,7 +149,7 @@ export default function RecommendPage() {
         <p style={{ color: "#c00", whiteSpace: "pre-wrap" }}>{error}</p>
       )}
 
-      {season && proposals && (
+      {view && (
         <section>
           <p
             style={{
@@ -112,15 +158,18 @@ export default function RecommendPage() {
               marginBottom: "0.75rem",
             }}
           >
-            季節: {SEASON_LABEL[season]} / {proposals.length} 案
+            {view.kind === "restored" && view.createdAt
+              ? `前回の提案 (${new Date(view.createdAt).toLocaleString("ja-JP")}) ・ シーン: ${view.tpo} ・ ${SEASON_LABEL[view.season]} ・ ${view.proposals.length} 案`
+              : `シーン: ${view.tpo} ・ ${SEASON_LABEL[view.season]} ・ ${view.proposals.length} 案`}
           </p>
-          {proposals.map((p, i) => (
+          {view.proposals.map((p, i) => (
             <ProposalCard
-              key={i}
+              key={`${view.kind}-${view.createdAt ?? "fresh"}-${i}`}
               proposal={p}
               index={i}
-              tpo={submittedTpo}
-              season={season}
+              tpo={view.tpo}
+              season={view.season}
+              auto={view.kind === "fresh"}
             />
           ))}
         </section>

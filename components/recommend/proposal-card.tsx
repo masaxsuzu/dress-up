@@ -23,11 +23,15 @@ export function ProposalCard({
   index,
   tpo,
   season,
+  auto = true,
 }: {
   proposal: Proposal;
   index: number;
   tpo: string;
   season: Season;
+  /** マウント時に画像生成を auto-fire するか。fresh 提案では true、
+   *  保存済みからの「見返し」表示では false (ボタン押下で生成)。 */
+  auto?: boolean;
 }) {
   const buyCount = proposal.items.filter((i) => i.kind === "buy").length;
 
@@ -58,7 +62,7 @@ export function ProposalCard({
         )}
       </h2>
 
-      <FullBodyImage proposal={proposal} tpo={tpo} season={season} />
+      <FullBodyImage proposal={proposal} tpo={tpo} season={season} auto={auto} />
 
       <h3
         style={{
@@ -204,22 +208,28 @@ function ProposalItemRow({ item }: { item: ProposalItem }) {
   );
 }
 
-// マウント時に /api/outfit-image を自動発火し、画像が来たら差し込む。
+// auto=true: マウント時に /api/outfit-image を自動発火し、画像が来たら差し込む (fresh 提案)
+// auto=false: 「全身画像を生成」ボタン待ち (見返し時に Gemini quota を浪費しないため)
 function FullBodyImage({
   proposal,
   tpo,
   season,
+  auto,
 }: {
   proposal: Proposal;
   tpo: string;
   season: Season;
+  auto: boolean;
 }) {
-  const [state, setState] = useState<"running" | "done" | "error">("running");
+  const [state, setState] = useState<"idle" | "running" | "done" | "error">(
+    auto ? "running" : "idle",
+  );
   const [url, setUrl] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [retryKey, setRetryKey] = useState(0);
+  const [trigger, setTrigger] = useState(auto ? 1 : 0);
 
   useEffect(() => {
+    if (trigger === 0) return; // ボタン待ち状態
     const controller = new AbortController();
     let blobUrl: string | null = null;
     setState("running");
@@ -259,8 +269,8 @@ function FullBodyImage({
       controller.abort();
       if (blobUrl) URL.revokeObjectURL(blobUrl);
     };
-    // proposal の参照が変わる + retryKey で再走
-  }, [proposal, tpo, season, retryKey]);
+    // proposal が差し替わったとき (fresh) は auto 由来で再走、ボタンの時は trigger 増加で再走
+  }, [proposal, tpo, season, trigger]);
 
   return (
     <div style={{ marginBottom: "0.75rem" }}>
@@ -277,6 +287,23 @@ function FullBodyImage({
             border: "1px solid #eee",
           }}
         />
+      )}
+      {state === "idle" && (
+        <button
+          onClick={() => setTrigger((t) => t + 1)}
+          style={{
+            width: "100%",
+            padding: "0.7rem 0.9rem",
+            fontSize: "0.9rem",
+            background: "#fff",
+            color: "#111",
+            border: "1px solid #111",
+            borderRadius: 8,
+            cursor: "pointer",
+          }}
+        >
+          全身画像を生成
+        </button>
       )}
       {state === "running" && (
         <div
@@ -312,7 +339,7 @@ function FullBodyImage({
             画像の生成に失敗しました: {errorMsg}
           </p>
           <button
-            onClick={() => setRetryKey((k) => k + 1)}
+            onClick={() => setTrigger((t) => t + 1)}
             style={{
               padding: "0.4rem 0.8rem",
               fontSize: "0.85rem",
