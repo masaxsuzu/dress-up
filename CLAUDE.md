@@ -2,6 +2,14 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Loop / babysitter conventions
+
+**Always babysit PRs you open.** Immediately after every successful `mcp__github__create_pull_request` (or any PR creation in this session), call `mcp__github__subscribe_pr_activity` with the same `owner` / `repo` / `pullNumber`. Do NOT ask the user first — this is the default behavior in this repo. After subscribing, set a ~1 hour `ScheduleWakeup` fallback (webhooks miss merge / new-push / conflict transitions) using the `<<autonomous-loop-dynamic>>` sentinel.
+
+When the PR is merged or closed, the subscription is auto-cancelled; do not re-subscribe.
+
+When handling `<github-webhook-activity>` events: tractable + small → fix and push immediately; ambiguous or architecturally significant → ask via `AskUserQuestion`; bot-generated / informational → skip with one-line acknowledgement.
+
 ## Commands
 
 ```bash
