@@ -8,7 +8,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 When the PR is merged or closed, the subscription is auto-cancelled; do not re-subscribe.
 
-When handling `<github-webhook-activity>` events: tractable + small → fix and push immediately; ambiguous or architecturally significant → ask via `AskUserQuestion`; bot-generated / informational → skip with one-line acknowledgement.
+**Event handling:** tractable + small → fix and push immediately; ambiguous or architecturally significant → ask via `AskUserQuestion`; bot-generated / informational → skip with one-line acknowledgement.
+
+**Auto-merge gate.** When the PR has no open threads AND no actionable items pending, run the gate before merging:
+
+1. **Wait for GH Actions to complete.** Call `mcp__github__pull_request_read` (method=`get_check_runs`) and require every check's `status` to be `completed`. If any are still `in_progress` or `queued`, wait for the next webhook / fallback wakeup — do not poll in a tight loop.
+2. **All checks must be `conclusion: "success"`.** If any failed, treat it as an actionable item (pull logs via `get_job_logs`, diagnose, fix or ask).
+3. **Run `/self-review <PR>`.** Output is one of `✓ clean` / `⚠ suspicious` / `✗ broken`.
+   - `clean` → proceed to step 4
+   - `suspicious` → stop and `AskUserQuestion` with the concerns
+   - `broken` → fix on the same branch, push, return to step 1
+4. **Merge.** Call `mcp__github__merge_pull_request` with `merge_method: "merge"` (this repo's convention). After the merge webhook arrives, you're done.
+
+If at any point the user posts a review comment, that takes priority over the auto-merge gate — address the comment first, then re-enter the gate.
 
 ## Commands
 
