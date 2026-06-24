@@ -1,7 +1,5 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { z } from "zod";
-import { errorResponse, validationError } from "@/lib/api-response";
-import { getUserEmail } from "@/lib/auth";
+import { errorResponse } from "@/lib/api-response";
 import { getItem } from "@/lib/db";
 import {
   generateOutfitImage,
@@ -11,6 +9,7 @@ import {
 import type { PromptItem } from "@/lib/outfit-prompt";
 import { getProfile } from "@/lib/profile";
 import { loadImageBase64 } from "@/lib/r2";
+import { parseJson, route } from "@/lib/route-handler";
 import { currentSeason } from "@/lib/season";
 import { ClothingCategorySchema } from "@/schema/clothing";
 
@@ -30,15 +29,9 @@ const InputSchema = z.object({
   season: z.enum(["spring", "summer", "autumn", "winter"]).optional(),
 });
 
-export async function POST(req: Request) {
-  const { env } = await getCloudflareContext({ async: true });
-  const userEmail = getUserEmail(req);
-
-  const body = await req.json();
-  const parsed = InputSchema.safeParse(body);
-  if (!parsed.success) {
-    return validationError(parsed.error);
-  }
+export const POST = route(async ({ req, env, user }) => {
+  const parsed = await parseJson(req, InputSchema);
+  if (!parsed.ok) return parsed.res;
 
   // owned は DB から fetch、画像を R2 から base64 化して Gemini に渡す。
   // buy はテキストで渡すのみ。
@@ -46,7 +39,7 @@ export async function POST(req: Request) {
   const images: OutfitImageInput[] = [];
   for (const it of parsed.data.items) {
     if (it.kind === "owned") {
-      const item = await getItem(env.DB, userEmail, it.id);
+      const item = await getItem(env.DB, user, it.id);
       if (!item) continue;
       promptItems.push({ kind: "owned", item });
       const img = await loadImageBase64(env.IMAGES, item.imageKey);
@@ -61,7 +54,7 @@ export async function POST(req: Request) {
   }
 
   // プロフィール (性別・体型) と参考画像を Flash Image に同梱する。
-  const profile = await getProfile(env.DB, userEmail);
+  const profile = await getProfile(env.DB, user);
   let referenceImage: ReferenceImageInput | null = null;
   if (profile?.referenceImageKey) {
     const ref = await loadImageBase64(env.IMAGES, profile.referenceImageKey);
@@ -87,4 +80,4 @@ export async function POST(req: Request) {
     const message = e instanceof Error ? e.message : String(e);
     return errorResponse(message, 500);
   }
-}
+});

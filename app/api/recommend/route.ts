@@ -1,12 +1,11 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { errorResponse, validationError } from "@/lib/api-response";
-import { getUserEmail } from "@/lib/auth";
+import { errorResponse } from "@/lib/api-response";
 import { listItems } from "@/lib/db";
 import { setLatestRecommendation } from "@/lib/latest-recommendation";
 import { getProfile } from "@/lib/profile";
 import { hydrateProposals } from "@/lib/proposal-hydrate";
 import { loadImageBase64 } from "@/lib/r2";
 import { recommendOutfits, type ItemImage } from "@/lib/recommend";
+import { parseJson, route } from "@/lib/route-handler";
 import { currentSeason } from "@/lib/season";
 import type { ClothingItem } from "@/schema/clothing";
 import { RecommendInputSchema } from "@/schema/recommend";
@@ -20,20 +19,14 @@ async function loadItemImage(
   return { id: item.id, ...img };
 }
 
-export async function POST(req: Request) {
-  const { env } = await getCloudflareContext({ async: true });
-  const userEmail = getUserEmail(req);
-
-  const body = await req.json();
-  const parsed = RecommendInputSchema.safeParse(body);
-  if (!parsed.success) {
-    return validationError(parsed.error);
-  }
+export const POST = route(async ({ req, env, user }) => {
+  const parsed = await parseJson(req, RecommendInputSchema);
+  if (!parsed.ok) return parsed.res;
 
   // ワードローブが空でも 3 案 (all buy) を返す方針なので、空判定でエラーにしない。
   const [items, profile] = await Promise.all([
-    listItems(env.DB, userEmail),
-    getProfile(env.DB, userEmail),
+    listItems(env.DB, user),
+    getProfile(env.DB, user),
   ]);
   const season = currentSeason();
 
@@ -52,9 +45,9 @@ export async function POST(req: Request) {
     });
 
     // 「最新の提案」として draft (owned: id だけの軽量形) を D1 に保存。
-    // hydrate 済みの ClothingItem を保存すると古い snapshot がずっと残るので
-    // あくまで id 参照。見返し時に現在のワードローブから hydrate する。
-    await setLatestRecommendation(env.DB, userEmail, {
+    // 見返し時に現在のワードローブから hydrate するので、保存後にアイテムが
+    // 削除された場合も placeholder で安全に扱える。
+    await setLatestRecommendation(env.DB, user, {
       tpo: parsed.data.tpo,
       season,
       proposals: draft.proposals,
@@ -66,4 +59,4 @@ export async function POST(req: Request) {
     const message = e instanceof Error ? e.message : String(e);
     return errorResponse(message, 500);
   }
-}
+});

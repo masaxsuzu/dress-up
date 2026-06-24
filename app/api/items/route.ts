@@ -1,26 +1,15 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { validationError } from "@/lib/api-response";
-import { getUserEmail } from "@/lib/auth";
 import { createItem, listItems } from "@/lib/db";
+import { parseJson, route } from "@/lib/route-handler";
 import { ClothingItemInputSchema } from "@/schema/clothing";
 
-export async function GET(req: Request) {
-  const { env } = await getCloudflareContext({ async: true });
-  const userEmail = getUserEmail(req);
-  const items = await listItems(env.DB, userEmail);
+export const GET = route(async ({ env, user }) => {
+  const items = await listItems(env.DB, user);
   return Response.json({ items });
-}
+});
 
-export async function POST(req: Request) {
-  const { env } = await getCloudflareContext({ async: true });
-  const userEmail = getUserEmail(req);
-
-  const body = await req.json();
-  const parsed = ClothingItemInputSchema.safeParse(body);
-  if (!parsed.success) {
-    return validationError(parsed.error);
-  }
-
-  const item = await createItem(env.DB, userEmail, parsed.data);
+export const POST = route(async ({ req, env, user }) => {
+  const parsed = await parseJson(req, ClothingItemInputSchema);
+  if (!parsed.ok) return parsed.res;
+  const item = await createItem(env.DB, user, parsed.data);
   return Response.json({ item }, { status: 201 });
-}
+});

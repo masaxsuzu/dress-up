@@ -8,10 +8,16 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "json-summary", "html"],
-      include: ["lib/**/*.ts", "schema/**/*.ts"],
+      include: [
+        "lib/**/*.ts",
+        "schema/**/*.ts",
+        "app/api/**/route.ts",
+      ],
+      // UI helpers (React only), 画像リサイズ (browser canvas)、static maps はテスト対象外。
       exclude: [
         "lib/labels.ts",
         "lib/resize-image.ts",
+        "lib/ui.ts",
       ],
       thresholds: {
         lines: 80,
