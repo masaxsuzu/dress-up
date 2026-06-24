@@ -303,11 +303,11 @@ export function Gallery({ items }: { items: ClothingItem[] }) {
                   // アイコン (透過 PNG, 服が中央) なら contain で全体を見せる。
                   // 元写真フォールバック時は cover で枠を埋める。
                   objectFit: item.iconKey ? "contain" : "cover",
-                  background: item.iconKey ? "#f7f5ef" : undefined,
+                  background: item.iconKey ? "#fff" : undefined,
                   display: "block",
                 }}
               />
-              <div style={{ padding: "0.6rem" }}>
+              <div style={{ padding: "0.6rem", minHeight: "3.75rem", boxSizing: "border-box" }}>
                 <div style={{ fontSize: "0.85rem", color: "#666" }}>
                   {CATEGORY_LABEL[item.category]}
                   {item.subcategory ? ` / ${item.subcategory}` : ""}
@@ -318,6 +318,7 @@ export function Gallery({ items }: { items: ClothingItem[] }) {
                     gap: 4,
                     marginTop: 6,
                     flexWrap: "wrap",
+                    minHeight: 14,
                   }}
                 >
                   {item.colors.map((c) => (
