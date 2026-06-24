@@ -35,18 +35,54 @@ export default async function ItemPage({
         </Link>
       </p>
 
-      <img
-        src={`/api/images/${item.imageKey}`}
-        alt={item.subcategory ?? item.category}
-        style={{
-          width: "100%",
-          maxHeight: "60vh",
-          objectFit: "contain",
-          background: "#fff",
-          borderRadius: 10,
-          border: "1px solid #eee",
-        }}
-      />
+      {item.iconKey ? (
+        <div>
+          <img
+            data-testid="main-image"
+            src={`/api/images/${item.iconKey}`}
+            alt={item.subcategory ?? item.category}
+            style={{
+              width: "100%",
+              maxHeight: "60vh",
+              objectFit: "contain",
+              background: "#fff",
+              borderRadius: 10,
+              border: "1px solid #eee",
+            }}
+          />
+          <div style={{ marginTop: "0.75rem" }}>
+            <p style={{ margin: "0 0 0.25rem", fontSize: "0.75rem", color: "#888" }}>
+              元の写真
+            </p>
+            <img
+              data-testid="original-image"
+              src={`/api/images/${item.imageKey}`}
+              alt={`${item.subcategory ?? item.category} (元の写真)`}
+              style={{
+                width: 140,
+                height: 140,
+                objectFit: "cover",
+                borderRadius: 8,
+                border: "1px solid #eee",
+              }}
+            />
+          </div>
+        </div>
+      ) : (
+        <img
+          data-testid="main-image"
+          src={`/api/images/${item.imageKey}`}
+          alt={item.subcategory ?? item.category}
+          style={{
+            width: "100%",
+            maxHeight: "60vh",
+            objectFit: "contain",
+            background: "#fff",
+            borderRadius: 10,
+            border: "1px solid #eee",
+          }}
+        />
+      )}
 
       <div
         style={{
@@ -141,34 +177,6 @@ export default async function ItemPage({
           {new Date(item.createdAt).toLocaleString("ja-JP")}
         </Row>
       </div>
-
-      {item.iconKey && (
-        <div
-          style={{
-            marginTop: "1rem",
-            background: "#fff",
-            borderRadius: 10,
-            border: "1px solid #eee",
-            padding: "1rem",
-          }}
-        >
-          <p style={{ margin: "0 0 0.5rem", fontSize: "0.8rem", color: "#888" }}>
-            アイコン
-          </p>
-          <img
-            src={`/api/images/${item.iconKey}`}
-            alt="icon"
-            style={{
-              width: 128,
-              height: 128,
-              objectFit: "contain",
-              background: "#f8f8f8",
-              borderRadius: 8,
-              border: "1px solid #eee",
-            }}
-          />
-        </div>
-      )}
 
       <div style={{ marginTop: "1.5rem", display: "grid", gap: "0.75rem" }}>
         <Link
