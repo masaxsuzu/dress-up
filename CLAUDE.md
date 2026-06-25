@@ -29,8 +29,7 @@ When the PR is merged or closed, the subscription is auto-cancelled; do not re-s
    - Fetch the current PR body via `mcp__github__pull_request_read` (method=`get`).
    - In the `## Test plan` section, replace every `- [ ]` with `- [x]`. The gate is by definition completing the plan it wrote, so all items are checked.
    - Call `mcp__github__update_pull_request` with the new body.
-   - Call `mcp__github__merge_pull_request` with `merge_method: "merge"` (this repo's convention).
-5. **Delete the head branch after merge.** Once the merge webhook arrives, run `git push origin --delete <head-ref>` (the PR's `head.ref`, e.g. `claude/foo-bar`). This keeps the branch list clean — the unsubscribe webhook fires before this step, so the gate is "done" only after this delete. Local cleanup happens naturally on the next `git fetch --prune`.
+   - Call `mcp__github__merge_pull_request` with `merge_method: "merge"` (this repo's convention). The head branch is auto-deleted by the GitHub repo setting **"Automatically delete head branches"** (one-time setup, applies to all merges including API-driven ones). On the next `git fetch --prune` your local stale tracking ref clears.
 
 If at any point the user posts a review comment, that takes priority over the auto-merge gate — address the comment first, then re-enter the gate.
 
