@@ -45,6 +45,15 @@ jobs:
           echo "env_name=pr-${DIGIT}" >> "$GITHUB_OUTPUT"
           echo "Slot for PR #${PR}: pr-${DIGIT}"
 
+      # マイグレーションは idempotent。reset より先に走らせて、初回スロット
+      # 利用時 (テーブルがまだ存在しない) でも reset の DELETE が成功するよう
+      # にする。reset 規則 (slot 交代時のみ) は変えない。
+      - name: Apply migrations
+        env:
+          DIGIT: ${{ steps.slot.outputs.digit }}
+          ENV_NAME: ${{ steps.slot.outputs.env_name }}
+        run: npx wrangler d1 migrations apply "dress-up-pr-${DIGIT}" --remote --env "${ENV_NAME}"
+
       # スロットが別の PR に使われていたら D1/R2 を reset。同じ PR が連続 push
       # した場合は reset しない (デバッグ中のデータを失わないため)。
       # 「直近 version の tag が pr-<同じ PR 番号>」かどうかで判定。
@@ -81,13 +90,6 @@ jobs:
             fi
             echo "did_reset=true" >> "$GITHUB_OUTPUT"
           fi
-
-      # マイグレーションは idempotent なので毎回適用 (reset の有無に関わらず)
-      - name: Apply migrations
-        env:
-          DIGIT: ${{ steps.slot.outputs.digit }}
-          ENV_NAME: ${{ steps.slot.outputs.env_name }}
-        run: npx wrangler d1 migrations apply "dress-up-pr-${DIGIT}" --remote --env "${ENV_NAME}"
 
       # Worker `dress-up` に新バージョンを upload。`--env pr-N` により [env.pr-N]
       # の binding (dress-up-pr-N D1 / dress-up-images-pr-N R2) が付く。
