@@ -1,83 +1,45 @@
 ---
-description: 指定 PR の diff をレビュー (静的) + 実 deploy 確認 (CI で curl 済) して clean / suspicious / broken を判定し、結果を PR コメントに投稿する。babysitter の自動マージ前のゲート
+description: PR の diff (静的) + CI preview job (deploy 検証済) を judge して verdict を PR コメント投稿。babysitter gate 前段。
 argument-hint: "<PR number>"
 ---
 
 # /self-review
 
-PR babysitter が **自動マージする前** に必ず通すレビュー。`$ARGUMENTS` に PR 番号を渡す (例: `/self-review 60`)。判定はこの 3 値:
-
-| Verdict | 行動 |
-|---------|------|
-| ✓ clean | 問題なし、babysitter は merge へ進む |
-| ⚠ suspicious | 不確かな点があり、判断を user に投げる (AskUserQuestion) |
-| ✗ broken | 明らかな問題 (壊れた assertion / 抜けた null check / 型違反 / preview verify 失敗) を見つけた。修正して同じ PR ブランチに push、resolve thread |
+3 値判定:
+- ✓ clean — gate を merge へ進める
+- ⚠ suspicious — `AskUserQuestion` で user に投げる
+- ✗ broken — 同じブランチに修正 push し gate Step 1 へ戻る
 
 ## 手順
 
-1. `mcp__github__pull_request_read` (method=`get`) で PR メタ取得 (title / body / head SHA)
-2. `mcp__github__pull_request_read` (method=`get_diff`) で diff を取得
-3. `mcp__github__pull_request_read` (method=`get_files`) で変更ファイル一覧を取得
-4. 下のチェックリスト (静的) を通す
-5. **Deploy verification** — `.github/workflows/preview.yml` の `Verify preview deploy` ステップが既に preview deploy 直後に `scripts/verify-preview.sh` を CI 上で実行している。Claude Code セッションから workers.dev に直接 curl はできない (agent proxy が policy で 403 を返す) ので、ここでは CI 結果を信用する:
-   - `mcp__github__pull_request_read` (method=`get_check_runs`) で `preview` ジョブが `completed` かつ `conclusion: "success"` なら verify pass 扱い
-   - `preview` が failure / cancelled / skipped なら **broken**
-6. 静的レビュー + CI 結果を合算して verdict を決める
-7. **verdict を PR コメントとして投稿:** `mcp__github__add_issue_comment` で結果サマリを書く (下の出力フォーマット参照)
+1. `pull_request_read` で get / get_diff / get_files
+2. 下チェックリスト通過 (diff ≤100 行は全読、超なら additions 多いファイル優先)
+3. `pull_request_read get_check_runs` で `preview` ジョブ確認: success → deploy verify pass / failure/cancelled/skipped → broken
+4. verdict 決定 → `add_issue_comment` で投稿 (下フォーマット)
 
-## チェックリスト (このリポジトリ固有)
+## チェックリスト (このリポ固有)
 
-**Correctness:**
-- Zod schema に変更があるとき、`lib/db.ts` の row → object マッピングや migration と整合してるか
-- `route()` wrapper を使ってるか (`getCloudflareContext` / `getUserEmail` を直に呼んでないか)
-- `user_email` で scoping してるか (新規 D1 query を足したとき)
-- `process.env` を使ってないか (Cloudflare bindings に限る)
-- `atob` を呼ぶコードは valid base64 を期待してるか (テストで `imageResponse` 使ってるか)
+**Correctness:** `route()` wrapper 使用 / `user_email` scoping / `process.env` 不使用 / `atob` は valid base64 / Zod schema 変更時は migration & `db.ts:rowToItem` 整合
 
-**Security:**
-- 新規 `/api/images/[...key]` 系で owner check (`imageKeyOwnedBy`) 通してるか
-- multipart upload の Content-Type ホワイトリスト / サイズ上限が他 endpoint と揃ってるか
-- Secret や API key を直書きしてないか
+**Security:** `/api/images` の owner check / multipart upload の content-type & size 上限 / secret 直書き無し
 
-**Tests:**
-- `lib/*.ts` への変更には対応する `test/lib/*.test.ts` の更新があるか
-- `app/api/**/route.ts` への変更には `test/api/*.test.ts` の更新があるか (新規エンドポイントなら新規テスト)
-- e2e (`e2e/**/*.spec.ts`) は壊れていないか (page title / role / locator が変わっていれば spec も更新が必要)
+**Tests:** `lib/*.ts` → `test/lib/*` / `app/api/**/route.ts` → `test/api/*` / e2e selector 整合
 
-**Quality:**
-- 新規ファイルが規約に沿ってるか (route handler は `route()`, テストは shared helpers, factories)
-- コミットメッセージが具体的か (「Fix bug」みたいな空メッセージじゃない)
-- 過剰なリファクタや無関係なファイル変更が混じってないか
+**Quality:** 規約準拠 (`route()`, shared helpers, factories) / commit message 具体的 / 無関係変更無し
 
-**Suspicious sign:**
-- diff に `// TODO` や `// FIXME` が残っている
-- テストを skip / .only にしている
-- timeout を急に長くしてる (今回は弱い signal だが justify されてるか確認)
-- 型 assertion (`as unknown as Foo`) が増えてる
+**Suspicious:** TODO/FIXME 残存 / `.skip`/`.only` / timeout 急増 / `as` 型 assertion 増
 
-## 出力フォーマット (PR コメント本文)
-
-```markdown
-**Self-review: ✓ clean | ⚠ suspicious | ✗ broken** (commit `<short sha>`)
-
-Static: <1 文の総評>
-Deploy: ✓ preview ジョブ green (verify-preview.sh PASS)  (or)  ✗ preview ジョブ failure
-
-[suspicious / broken のときだけ箇条書きで懸念点 1〜3 個]
-```
-
-例:
+## 出力 (PR コメント本文)
 
 ```
-**Self-review: ✓ clean** (commit `dca84f6`)
+**Self-review: <verdict>** (commit `<short-sha>`)
+Static: <1 文>
+Deploy: ✓ preview ジョブ green | ✗ preview ジョブ failure
 
-Static: 9 行差分の docs only、suspicious sign 無し。
-Deploy: ✓ preview ジョブ green (verify-preview.sh PASS)
+[suspicious / broken のみ 1〜3 個の懸念点]
 ```
 
 ## ルール
-
-- 静的レビューも deploy 確認も MCP github tool で完結する (skill / agent / Bash 使わない)
-- 自分で書いた diff だからといって甘くしない。「もし他人が出してきたらここ指摘するか?」で判定する
-- diff が 100 行以下なら全部読む。100 行超なら、変更が密集してるホットスポット (`get_files` の additions が多いファイル) を優先
-- verdict コメントは必ず投稿する (gate がコメントを見て判断する人にも見える)
+- MCP github tool で完結 (skill / agent / Bash 不使用)
+- 「他人の PR ならここ指摘するか」目線で甘くしない
+- verdict コメント必須投稿
