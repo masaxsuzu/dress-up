@@ -4,7 +4,10 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
-# 同じ PR で連続 push しても古いジョブをキャンセルして無駄を減らす
+# 同じ PR で連続 push しても古いジョブをキャンセルして無駄を減らす。
+# 異なる PR でも同じスロット (PR# % 9) は直列化したいが、GitHub 式言語に
+# 算術が無く剰余が取れないため、ここでは PR 単位の concurrency で妥協する。
+# (同時並行 10 PR 以上は想定しないという前提)
 concurrency:
   group: preview-${{ github.event.pull_request.number }}
   cancel-in-progress: true
@@ -31,27 +34,60 @@ jobs:
 
       - run: npx opennextjs-cloudflare build
 
-      # preview D1 にマイグレーションを当てる。idempotent なので毎 PR で OK。
-      - name: Apply migrations to preview D1
-        run: npx wrangler d1 migrations apply dress-up-preview --remote --env preview
+      # PR 番号を 9 で割った余りをスロット ID にする (0〜8)。
+      # Cloudflare D1 無料枠 10 のうち 1 つは本番用、残り 9 をプレビューに当てる。
+      - name: Compute preview slot
+        id: slot
+        run: |
+          PR=${{ github.event.pull_request.number }}
+          DIGIT=$((PR % 9))
+          echo "digit=${DIGIT}" >> "$GITHUB_OUTPUT"
+          echo "env_name=pr-${DIGIT}" >> "$GITHUB_OUTPUT"
+          echo "Slot for PR #${PR}: pr-${DIGIT}"
 
-      # Worker `dress-up` に新バージョンを upload (本番トラフィックは切り替わらない:
-      # versions upload は deploy と違って promote しない)。
-      # `--env preview` により、上がるバージョンには [env.preview] の binding
-      # (dress-up-preview D1 / dress-up-images-preview R2) が付く。
+      # マイグレーションは idempotent。reset より先に走らせて、初回スロット
+      # 利用時 (テーブルがまだ存在しない) でも reset の DELETE が成功するように。
+      - name: Apply migrations
+        env:
+          DIGIT: ${{ steps.slot.outputs.digit }}
+          ENV_NAME: ${{ steps.slot.outputs.env_name }}
+        run: npx wrangler d1 migrations apply "dress-up-pr-${DIGIT}" --remote --env "${ENV_NAME}"
+
+      # スロットを reset (D1 全テーブル DELETE + R2 全 object 削除)。
+      # 「11 を作るとき 1 を消す」がユーザ仕様だが、毎 push で消すのも仕様の
+      # 範疇 (= スロット交代時より厳しい側)。シンプルさを取って毎回 reset する。
+      - name: Reset slot
+        env:
+          DIGIT: ${{ steps.slot.outputs.digit }}
+          ENV_NAME: ${{ steps.slot.outputs.env_name }}
+        run: |
+          set -euo pipefail
+          # D1 reset (テーブル一覧は test/helpers/d1.ts TABLES と揃える)
+          npx wrangler d1 execute "dress-up-pr-${DIGIT}" \
+            --remote --env "${ENV_NAME}" \
+            --command "DELETE FROM clothing_items; DELETE FROM profile; DELETE FROM latest_recommendation;"
+          # R2 reset: 全 object を消す
+          keys=$(npx wrangler r2 object list "dress-up-images-pr-${DIGIT}" --remote --json 2>/dev/null \
+            | jq -r '.[].key // empty' || true)
+          if [ -n "${keys}" ]; then
+            echo "${keys}" | while IFS= read -r key; do
+              [ -n "${key}" ] && npx wrangler r2 object delete "dress-up-images-pr-${DIGIT}/${key}" --remote || true
+            done
+          fi
+
+      # Worker `dress-up` に新バージョンを upload。`--env pr-N` により [env.pr-N]
+      # の binding (dress-up-pr-N D1 / dress-up-images-pr-N R2) が付く。
       - name: Upload preview version
         id: upload
+        env:
+          ENV_NAME: ${{ steps.slot.outputs.env_name }}
         run: |
           set -o pipefail
           out=$(npx wrangler@latest versions upload \
-            --env preview \
+            --env "${ENV_NAME}" \
             --tag "pr-${{ github.event.pull_request.number }}" \
             --message "PR #${{ github.event.pull_request.number }} (${GITHUB_SHA::7})" \
             2>&1 | tee /dev/stderr)
-          # grep が何もマッチしないと exit 1 を返し set -e で workflow が落ちるので
-          # `|| true` で許容、後段の if で空判定する。
-          # wrangler 4.100+ は preview_urls = true (& Worker 側でも有効化済み) なら
-          # `Version Preview URL: https://...` を出力する。
           url=$(echo "$out" | grep -oE 'Version Preview URL: https://[^[:space:]]+' | head -n1 | sed 's/^Version Preview URL: //' || true)
           if [ -z "$url" ]; then
             url=$(echo "$out" | grep -oE 'https://[a-zA-Z0-9-]+\.workers\.dev' | head -n1 || true)
@@ -72,8 +108,10 @@ jobs:
             | | |
             |---|---|
             | Worker | `dress-up` (preview バージョン) |
-            | D1 | `dress-up-preview` (shared) |
-            | R2 | `dress-up-images-preview` (shared) |
+            | Slot | `pr-${{ steps.slot.outputs.digit }}` (PR # を 9 で割った余り) |
+            | D1 | `dress-up-pr-${{ steps.slot.outputs.digit }}` |
+            | R2 | `dress-up-images-pr-${{ steps.slot.outputs.digit }}` |
+            | Slot reset | 🔄 D1/R2 を空にしました (毎 push 実施) |
             | Commit | `${{ github.event.pull_request.head.sha }}` |
 
             ⚠️ プレビューは Cloudflare Access の保護外 (public URL)。
