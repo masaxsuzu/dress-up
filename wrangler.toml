@@ -25,34 +25,182 @@ bucket_name = "dress-up-images"
 # ---------------------------------------------------------------------------
 # PR プレビュー環境 (Worker は本番と同一、binding と URL だけ変える)
 #
-# - name は本番と同じ `dress-up` を指定 → 同じ Worker に preview バージョンが
-#   積まれ、URL は `<version-id>-dress-up.<acct>.workers.dev` になる
-# - D1 / R2 だけ別物 (dress-up-preview / dress-up-images-preview) を指す
-#   ことで、preview バージョンが本番データを破壊しないよう隔離
-# - `wrangler versions upload --env preview` で uploaded されたバージョンは
-#   この env の binding を保持する
+# 10 個の env (pr-0 〜 pr-9) を用意して、PR 番号の下 1 桁でスロットを割り当てる。
+# 同じ digit の PR が交代する時 (例: #1 → #11) は workflow が D1/R2 を reset。
+# 同時並行 11 PR 以上は想定しない (個人用)。
 #
-# 初期セットアップ手順は docs/preview-deployments.md を参照。
+# 初期セットアップ:
+#   scripts/setup-pr-previews.sh を 1 回実行 → 出力された 10 個の D1 ID を
+#   下の REPLACE_ME_PR_N に貼り付けて push。
+# 詳細は docs/preview-deployments.md。
 # ---------------------------------------------------------------------------
-[env.preview]
-name = "dress-up"
-# preview バージョン用の <version-id>-dress-up.<acct>.workers.dev URL を有効化。
-# これがないと wrangler が Version Preview URL を出力せず、CI が URL を拾えない。
-preview_urls = true
 
-[env.preview.assets]
+[env.pr-0]
+name = "dress-up"
+preview_urls = true
+[env.pr-0.assets]
 directory = ".open-next/assets"
 binding = "ASSETS"
-
-[env.preview.observability]
+[env.pr-0.observability]
 enabled = true
-
-[[env.preview.d1_databases]]
+[[env.pr-0.d1_databases]]
 binding = "DB"
-database_name = "dress-up-preview"
-database_id = "5320cbe8-4ebb-49da-9b4f-df6cbbb6cb7f"
+database_name = "dress-up-pr-0"
+database_id = "REPLACE_ME_PR_0"
 migrations_dir = "migrations"
-
-[[env.preview.r2_buckets]]
+[[env.pr-0.r2_buckets]]
 binding = "IMAGES"
-bucket_name = "dress-up-images-preview"
+bucket_name = "dress-up-images-pr-0"
+
+[env.pr-1]
+name = "dress-up"
+preview_urls = true
+[env.pr-1.assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
+[env.pr-1.observability]
+enabled = true
+[[env.pr-1.d1_databases]]
+binding = "DB"
+database_name = "dress-up-pr-1"
+database_id = "REPLACE_ME_PR_1"
+migrations_dir = "migrations"
+[[env.pr-1.r2_buckets]]
+binding = "IMAGES"
+bucket_name = "dress-up-images-pr-1"
+
+[env.pr-2]
+name = "dress-up"
+preview_urls = true
+[env.pr-2.assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
+[env.pr-2.observability]
+enabled = true
+[[env.pr-2.d1_databases]]
+binding = "DB"
+database_name = "dress-up-pr-2"
+database_id = "REPLACE_ME_PR_2"
+migrations_dir = "migrations"
+[[env.pr-2.r2_buckets]]
+binding = "IMAGES"
+bucket_name = "dress-up-images-pr-2"
+
+[env.pr-3]
+name = "dress-up"
+preview_urls = true
+[env.pr-3.assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
+[env.pr-3.observability]
+enabled = true
+[[env.pr-3.d1_databases]]
+binding = "DB"
+database_name = "dress-up-pr-3"
+database_id = "REPLACE_ME_PR_3"
+migrations_dir = "migrations"
+[[env.pr-3.r2_buckets]]
+binding = "IMAGES"
+bucket_name = "dress-up-images-pr-3"
+
+[env.pr-4]
+name = "dress-up"
+preview_urls = true
+[env.pr-4.assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
+[env.pr-4.observability]
+enabled = true
+[[env.pr-4.d1_databases]]
+binding = "DB"
+database_name = "dress-up-pr-4"
+database_id = "REPLACE_ME_PR_4"
+migrations_dir = "migrations"
+[[env.pr-4.r2_buckets]]
+binding = "IMAGES"
+bucket_name = "dress-up-images-pr-4"
+
+[env.pr-5]
+name = "dress-up"
+preview_urls = true
+[env.pr-5.assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
+[env.pr-5.observability]
+enabled = true
+[[env.pr-5.d1_databases]]
+binding = "DB"
+database_name = "dress-up-pr-5"
+database_id = "REPLACE_ME_PR_5"
+migrations_dir = "migrations"
+[[env.pr-5.r2_buckets]]
+binding = "IMAGES"
+bucket_name = "dress-up-images-pr-5"
+
+[env.pr-6]
+name = "dress-up"
+preview_urls = true
+[env.pr-6.assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
+[env.pr-6.observability]
+enabled = true
+[[env.pr-6.d1_databases]]
+binding = "DB"
+database_name = "dress-up-pr-6"
+database_id = "REPLACE_ME_PR_6"
+migrations_dir = "migrations"
+[[env.pr-6.r2_buckets]]
+binding = "IMAGES"
+bucket_name = "dress-up-images-pr-6"
+
+[env.pr-7]
+name = "dress-up"
+preview_urls = true
+[env.pr-7.assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
+[env.pr-7.observability]
+enabled = true
+[[env.pr-7.d1_databases]]
+binding = "DB"
+database_name = "dress-up-pr-7"
+database_id = "REPLACE_ME_PR_7"
+migrations_dir = "migrations"
+[[env.pr-7.r2_buckets]]
+binding = "IMAGES"
+bucket_name = "dress-up-images-pr-7"
+
+[env.pr-8]
+name = "dress-up"
+preview_urls = true
+[env.pr-8.assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
+[env.pr-8.observability]
+enabled = true
+[[env.pr-8.d1_databases]]
+binding = "DB"
+database_name = "dress-up-pr-8"
+database_id = "REPLACE_ME_PR_8"
+migrations_dir = "migrations"
+[[env.pr-8.r2_buckets]]
+binding = "IMAGES"
+bucket_name = "dress-up-images-pr-8"
+
+[env.pr-9]
+name = "dress-up"
+preview_urls = true
+[env.pr-9.assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
+[env.pr-9.observability]
+enabled = true
+[[env.pr-9.d1_databases]]
+binding = "DB"
+database_name = "dress-up-pr-9"
+database_id = "REPLACE_ME_PR_9"
+migrations_dir = "migrations"
+[[env.pr-9.r2_buckets]]
+binding = "IMAGES"
+bucket_name = "dress-up-images-pr-9"
