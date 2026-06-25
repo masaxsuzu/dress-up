@@ -34,12 +34,13 @@ jobs:
 
       - run: npx opennextjs-cloudflare build
 
-      # PR 番号の下 1 桁をスロット ID にする (0〜9)。
+      # PR 番号を 9 で割った余りをスロット ID にする (0〜8)。
+      # Cloudflare D1 無料枠 10 のうち 1 つは本番用、残り 9 をプレビューに当てる。
       - name: Compute preview slot
         id: slot
         run: |
           PR=${{ github.event.pull_request.number }}
-          DIGIT=$((PR % 10))
+          DIGIT=$((PR % 9))
           echo "digit=${DIGIT}" >> "$GITHUB_OUTPUT"
           echo "env_name=pr-${DIGIT}" >> "$GITHUB_OUTPUT"
           echo "Slot for PR #${PR}: pr-${DIGIT}"
@@ -121,7 +122,7 @@ jobs:
             | | |
             |---|---|
             | Worker | `dress-up` (preview バージョン) |
-            | Slot | `pr-${{ steps.slot.outputs.digit }}` (PR # の下 1 桁) |
+            | Slot | `pr-${{ steps.slot.outputs.digit }}` (PR # を 9 で割った余り) |
             | D1 | `dress-up-pr-${{ steps.slot.outputs.digit }}` |
             | R2 | `dress-up-images-pr-${{ steps.slot.outputs.digit }}` |
             | Slot reset | ${{ steps.reset.outputs.did_reset == 'true' && '🔄 別 PR から交代 — D1/R2 を空にしました' || '✋ 同じ PR の再 push — D1/R2 維持' }} |

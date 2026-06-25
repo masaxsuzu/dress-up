@@ -25,13 +25,14 @@ bucket_name = "dress-up-images"
 # ---------------------------------------------------------------------------
 # PR プレビュー環境 (Worker は本番と同一、binding と URL だけ変える)
 #
-# 10 個の env (pr-0 〜 pr-9) を用意して、PR 番号の下 1 桁でスロットを割り当てる。
-# 同じ digit の PR が交代する時 (例: #1 → #11) は workflow が D1/R2 を reset。
-# 同時並行 11 PR 以上は想定しない (個人用)。
+# 9 個の env (pr-0 〜 pr-8) を用意して、PR 番号を 9 で割った余りでスロットを
+# 割り当てる (`% 9`)。Cloudflare D1 無料枠 10 のうち 1 つは本番用に確保、
+# 残り 9 をプレビューに当てる。同じ digit の PR が交代する時 (例: #1 → #10)
+# は workflow が D1/R2 を reset。同時並行 10 PR 以上は想定しない (個人用)。
 #
 # 初期セットアップ:
-#   scripts/setup-pr-previews.sh を 1 回実行 → 出力された 10 個の D1 ID を
-#   下の REPLACE_ME_PR_N に貼り付けて push。
+#   scripts/setup-pr-previews.sh を 1 回実行 → 出力された 9 個の D1 ID を
+#   下の database_id に貼り付けて push。
 # 詳細は docs/preview-deployments.md。
 # ---------------------------------------------------------------------------
 
@@ -46,7 +47,7 @@ enabled = true
 [[env.pr-0.d1_databases]]
 binding = "DB"
 database_name = "dress-up-pr-0"
-database_id = "REPLACE_ME_PR_0"
+database_id = "c89d28ce-8c70-4a3d-a14d-6d65cb703c36"
 migrations_dir = "migrations"
 [[env.pr-0.r2_buckets]]
 binding = "IMAGES"
@@ -63,7 +64,7 @@ enabled = true
 [[env.pr-1.d1_databases]]
 binding = "DB"
 database_name = "dress-up-pr-1"
-database_id = "REPLACE_ME_PR_1"
+database_id = "6ecdf661-d9c2-42e3-a758-c03974be1faa"
 migrations_dir = "migrations"
 [[env.pr-1.r2_buckets]]
 binding = "IMAGES"
@@ -80,7 +81,7 @@ enabled = true
 [[env.pr-2.d1_databases]]
 binding = "DB"
 database_name = "dress-up-pr-2"
-database_id = "REPLACE_ME_PR_2"
+database_id = "586b798d-07b5-4219-a3e9-246b3a2dcd3a"
 migrations_dir = "migrations"
 [[env.pr-2.r2_buckets]]
 binding = "IMAGES"
@@ -97,7 +98,7 @@ enabled = true
 [[env.pr-3.d1_databases]]
 binding = "DB"
 database_name = "dress-up-pr-3"
-database_id = "REPLACE_ME_PR_3"
+database_id = "dac907ab-97dc-426b-824e-d9a7809a8478"
 migrations_dir = "migrations"
 [[env.pr-3.r2_buckets]]
 binding = "IMAGES"
@@ -114,7 +115,7 @@ enabled = true
 [[env.pr-4.d1_databases]]
 binding = "DB"
 database_name = "dress-up-pr-4"
-database_id = "REPLACE_ME_PR_4"
+database_id = "97fdb67d-40b7-4c63-a7fe-0c1b75bb9c1b"
 migrations_dir = "migrations"
 [[env.pr-4.r2_buckets]]
 binding = "IMAGES"
@@ -131,7 +132,7 @@ enabled = true
 [[env.pr-5.d1_databases]]
 binding = "DB"
 database_name = "dress-up-pr-5"
-database_id = "REPLACE_ME_PR_5"
+database_id = "c49d8737-e54b-4b7f-ac19-9eb3503999fb"
 migrations_dir = "migrations"
 [[env.pr-5.r2_buckets]]
 binding = "IMAGES"
@@ -148,7 +149,7 @@ enabled = true
 [[env.pr-6.d1_databases]]
 binding = "DB"
 database_name = "dress-up-pr-6"
-database_id = "REPLACE_ME_PR_6"
+database_id = "59df9950-6328-4048-8dee-fb69407e0c11"
 migrations_dir = "migrations"
 [[env.pr-6.r2_buckets]]
 binding = "IMAGES"
@@ -165,7 +166,7 @@ enabled = true
 [[env.pr-7.d1_databases]]
 binding = "DB"
 database_name = "dress-up-pr-7"
-database_id = "REPLACE_ME_PR_7"
+database_id = "001c32c8-6e47-4888-80f5-0f511101623a"
 migrations_dir = "migrations"
 [[env.pr-7.r2_buckets]]
 binding = "IMAGES"
@@ -182,25 +183,8 @@ enabled = true
 [[env.pr-8.d1_databases]]
 binding = "DB"
 database_name = "dress-up-pr-8"
-database_id = "REPLACE_ME_PR_8"
+database_id = "e1c3e9ee-73bd-4c55-8ca1-95458a12cf29"
 migrations_dir = "migrations"
 [[env.pr-8.r2_buckets]]
 binding = "IMAGES"
 bucket_name = "dress-up-images-pr-8"
-
-[env.pr-9]
-name = "dress-up"
-preview_urls = true
-[env.pr-9.assets]
-directory = ".open-next/assets"
-binding = "ASSETS"
-[env.pr-9.observability]
-enabled = true
-[[env.pr-9.d1_databases]]
-binding = "DB"
-database_name = "dress-up-pr-9"
-database_id = "REPLACE_ME_PR_9"
-migrations_dir = "migrations"
-[[env.pr-9.r2_buckets]]
-binding = "IMAGES"
-bucket_name = "dress-up-images-pr-9"
