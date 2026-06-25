@@ -1,6 +1,7 @@
 #!/bin/bash
-# 一回だけ実行: 10 個の PR preview スロットを Cloudflare に作る。
-# 出力された database_id を wrangler.toml の REPLACE_ME_PR_N に貼り付けること。
+# 一回だけ実行: 9 個の PR preview スロット (pr-0 〜 pr-8) を Cloudflare に作る。
+# 出力された database_id を wrangler.toml の各 [[env.pr-N.d1_databases]] の
+# database_id に貼り付けること。
 #
 # 前提: wrangler が cloudflare 認証済 (`wrangler whoami` で確認)。
 set -euo pipefail
