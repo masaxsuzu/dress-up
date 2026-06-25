@@ -21,7 +21,7 @@ When the PR is merged or closed, the subscription is auto-cancelled; do not re-s
 
 1. **Wait for GH Actions to complete.** Call `mcp__github__pull_request_read` (method=`get_check_runs`) and require every check's `status` to be `completed`. If any are still `in_progress` or `queued`, wait for the next webhook / fallback wakeup — do not poll in a tight loop.
 2. **All checks must be `conclusion: "success"`.** If any failed, treat it as an actionable item (pull logs via `get_job_logs`, diagnose, fix or ask).
-3. **Run `/self-review <PR>`.** Output is one of `✓ clean` / `⚠ suspicious` / `✗ broken`.
+3. **Run `/self-review <PR>`.** Static checklist + the CI `preview` job (which itself runs `scripts/verify-preview.sh` post-deploy) result. The skill posts the verdict as a PR comment (`mcp__github__add_issue_comment`). Output is one of `✓ clean` / `⚠ suspicious` / `✗ broken`.
    - `clean` → proceed to step 4
    - `suspicious` → stop and `AskUserQuestion` with the concerns
    - `broken` → fix on the same branch, push, return to step 1

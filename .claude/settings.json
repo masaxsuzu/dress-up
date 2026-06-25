@@ -23,6 +23,7 @@
       "Bash(npx vitest run *)",
       "Bash(npx playwright test)",
       "Bash(npx playwright test *)",
+      "Bash(./scripts/verify-preview.sh *)",
       "mcp__github__list_pull_requests",
       "mcp__github__actions_list",
       "mcp__github__pull_request_read",

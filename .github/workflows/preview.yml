@@ -96,6 +96,19 @@ jobs:
           echo "url=$url" >> "$GITHUB_OUTPUT"
           echo "version_id=$version_id" >> "$GITHUB_OUTPUT"
 
+      # 実 preview を curl で叩いて、AI 不要の page/API が動くことを確認する。
+      # ここで失敗すると preview ジョブ全体が赤になり、babysitter gate が
+      # マージを止める。AI 必要 endpoint は scripts/verify-preview.sh 側で
+      # スキップ (Gemini quota を毎 PR で焼かない)。
+      - name: Verify preview deploy
+        if: steps.upload.outputs.url
+        env:
+          URL: ${{ steps.upload.outputs.url }}
+        run: |
+          # versions upload 直後はエッジに伝播するのに数秒かかるので軽く待つ。
+          sleep 10
+          ./scripts/verify-preview.sh "${URL}"
+
       - name: Comment preview URL on PR
         uses: marocchino/sticky-pull-request-comment@v2
         with:
