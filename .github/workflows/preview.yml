@@ -46,49 +46,33 @@ jobs:
           echo "Slot for PR #${PR}: pr-${DIGIT}"
 
       # マイグレーションは idempotent。reset より先に走らせて、初回スロット
-      # 利用時 (テーブルがまだ存在しない) でも reset の DELETE が成功するよう
-      # にする。reset 規則 (slot 交代時のみ) は変えない。
+      # 利用時 (テーブルがまだ存在しない) でも reset の DELETE が成功するように。
       - name: Apply migrations
         env:
           DIGIT: ${{ steps.slot.outputs.digit }}
           ENV_NAME: ${{ steps.slot.outputs.env_name }}
         run: npx wrangler d1 migrations apply "dress-up-pr-${DIGIT}" --remote --env "${ENV_NAME}"
 
-      # スロットが別の PR に使われていたら D1/R2 を reset。同じ PR が連続 push
-      # した場合は reset しない (デバッグ中のデータを失わないため)。
-      # 「直近 version の tag が pr-<同じ PR 番号>」かどうかで判定。
-      - name: Reset slot if owner changed
-        id: reset
+      # スロットを reset (D1 全テーブル DELETE + R2 全 object 削除)。
+      # 「11 を作るとき 1 を消す」がユーザ仕様だが、毎 push で消すのも仕様の
+      # 範疇 (= スロット交代時より厳しい側)。シンプルさを取って毎回 reset する。
+      - name: Reset slot
         env:
           DIGIT: ${{ steps.slot.outputs.digit }}
           ENV_NAME: ${{ steps.slot.outputs.env_name }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
-          EXPECTED_TAG="pr-${PR_NUMBER}"
-          LAST_TAG=$(npx wrangler versions list --env "${ENV_NAME}" --json 2>/dev/null \
-            | jq -r '.[0].annotations["workers/tag"] // ""' \
-            || echo "")
-          echo "Last tag on slot ${ENV_NAME}: '${LAST_TAG}'  Expected: '${EXPECTED_TAG}'"
-
-          if [ -n "${LAST_TAG}" ] && [ "${LAST_TAG}" = "${EXPECTED_TAG}" ]; then
-            echo "Same PR redeploys the slot — keep D1/R2 contents."
-            echo "did_reset=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "Slot changed hands — resetting D1 + R2."
-            # D1 reset (テーブル一覧は test/helpers/d1.ts TABLES と揃える)
-            npx wrangler d1 execute "dress-up-pr-${DIGIT}" \
-              --remote --env "${ENV_NAME}" \
-              --command "DELETE FROM clothing_items; DELETE FROM profile; DELETE FROM latest_recommendation;"
-            # R2 reset: 全 object を消す
-            keys=$(npx wrangler r2 object list "dress-up-images-pr-${DIGIT}" --remote --json 2>/dev/null \
-              | jq -r '.[].key // empty' || true)
-            if [ -n "${keys}" ]; then
-              echo "${keys}" | while IFS= read -r key; do
-                [ -n "${key}" ] && npx wrangler r2 object delete "dress-up-images-pr-${DIGIT}/${key}" --remote || true
-              done
-            fi
-            echo "did_reset=true" >> "$GITHUB_OUTPUT"
+          # D1 reset (テーブル一覧は test/helpers/d1.ts TABLES と揃える)
+          npx wrangler d1 execute "dress-up-pr-${DIGIT}" \
+            --remote --env "${ENV_NAME}" \
+            --command "DELETE FROM clothing_items; DELETE FROM profile; DELETE FROM latest_recommendation;"
+          # R2 reset: 全 object を消す
+          keys=$(npx wrangler r2 object list "dress-up-images-pr-${DIGIT}" --remote --json 2>/dev/null \
+            | jq -r '.[].key // empty' || true)
+          if [ -n "${keys}" ]; then
+            echo "${keys}" | while IFS= read -r key; do
+              [ -n "${key}" ] && npx wrangler r2 object delete "dress-up-images-pr-${DIGIT}/${key}" --remote || true
+            done
           fi
 
       # Worker `dress-up` に新バージョンを upload。`--env pr-N` により [env.pr-N]
@@ -127,7 +111,7 @@ jobs:
             | Slot | `pr-${{ steps.slot.outputs.digit }}` (PR # を 9 で割った余り) |
             | D1 | `dress-up-pr-${{ steps.slot.outputs.digit }}` |
             | R2 | `dress-up-images-pr-${{ steps.slot.outputs.digit }}` |
-            | Slot reset | ${{ steps.reset.outputs.did_reset == 'true' && '🔄 別 PR から交代 — D1/R2 を空にしました' || '✋ 同じ PR の再 push — D1/R2 維持' }} |
+            | Slot reset | 🔄 D1/R2 を空にしました (毎 push 実施) |
             | Commit | `${{ github.event.pull_request.head.sha }}` |
 
             ⚠️ プレビューは Cloudflare Access の保護外 (public URL)。
