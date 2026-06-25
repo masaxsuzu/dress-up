@@ -5,9 +5,9 @@ on:
     types: [opened, synchronize, reopened]
 
 # 同じ PR で連続 push しても古いジョブをキャンセルして無駄を減らす。
-# 異なる PR でも同じスロット (digit) は直列化したいが、GitHub 式言語に算術が
-# 無く下 1 桁が取れないため、ここでは PR 単位の concurrency で妥協する。
-# (同時並行 11 PR 以上は想定しないという前提)
+# 異なる PR でも同じスロット (PR# % 9) は直列化したいが、GitHub 式言語に
+# 算術が無く剰余が取れないため、ここでは PR 単位の concurrency で妥協する。
+# (同時並行 10 PR 以上は想定しないという前提)
 concurrency:
   group: preview-${{ github.event.pull_request.number }}
   cancel-in-progress: true
