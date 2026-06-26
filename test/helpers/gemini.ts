@@ -16,11 +16,13 @@ const { generateContentMock } = vi.hoisted(() => {
 
 vi.mock("@google/genai", async (importOriginal) => {
   const actual = (await importOriginal()) as Record<string, unknown>;
+  // vitest 4: vi.fn().mockImplementation(arrow) は `new` で呼べない (arrow 関数は
+  // constructor 不可)。`function` 式に変えれば `new GoogleGenAI({...})` が動く。
   return {
     ...actual,
-    GoogleGenAI: vi.fn().mockImplementation(() => ({
-      models: { generateContent: generateContentMock },
-    })),
+    GoogleGenAI: vi.fn().mockImplementation(function () {
+      return { models: { generateContent: generateContentMock } };
+    }),
   };
 });
 
