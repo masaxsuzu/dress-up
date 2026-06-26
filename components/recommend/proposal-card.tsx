@@ -117,6 +117,7 @@ function ProposalItemRow({ item }: { item: ProposalItem }) {
           <img
             src={`/api/images/${i.iconKey ?? i.imageKey}`}
             alt={i.subcategory ?? i.category}
+            loading="lazy"
             style={{
               width: 48,
               height: 48,

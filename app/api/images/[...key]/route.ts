@@ -19,11 +19,16 @@ export const GET = route<KeyParams>(async ({ env, user, params }) => {
   }
   if (!obj) return new Response("not found", { status: 404 });
 
+  // items/* と profile/* は UUID キーで一度作ったら同じ URL では中身が変わらない
+  // (再アップロード時は新 key を発行する) ので 7d。icons/* は item id 固定キーで
+  // 「アイコン化」ボタンで上書きされ得るので短めの 1d に抑える。
+  const maxAge = objectKey.startsWith("icons/") ? 86400 : 604800;
+
   return new Response(obj.body, {
     headers: {
       "Content-Type":
         obj.httpMetadata?.contentType ?? "application/octet-stream",
-      "Cache-Control": "private, max-age=3600",
+      "Cache-Control": `private, max-age=${maxAge}`,
       "Content-Length": obj.size.toString(),
     },
   });
