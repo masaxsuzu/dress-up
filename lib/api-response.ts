@@ -9,25 +9,13 @@ export function errorResponse(message: string, status: number): Response {
 }
 
 // ZodError を "field: message; field: message" 形式の 1 文字列に変換して
-// 400 レスポンスとして返す。
+// 400 レスポンスとして返す。issues を直接走査するので zod 3/4 両対応。
 export function validationError(error: ZodError): Response {
-  const flat = error.flatten();
-
   const parts: string[] = [];
-
-  // フォームエラー (特定フィールドに紐付かないエラー)
-  for (const msg of flat.formErrors) {
-    parts.push(msg);
+  for (const issue of error.issues) {
+    const path = issue.path.join(".");
+    parts.push(path ? `${path}: ${issue.message}` : issue.message);
   }
-
-  // フィールド別エラー
-  for (const [field, messages] of Object.entries(flat.fieldErrors)) {
-    if (!messages) continue;
-    for (const msg of messages) {
-      parts.push(`${field}: ${msg}`);
-    }
-  }
-
   const message = parts.join("; ") || "Validation failed";
   return Response.json({ error: message }, { status: 400 });
 }
