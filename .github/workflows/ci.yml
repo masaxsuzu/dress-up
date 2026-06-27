@@ -31,6 +31,27 @@ jobs:
           path: coverage/
           retention-days: 7
 
+      - name: Compute coverage percentage
+        if: github.ref == 'refs/heads/main'
+        id: coverage
+        run: |
+          PCT=$(node -e "const s=require('./coverage/coverage-summary.json');console.log(Math.floor(s.total.lines.pct))")
+          COLOR=$(node -e "const p=$PCT;console.log(p>=90?'brightgreen':p>=80?'green':p>=70?'yellow':'red')")
+          echo "pct=$PCT" >> "$GITHUB_OUTPUT"
+          echo "color=$COLOR" >> "$GITHUB_OUTPUT"
+
+      - name: Update coverage badge gist
+        if: github.ref == 'refs/heads/main'
+        continue-on-error: true
+        uses: Schneegans/dynamic-badges-action@v1.7.0
+        with:
+          auth: ${{ secrets.GIST_BADGE_TOKEN }}
+          gistID: ${{ vars.COVERAGE_GIST_ID }}
+          filename: dress-up-coverage.json
+          label: coverage
+          message: ${{ steps.coverage.outputs.pct }}%
+          color: ${{ steps.coverage.outputs.color }}
+
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
