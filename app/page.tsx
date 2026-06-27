@@ -16,17 +16,9 @@ export default async function Home() {
 
   return (
     <main style={pageStyle(1100)}>
-      <header
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "1rem",
-          gap: "0.5rem",
-        }}
-      >
+      <header className="page-header">
         <h1 style={{ margin: 0, fontSize: "1.4rem" }}>dress-up</h1>
-        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+        <div className="page-header-nav">
           <a href="/stats" style={pillLinkStyle}>
             統計
           </a>
