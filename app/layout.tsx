@@ -1,4 +1,5 @@
 import type { Viewport } from "next";
+import "./globals.css";
 
 export const metadata = {
   title: "dress-up",

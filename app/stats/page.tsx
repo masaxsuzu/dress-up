@@ -15,19 +15,13 @@ export default async function StatsPage() {
 
   return (
     <main style={pageStyle(640)}>
-      <header
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "1.5rem",
-          gap: "0.5rem",
-        }}
-      >
+      <header className="page-header" style={{ marginBottom: "1.5rem" }}>
         <h1 style={{ margin: 0, fontSize: "1.4rem" }}>統計</h1>
-        <Link href="/" style={pillLinkStyle}>
-          ← 一覧
-        </Link>
+        <div className="page-header-nav">
+          <Link href="/" style={pillLinkStyle}>
+            ← 一覧
+          </Link>
+        </div>
       </header>
 
       <StatsView items={items} />
