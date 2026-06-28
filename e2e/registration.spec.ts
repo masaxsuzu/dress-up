@@ -30,7 +30,7 @@ test("/add でアップロード→VLM失敗→手動入力→保存→一覧に
   await page.goto("/add");
   await expect(page.getByRole("heading", { name: "服を追加" })).toBeVisible();
 
-  await page.locator('input[type="file"]').setInputFiles({
+  await page.locator('[data-testid="photo-file-input"]').setInputFiles({
     name: "test.png",
     mimeType: "image/png",
     buffer: TINY_PNG,

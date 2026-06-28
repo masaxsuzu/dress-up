@@ -122,6 +122,7 @@ export default function AddPage() {
           }}
         >
           <input
+            data-testid="photo-file-input"
             type="file"
             accept="image/*"
             onChange={onFileChange}
