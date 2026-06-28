@@ -149,7 +149,7 @@ function computeStats(items: ClothingItem[]) {
     }
   }
   const topColors = [...colorMap.entries()]
-    .sort((a, b) => b[1].count - a[1].count)
+    .sort((a, b) => a[0].localeCompare(b[0]))
     .slice(0, 20);
 
   // brands
