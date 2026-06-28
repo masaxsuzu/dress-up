@@ -48,6 +48,7 @@
   }
 
   .bottom-nav-spacer {
+    display: block;
     height: calc(56px + env(safe-area-inset-bottom));
   }
 }
