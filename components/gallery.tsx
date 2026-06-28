@@ -5,7 +5,7 @@ import { useCallback, useMemo, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { ClothingCategory, ClothingItem, Season } from "@/schema/clothing";
 import { ClothingCategorySchema, SeasonSchema } from "@/schema/clothing";
-import { CATEGORY_LABEL, SEASON_LABEL } from "@/lib/labels";
+import { CATEGORY_LABEL, SEASON_LABEL, itemLabel } from "@/lib/labels";
 
 // ---------------------------------------------------------------------------
 // Filter helpers
@@ -310,8 +310,7 @@ export function Gallery({ items }: { items: ClothingItem[] }) {
               />
               <div style={{ padding: "0.6rem", minHeight: "3.75rem", boxSizing: "border-box" }}>
                 <div style={{ fontSize: "0.85rem", color: "#666" }}>
-                  {CATEGORY_LABEL[item.category]}
-                  {item.subcategory ? ` / ${item.subcategory}` : ""}
+                  {itemLabel(item.category, item.subcategory)}
                 </div>
                 <div
                   style={{

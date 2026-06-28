@@ -32,6 +32,14 @@ export const PATTERN_LABEL: Record<Pattern, string> = {
   other: "その他",
 };
 
+// サブカテゴリがあればそれだけ表示、なければカテゴリ名。
+export function itemLabel(
+  category: ClothingCategory,
+  subcategory: string | null | undefined,
+): string {
+  return subcategory ?? CATEGORY_LABEL[category];
+}
+
 export const FORMALITY_LABEL: Record<number, string> = {
   1: "ルームウェア",
   2: "カジュアル",
