@@ -155,7 +155,10 @@ function computeStats(items: ClothingItem[]) {
   // brands
   const brandMap = new Map<string, number>();
   for (const item of items) {
-    if (item.brand) brandMap.set(item.brand, (brandMap.get(item.brand) ?? 0) + 1);
+    if (item.brand) {
+      const key = item.brand.trim();
+      brandMap.set(key, (brandMap.get(key) ?? 0) + 1);
+    }
   }
   const topBrands = [...brandMap.entries()]
     .sort((a, b) => b[1] - a[1])
