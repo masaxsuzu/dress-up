@@ -97,6 +97,8 @@ test("詳細ページから編集して変更が反映される", async ({ page,
   // カテゴリをボトムスに変更 (最初のselectがカテゴリ)
   const selects = page.locator("select");
   await selects.first().selectOption("bottoms");
+  // サブカテゴリをクリア (旧カテゴリのサブカテゴリが残ると itemLabel がそちらを返す)
+  await page.getByLabel("サブカテゴリ").fill("");
 
   // 保存ボタンをクリック
   await page.getByRole("button", { name: "保存" }).click();

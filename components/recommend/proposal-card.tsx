@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { CATEGORY_LABEL } from "@/lib/labels";
+import { itemLabel } from "@/lib/labels";
 import { cardStyle } from "@/lib/ui";
 import type { ClothingCategory, Season } from "@/schema/clothing";
 import type { Proposal, ProposalItem } from "@/schema/recommend";
@@ -153,8 +153,7 @@ function ProposalItemRow({ item }: { item: ProposalItem }) {
             whiteSpace: "nowrap",
           }}
         >
-          {CATEGORY_LABEL[i.category]}
-          {i.subcategory ? ` / ${i.subcategory}` : ""}
+          {itemLabel(i.category, i.subcategory)}
         </Link>
       </li>
     );
@@ -201,7 +200,7 @@ function ProposalItemRow({ item }: { item: ProposalItem }) {
       </span>
       <span style={{ fontSize: "0.9rem", flex: 1 }}>
         <span style={{ color: "#666", marginRight: "0.4rem" }}>
-          {CATEGORY_LABEL[item.category]}
+          {itemLabel(item.category, null)}
         </span>
         {item.description}
       </span>

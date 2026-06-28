@@ -5,10 +5,10 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { getUserEmailFromHeaders } from "@/lib/auth";
 import { getItem } from "@/lib/db";
 import {
-  CATEGORY_LABEL,
   FORMALITY_LABEL,
   PATTERN_LABEL,
   SEASON_LABEL,
+  itemLabel,
 } from "@/lib/labels";
 import { DeleteButton } from "./delete-button";
 import { IconizeButton } from "./iconize-button";
@@ -96,8 +96,7 @@ export default async function ItemPage({
         }}
       >
         <Row label="カテゴリ">
-          {CATEGORY_LABEL[item.category]}
-          {item.subcategory ? ` / ${item.subcategory}` : ""}
+          {itemLabel(item.category, item.subcategory)}
         </Row>
 
         <Row label="カラー">
