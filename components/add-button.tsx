@@ -10,7 +10,13 @@ export function takePendingFile(): File | null {
   return f;
 }
 
-export function AddButton({ style }: { style?: React.CSSProperties }) {
+export function AddButton({
+  style,
+  children,
+}: {
+  style?: React.CSSProperties;
+  children?: React.ReactNode;
+}) {
   const router = useRouter();
 
   function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -28,7 +34,7 @@ export function AddButton({ style }: { style?: React.CSSProperties }) {
         onChange={onFileChange}
         style={{ display: "none" }}
       />
-      + 服を追加
+      {children ?? "+ 服を追加"}
     </label>
   );
 }

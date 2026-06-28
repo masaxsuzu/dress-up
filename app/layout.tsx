@@ -1,5 +1,6 @@
 import type { Viewport } from "next";
 import "./globals.css";
+import { BottomNav } from "@/components/bottom-nav";
 
 export const metadata = {
   title: "dress-up",
@@ -29,6 +30,9 @@ export default function RootLayout({
         }}
       >
         {children}
+        {/* Spacer so page content isn't hidden behind the fixed bottom nav on mobile */}
+        <div aria-hidden="true" className="bottom-nav-spacer" />
+        <BottomNav />
       </body>
     </html>
   );
