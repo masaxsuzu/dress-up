@@ -1,3 +1,21 @@
+/* Bottom navigation bar (mobile only) */
+.bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  padding-bottom: env(safe-area-inset-bottom);
+  background: #fff;
+  border-top: 1px solid #eee;
+  z-index: 100;
+}
+
+.bottom-nav-spacer {
+  display: none;
+}
+
 /* Responsive page header: title left + nav right on desktop,
    stacked column on mobile */
 .page-header {
@@ -22,6 +40,14 @@
   }
 
   .page-header-nav {
-    width: 100%;
+    display: none;
+  }
+
+  .bottom-nav {
+    display: flex;
+  }
+
+  .bottom-nav-spacer {
+    height: calc(56px + env(safe-area-inset-bottom));
   }
 }
