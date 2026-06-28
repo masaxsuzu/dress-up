@@ -9,40 +9,6 @@ import {
 import { cardStyle } from "@/lib/ui";
 
 // ---------------------------------------------------------------------------
-// Color helpers
-// ---------------------------------------------------------------------------
-
-function hexToHsl(hex: string): { h: number; s: number; l: number } {
-  const r = parseInt(hex.slice(1, 3), 16) / 255;
-  const g = parseInt(hex.slice(3, 5), 16) / 255;
-  const b = parseInt(hex.slice(5, 7), 16) / 255;
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  const l = (max + min) / 2;
-  if (max === min) return { h: 0, s: 0, l };
-  const d = max - min;
-  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-  let h = 0;
-  if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
-  else if (max === g) h = ((b - r) / d + 2) / 6;
-  else h = ((r - g) / d + 4) / 6;
-  return { h: h * 360, s, l };
-}
-
-// 彩度が低い色（グレー系）は末尾、有彩色は hue 昇順
-function compareByHue(hexA: string, hexB: string): number {
-  const ACHROMATIC_THRESHOLD = 0.12;
-  const a = hexToHsl(hexA);
-  const b = hexToHsl(hexB);
-  const aAchromatic = a.s < ACHROMATIC_THRESHOLD;
-  const bAchromatic = b.s < ACHROMATIC_THRESHOLD;
-  if (aAchromatic && bAchromatic) return a.l - b.l; // 暗→明
-  if (aAchromatic) return 1;
-  if (bAchromatic) return -1;
-  return a.h - b.h;
-}
-
-// ---------------------------------------------------------------------------
 // Primitives
 // ---------------------------------------------------------------------------
 
@@ -183,8 +149,7 @@ function computeStats(items: ClothingItem[]) {
     }
   }
   const topColors = [...colorMap.entries()]
-    .sort((a, b) => compareByHue(a[0], b[0]))
-    .slice(0, 20);
+    .sort((a, b) => a[0].localeCompare(b[0]));
 
   // brands
   const brandMap = new Map<string, number>();
@@ -332,32 +297,36 @@ export function StatsView({ items }: { items: ClothingItem[] }) {
 
       {/* Colors */}
       <Section title="使用カラー">
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.6rem" }}>
-          {s.topColors.map(([hex, { name, count }]) => (
+        {(() => {
+          const maxCount = Math.max(...s.topColors.map(([, { count }]) => count), 1);
+          return (
             <div
-              key={hex}
-              title={`${name} (${hex}) × ${count}`}
               style={{
                 display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: "0.25rem",
+                alignItems: "flex-end",
+                height: 80,
+                gap: 2,
+                borderBottom: "1px solid #eee",
               }}
             >
-              <div
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: "50%",
-                  background: hex,
-                  border: "1px solid #ddd",
-                  boxShadow: count >= 3 ? "0 0 0 2px #111" : undefined,
-                }}
-              />
-              <span style={{ fontSize: "0.65rem", color: "#888" }}>{count}</span>
+              {s.topColors.map(([hex, { name, count }]) => (
+                <div
+                  key={hex}
+                  title={`${name} (${hex}) × ${count}`}
+                  style={{
+                    flex: 1,
+                    minWidth: 8,
+                    height: `${Math.max((count / maxCount) * 100, 8)}%`,
+                    background: hex,
+                    borderRadius: "3px 3px 0 0",
+                    border: "1px solid rgba(0,0,0,0.08)",
+                    boxSizing: "border-box",
+                  }}
+                />
+              ))}
             </div>
-          ))}
-        </div>
+          );
+        })()}
       </Section>
 
       {/* Brands */}
