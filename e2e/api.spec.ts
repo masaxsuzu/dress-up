@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { clearItems as clear } from "./helpers";
 
 const VALID_PAYLOAD = {
   category: "tops",
@@ -15,14 +16,6 @@ const VALID_PAYLOAD = {
   notes: null,
   imageKey: "items/test.jpg",
 };
-
-async function clear(request: import("@playwright/test").APIRequestContext) {
-  const res = await request.get("/api/items");
-  const { items } = await res.json();
-  for (const item of items) {
-    await request.delete(`/api/items/${item.id}`);
-  }
-}
 
 test.describe("/api/items", () => {
   test.beforeEach(async ({ request }) => {

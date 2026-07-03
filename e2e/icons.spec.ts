@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { clearItems as clear } from "./helpers";
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -19,14 +20,6 @@ const BASE_ITEM = {
   notes: null,
   imageKey: "items/dummy-icon-test.png",
 };
-
-async function clear(request: import("@playwright/test").APIRequestContext) {
-  const res = await request.get("/api/items");
-  const { items } = await res.json();
-  for (const item of items) {
-    await request.delete(`/api/items/${item.id}`);
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Case 1: Gallery thumbnail when iconKey is absent

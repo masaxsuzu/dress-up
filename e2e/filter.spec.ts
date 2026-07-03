@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { clearItems as clearAll } from "./helpers";
 
 // Seed helper — creates items via the API
 async function createItem(
@@ -25,16 +26,6 @@ async function createItem(
   });
   expect(res.ok()).toBeTruthy();
   return (await res.json()).item;
-}
-
-async function clearAll(
-  request: import("@playwright/test").APIRequestContext,
-) {
-  const res = await request.get("/api/items");
-  const { items } = await res.json();
-  for (const item of items) {
-    await request.delete(`/api/items/${item.id}`);
-  }
 }
 
 test.describe("/ 絞り込み", () => {

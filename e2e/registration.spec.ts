@@ -1,19 +1,5 @@
 import { expect, test } from "@playwright/test";
-
-// 1x1 透明PNG。VLMが無くても Cloudflare Access も無くても /add フローを通せる。
-const TINY_PNG = Buffer.from(
-  "89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c489" +
-    "0000000d49444154789c63000100000500010d0a2db40000000049454e44ae426082",
-  "hex",
-);
-
-async function clear(request: import("@playwright/test").APIRequestContext) {
-  const res = await request.get("/api/items");
-  const { items } = await res.json();
-  for (const item of items) {
-    await request.delete(`/api/items/${item.id}`);
-  }
-}
+import { TINY_PNG, clearItems as clear } from "./helpers";
 
 test("/add でアップロード→VLM失敗→手動入力→保存→一覧に出る", async ({
   page,
