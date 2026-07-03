@@ -1,3 +1,4 @@
+// latest_recommendation テーブル (ユーザ毎 1 行の提案 draft) の保存/取得。
 import { z } from "zod";
 import { SeasonSchema, type Season } from "@/schema/clothing";
 import {

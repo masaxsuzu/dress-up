@@ -1,3 +1,4 @@
+// コーデ画像プロンプト用に提案アイテムを main (着装) / side (小物) に振り分け。
 import type { ClothingCategory, ClothingItem } from "@/schema/clothing";
 
 const MAIN_ORDER: readonly ClothingCategory[] = [

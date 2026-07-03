@@ -6,6 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 | 対象 | 読む |
 |------|-----|
+| どのファイルに何があるか (全ファイル 1 行索引) | `docs/codemap.md` |
 | アーキテクチャ / bindings / API ルート / スキーマ / 認証 | `docs/architecture.md` |
 | テストの書き方・共有ヘルパー | `docs/testing.md` |
 | PR プレビュー環境の仕組み・セットアップ | `docs/preview-deployments.md` |

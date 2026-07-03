@@ -1,3 +1,4 @@
+// コーデ提案の Zod スキーマ (リクエスト / 保存用 draft / hydrate 後の Proposal)。
 import { z } from "zod";
 import { ClothingCategorySchema, ClothingItemSchema } from "./clothing";
 

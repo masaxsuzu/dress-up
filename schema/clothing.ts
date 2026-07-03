@@ -1,3 +1,4 @@
+// 服アイテムの Zod スキーマ (data shape の source of truth)。VLM → Input → Item の層構造。
 import { z } from "zod";
 
 export const ClothingCategorySchema = z.enum([

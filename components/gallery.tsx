@@ -1,72 +1,19 @@
 "use client";
 
+// 一覧ページのギャラリービュー: 検索/絞り込み UI + アイテムグリッド。
+// 絞り込みロジックと URL パラメータ変換は lib/gallery-filters.ts。
 import Link from "next/link";
 import { useCallback, useMemo, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { ClothingCategory, ClothingItem, Season } from "@/schema/clothing";
 import { ClothingCategorySchema, SeasonSchema } from "@/schema/clothing";
 import { CATEGORY_LABEL, SEASON_LABEL, itemLabel } from "@/lib/labels";
-
-// ---------------------------------------------------------------------------
-// Filter helpers
-// ---------------------------------------------------------------------------
-
-function matchesText(item: ClothingItem, q: string): boolean {
-  if (!q) return true;
-  const lower = q.toLowerCase();
-  return [
-    item.subcategory,
-    item.brand,
-    item.material,
-    item.notes,
-    ...item.tags,
-  ]
-    .filter(Boolean)
-    .some((v) => v!.toLowerCase().includes(lower));
-}
-
-function matchesCategory(
-  item: ClothingItem,
-  categories: ClothingCategory[],
-): boolean {
-  if (categories.length === 0) return true;
-  return categories.includes(item.category);
-}
-
-function matchesSeason(item: ClothingItem, seasons: Season[]): boolean {
-  if (seasons.length === 0) return true;
-  return seasons.some((s) => item.season.includes(s));
-}
-
-// ---------------------------------------------------------------------------
-// URL param helpers
-// ---------------------------------------------------------------------------
-
-type Params = {
-  q: string;
-  categories: ClothingCategory[];
-  seasons: Season[];
-};
-
-function parseParams(sp: URLSearchParams): Params {
-  const q = sp.get("q") ?? "";
-  const categories = (sp.getAll("category") as ClothingCategory[]).filter((c) =>
-    ClothingCategorySchema.options.includes(c),
-  );
-  const seasons = (sp.getAll("season") as Season[]).filter((s) =>
-    SeasonSchema.options.includes(s),
-  );
-  return { q, categories, seasons };
-}
-
-function buildURL(params: Params): string {
-  const sp = new URLSearchParams();
-  if (params.q) sp.set("q", params.q);
-  for (const c of params.categories) sp.append("category", c);
-  for (const s of params.seasons) sp.append("season", s);
-  const qs = sp.toString();
-  return qs ? `/?${qs}` : "/";
-}
+import {
+  type GalleryParams,
+  buildURL,
+  matchesAll,
+  parseParams,
+} from "@/lib/gallery-filters";
 
 // ---------------------------------------------------------------------------
 // Sub-components
@@ -116,8 +63,8 @@ export function Gallery({ items }: { items: ClothingItem[] }) {
   const [searchText, setSearchText] = useState(q);
 
   const updateParams = useCallback(
-    (next: Partial<Params>) => {
-      const merged: Params = {
+    (next: Partial<GalleryParams>) => {
+      const merged: GalleryParams = {
         q: next.q ?? q,
         categories: next.categories ?? categories,
         seasons: next.seasons ?? seasons,
@@ -159,13 +106,7 @@ export function Gallery({ items }: { items: ClothingItem[] }) {
     (q ? 1 : 0) + categories.length + seasons.length;
 
   const filtered = useMemo(
-    () =>
-      items.filter(
-        (item) =>
-          matchesText(item, q) &&
-          matchesCategory(item, categories) &&
-          matchesSeason(item, seasons),
-      ),
+    () => items.filter((item) => matchesAll(item, { q, categories, seasons })),
     [items, q, categories, seasons],
   );
 

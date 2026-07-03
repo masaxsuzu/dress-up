@@ -1,3 +1,4 @@
+// ゴーストマネキン風アイコン生成用の Gemini プロンプト組み立て。
 import type { ClothingCategory } from "@/schema/clothing";
 
 // 全カテゴリ共通の制約。

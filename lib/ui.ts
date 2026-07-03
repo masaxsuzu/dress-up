@@ -1,3 +1,4 @@
+// ページ/カード/ボタンの共有インラインスタイル定数。
 import type { CSSProperties } from "react";
 
 // Page container: centered column with 1rem padding.

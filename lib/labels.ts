@@ -1,3 +1,4 @@
+// enum 値 → 日本語表示ラベルの対応表と itemLabel ヘルパー。
 import type {
   ClothingCategory,
   Pattern,

@@ -1,3 +1,4 @@
+// profile テーブル (ユーザ毎 1 行) の D1 読み書き。
 import type { Gender, Profile, ProfileInput } from "@/schema/profile";
 
 interface Row {

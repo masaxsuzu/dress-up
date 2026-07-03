@@ -1,3 +1,4 @@
+// 全身コーデ画像生成プロンプトの組み立て (プロフィール・TPO・シーズン折込み)。
 import type { ClothingCategory, ClothingItem, Pattern, Season } from "@/schema/clothing";
 import type { Profile } from "@/schema/profile";
 

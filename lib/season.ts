@@ -1,3 +1,4 @@
+// 現在の月 → シーズン (spring/summer/autumn/winter) 判定。
 import type { Season } from "@/schema/clothing";
 
 // 月から現在の季節を返す。date を渡さない場合は今日の日付を使う。

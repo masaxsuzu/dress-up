@@ -1,3 +1,4 @@
+// Gemini (2.5-pro, forced function calling) でワードローブ + TPO からコーデ 3 案を生成。
 import {
   GoogleGenAI,
   FunctionCallingConfigMode,
