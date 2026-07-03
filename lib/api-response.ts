@@ -1,3 +1,4 @@
+// 全 API ルート共通のレスポンス形状 ({ error: string }) と JSON ヘルパー。
 import type { ZodError } from "zod";
 
 // すべての API エラーレスポンスを { error: string } 形状に統一するためのヘルパー。

@@ -1,3 +1,4 @@
+// Gemini (flash-image) で全身コーデ画像を生成。
 import { GoogleGenAI, Modality } from "@google/genai";
 import { buildOutfitPrompt, type PromptItem } from "@/lib/outfit-prompt";
 import type { ClothingItem, Season } from "@/schema/clothing";

@@ -1,3 +1,4 @@
+// Gemini (2.5-flash, forced function calling) で服写真から属性を抽出。
 import {
   GoogleGenAI,
   FunctionCallingConfigMode,

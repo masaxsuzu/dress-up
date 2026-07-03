@@ -1,3 +1,4 @@
+// 保存済み提案 draft を現在のワードローブで Proposal に復元 (削除済みはプレースホルダ)。
 import type { ClothingItem } from "@/schema/clothing";
 import type {
   Proposal,

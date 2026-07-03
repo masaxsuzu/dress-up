@@ -1,3 +1,4 @@
+// clothing_items の D1 CRUD。配列フィールドは JSON 文字列で保存し rowToItem でパース。
 import type {
   ClothingCategory,
   ClothingItem,
