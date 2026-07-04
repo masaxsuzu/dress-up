@@ -1,4 +1,126 @@
-/* Bottom navigation bar (mobile only) */
+/* Design tokens (CSS custom properties). Consumed by globals.css classes
+   below and by lib/ui.ts's shared inline-style constants — update both
+   together when adjusting the palette. */
+:root {
+  --bg: #f7f5f2; /* 温かみのあるオフホワイト */
+  --surface: #ffffff;
+  --ink: #1c1917;
+  --muted: #78716c;
+  --border: #e7e2dc;
+  --accent: #a08060;
+  --danger: #c00;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.04), 0 4px 16px rgb(0 0 0 / 0.05);
+  --shadow-hover: 0 2px 4px rgb(0 0 0 / 0.05), 0 8px 24px rgb(0 0 0 / 0.08);
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family:
+    system-ui,
+    -apple-system,
+    "Hiragino Sans",
+    "Noto Sans JP",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------------
+   Shared component classes
+   --------------------------------------------------------------------- */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+}
+
+.card-interactive {
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.card-interactive:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-hover);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    opacity 0.15s ease,
+    background 0.15s ease;
+}
+
+.btn-primary {
+  background: var(--ink);
+  color: #fff;
+  padding: 0.6rem 1.1rem;
+  border-radius: var(--radius-sm);
+}
+
+.btn-primary:hover {
+  opacity: 0.85;
+}
+
+.btn-outline {
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  padding: 0.6rem 1.1rem;
+  border-radius: var(--radius-sm);
+}
+
+.btn-outline:hover {
+  background: var(--bg);
+}
+
+.chip {
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-family: inherit;
+  white-space: nowrap;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.chip-active {
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------------------
+   Bottom navigation bar (mobile only)
+   --------------------------------------------------------------------- */
 .bottom-nav {
   display: none;
   position: fixed;
@@ -7,8 +129,10 @@
   right: 0;
   height: 56px;
   padding-bottom: env(safe-area-inset-bottom);
-  background: #fff;
-  border-top: 1px solid #eee;
+  background: rgb(255 255 255 / 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border);
   z-index: 100;
 }
 
@@ -24,6 +148,11 @@
   align-items: center;
   margin-bottom: 1rem;
   gap: 0.5rem;
+}
+
+.page-header h1 {
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 .page-header-nav {

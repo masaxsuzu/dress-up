@@ -58,7 +58,7 @@ const itemStyle = (active: boolean): React.CSSProperties => ({
   alignItems: "center",
   justifyContent: "center",
   gap: 2,
-  color: active ? "#111" : "#aaa",
+  color: active ? "var(--ink)" : "var(--muted)",
   textDecoration: "none",
   fontSize: "0.6rem",
   lineHeight: 1,
