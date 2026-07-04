@@ -42,10 +42,10 @@ lint スクリプトはまだ無い。
 
 ## モデルティア・ルーティング（コスト最適化）
 
-セッション既定は `claude-sonnet-4-6`（`.claude/settings.json`）。メインループが**上位モデル（Fable/Opus）で動いている場合**は役割を分離する:
+セッション既定は `claude-sonnet-5`（`.claude/settings.json`）。メインループが**上位モデル（Fable/Opus）で動いている場合**は役割を分離する:
 
 - **メインループ（高価）**: 計画・設計判断・調査のまとめ・self-review・マージ判断・ユーザ対話のみ
-- **実行（安価）**: 計画確定後のコード実装・テスト作成・機械的リファクタは Agent tool で `full-stack-developer`（`model: sonnet` 指定済み）に委譲する。委譲プロンプトには対象ファイル・期待する変更・検証コマンド（`npx tsc --noEmit` / `npm test`）を明記
+- **実行（安価）**: 計画確定後のコード実装・テスト作成・機械的リファクタは Agent tool で `full-stack-developer`（`model: claude-sonnet-5` 指定済み）に委譲する。委譲プロンプトには対象ファイル・期待する変更・検証コマンド（`npx tsc --noEmit` / `npm test`）を明記
 - 例外: 数行の trivial な修正は委譲コスト（コンテキスト転送）の方が高いのでメインループが直接行ってよい
 - メインループが Sonnet 以下のときは委譲不要（既に安い）
 
