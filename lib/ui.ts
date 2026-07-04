@@ -1,4 +1,5 @@
 // ページ/カード/ボタンの共有インラインスタイル定数。
+// 値は app/globals.css の CSS カスタムプロパティ (デザイントークン) を参照する。
 import type { CSSProperties } from "react";
 
 // Page container: centered column with 1rem padding.
@@ -11,12 +12,12 @@ export function pageStyle(maxWidth: number): CSSProperties {
   };
 }
 
-// Pill-shaped navigation link (ghost variant: white bg, dark border).
+// Pill-shaped navigation link (ghost variant: surface bg, dark border).
 export const pillLinkStyle: CSSProperties = {
   padding: "0.6rem 1rem",
-  background: "#fff",
-  color: "#111",
-  border: "1px solid #111",
+  background: "var(--surface)",
+  color: "var(--ink)",
+  border: "1px solid var(--ink)",
   borderRadius: 999,
   textDecoration: "none",
   fontSize: "0.95rem",
@@ -26,7 +27,7 @@ export const pillLinkStyle: CSSProperties = {
 // Filled pill variant used for the "Add" button.
 export const pillLinkFilledStyle: CSSProperties = {
   padding: "0.6rem 1rem",
-  background: "#111",
+  background: "var(--ink)",
   color: "#fff",
   borderRadius: 999,
   textDecoration: "none",
@@ -35,9 +36,9 @@ export const pillLinkFilledStyle: CSSProperties = {
 };
 
 // Full-width action button.
-//   variant "primary"  → black  (default)
-//   variant "danger"   → red (#c00)
-//   variant "secondary"→ grey (#555)
+//   variant "primary"  → ink   (default)
+//   variant "danger"   → red (var(--danger))
+//   variant "secondary"→ muted grey
 // disabled: grays out the button and sets cursor.
 export function actionBtnStyle(opts?: {
   variant?: "primary" | "danger" | "secondary";
@@ -46,9 +47,12 @@ export function actionBtnStyle(opts?: {
 }): CSSProperties {
   const { variant = "primary", disabled = false, cursor } = opts ?? {};
   const bgMap: Record<string, string> = {
-    primary: disabled ? "#999" : "#111",
-    danger: disabled ? "#999" : "#c00",
-    secondary: disabled ? "#999" : "#555",
+    primary: disabled ? "var(--muted)" : "var(--ink)",
+    // NOTE: kept as a literal (matches --danger's value) rather than
+    // var(--danger) — e2e/icons.spec.ts reads the raw inline
+    // `el.style.background` string and expects "#c00" / its rgb() form.
+    danger: disabled ? "var(--muted)" : "#c00",
+    secondary: disabled ? "var(--muted)" : "#555",
   };
   return {
     display: "block",
@@ -56,7 +60,7 @@ export function actionBtnStyle(opts?: {
     background: bgMap[variant],
     color: "#fff",
     border: "none",
-    borderRadius: 8,
+    borderRadius: "var(--radius-sm)",
     cursor: cursor ?? (disabled ? "not-allowed" : "pointer"),
     fontSize: "1rem",
     width: "100%",
@@ -64,11 +68,11 @@ export function actionBtnStyle(opts?: {
   };
 }
 
-// Card container: white box with light border and rounded corners.
+// Card container: surface box with light border and rounded corners.
 // Used in recommend cards and item detail sections.
 export const cardStyle: CSSProperties = {
-  border: "1px solid #e5e5e5",
-  borderRadius: 10,
+  border: "1px solid var(--border)",
+  borderRadius: "var(--radius)",
   padding: "0.75rem",
-  background: "#fff",
+  background: "var(--surface)",
 };

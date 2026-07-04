@@ -31,17 +31,7 @@ function Chip({
   return (
     <button
       onClick={onClick}
-      style={{
-        padding: "0.3rem 0.75rem",
-        borderRadius: 999,
-        border: active ? "2px solid #111" : "1px solid #ccc",
-        background: active ? "#111" : "#fff",
-        color: active ? "#fff" : "#333",
-        cursor: "pointer",
-        fontSize: "0.82rem",
-        fontWeight: active ? 600 : 400,
-        whiteSpace: "nowrap",
-      }}
+      className={active ? "chip chip-active" : "chip"}
     >
       {label}
     </button>
@@ -132,13 +122,12 @@ export function Gallery({ items }: { items: ClothingItem[] }) {
             onChange={(e) => setSearchText(e.target.value)}
             onBlur={() => updateParams({ q: searchText.trim() })}
             placeholder="ブランド・素材・タグで検索"
+            className="chip"
             style={{
               flex: 1,
-              padding: "0.5rem 0.8rem",
-              borderRadius: 999,
-              border: "1px solid #ccc",
+              padding: "0.5rem 0.9rem",
+              cursor: "text",
               fontSize: "0.9rem",
-              background: "#fff",
               outline: "none",
               minWidth: 0,
             }}
@@ -228,12 +217,8 @@ export function Gallery({ items }: { items: ClothingItem[] }) {
             style={{ textDecoration: "none", color: "inherit" }}
           >
             <article
-              style={{
-                border: "1px solid #eee",
-                borderRadius: 10,
-                overflow: "hidden",
-                background: "#fff",
-              }}
+              className="card card-interactive"
+              style={{ overflow: "hidden" }}
             >
               <img
                 src={`/api/images/${item.iconKey ?? item.imageKey}`}

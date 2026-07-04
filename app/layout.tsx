@@ -20,15 +20,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ja">
-      <body
-        style={{
-          margin: 0,
-          fontFamily: "system-ui, -apple-system, sans-serif",
-          background: "#fafafa",
-          color: "#111",
-          WebkitTextSizeAdjust: "100%",
-        }}
-      >
+      <body>
         {children}
         {/* Spacer so page content isn't hidden behind the fixed bottom nav on mobile */}
         <div aria-hidden="true" className="bottom-nav-spacer" />

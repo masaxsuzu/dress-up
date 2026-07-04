@@ -27,7 +27,7 @@ export function AddButton({
   }
 
   return (
-    <label style={{ cursor: "pointer", ...style }}>
+    <label className="btn-primary" style={{ cursor: "pointer", ...style }}>
       <input
         type="file"
         accept="image/*"
