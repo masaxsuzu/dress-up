@@ -224,6 +224,7 @@ export function Gallery({ items }: { items: ClothingItem[] }) {
                 src={`/api/images/${item.iconKey ?? item.imageKey}`}
                 alt={item.subcategory ?? item.category}
                 loading="lazy"
+                decoding="async"
                 style={{
                   width: "100%",
                   aspectRatio: "1",
