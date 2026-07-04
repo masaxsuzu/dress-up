@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { TINY_PNG, clearItems as clear } from "./helpers";
+import { TINY_PNG, clearItems as clear, itemPayload } from "./helpers";
 
 test("/add でアップロード→VLM失敗→手動入力→保存→一覧に出る", async ({
   page,
@@ -47,21 +47,7 @@ test("詳細ページから編集して変更が反映される", async ({ page,
   await clear(request);
 
   const created = await request.post("/api/items", {
-    data: {
-      category: "tops",
-      subcategory: "Tシャツ",
-      colors: [{ name: "navy", hex: "#1f2a44" }],
-      pattern: null,
-      material: null,
-      silhouette: null,
-      season: ["spring"],
-      formality: 2,
-      occasion: [],
-      tags: [],
-      brand: null,
-      notes: null,
-      imageKey: "items/dummy.png",
-    },
+    data: itemPayload({ subcategory: "Tシャツ" }),
   });
   expect(created.ok()).toBeTruthy();
   const { item } = await created.json();
@@ -99,21 +85,7 @@ test("詳細ページから削除すると一覧から消える", async ({ page,
 
   // API 経由で1件作っておく（UIフローはもう一つのテストでカバー済み）
   const created = await request.post("/api/items", {
-    data: {
-      category: "tops",
-      subcategory: null,
-      colors: [{ name: "navy", hex: "#1f2a44" }],
-      pattern: null,
-      material: null,
-      silhouette: null,
-      season: ["spring"],
-      formality: 2,
-      occasion: [],
-      tags: [],
-      brand: null,
-      notes: null,
-      imageKey: "items/dummy.png",
-    },
+    data: itemPayload(),
   });
   expect(created.ok()).toBeTruthy();
   const { item } = await created.json();

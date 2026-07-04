@@ -1,28 +1,13 @@
 import { expect, test } from "@playwright/test";
-import { clearItems as clearAll } from "./helpers";
+import { clearItems as clearAll, itemPayload } from "./helpers";
 
 // Seed helper — creates items via the API
 async function createItem(
   request: import("@playwright/test").APIRequestContext,
   overrides: Record<string, unknown>,
 ) {
-  const base = {
-    category: "tops",
-    subcategory: null,
-    colors: [{ name: "white", hex: "#ffffff" }],
-    pattern: null,
-    material: null,
-    silhouette: null,
-    season: ["spring"],
-    formality: 2,
-    occasion: [],
-    tags: [],
-    brand: null,
-    notes: null,
-    imageKey: "items/dummy.png",
-  };
   const res = await request.post("/api/items", {
-    data: { ...base, ...overrides },
+    data: itemPayload({ colors: [{ name: "white", hex: "#ffffff" }], ...overrides }),
   });
   expect(res.ok()).toBeTruthy();
   return (await res.json()).item;

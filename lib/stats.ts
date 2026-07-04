@@ -2,8 +2,6 @@
 import type { ClothingItem } from "@/schema/clothing";
 import { ClothingCategorySchema, SeasonSchema } from "@/schema/clothing";
 
-export type WardrobeStats = ReturnType<typeof computeStats>;
-
 export function computeStats(items: ClothingItem[]) {
   const total = items.length;
   const iconized = items.filter((i) => i.iconKey).length;
