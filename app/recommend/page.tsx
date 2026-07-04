@@ -99,7 +99,7 @@ export default function RecommendPage() {
   return (
     <main style={pageStyle(900)}>
       <p style={{ margin: "0 0 1rem" }}>
-        <Link href="/" style={{ color: "#666" }}>
+        <Link href="/" style={{ color: "var(--muted)" }}>
           ← 一覧に戻る
         </Link>
       </p>
@@ -126,10 +126,11 @@ export default function RecommendPage() {
               marginTop: "0.25rem",
               padding: "0.5rem",
               fontSize: "0.95rem",
-              border: "1px solid #ddd",
-              borderRadius: 6,
+              border: "1px solid var(--border)",
+              borderRadius: "var(--radius-sm)",
               resize: "vertical",
-              background: "#fff",
+              background: "var(--surface)",
+              color: "var(--ink)",
             }}
           />
         </label>
@@ -146,14 +147,16 @@ export default function RecommendPage() {
       </section>
 
       {error && (
-        <p style={{ color: "#c00", whiteSpace: "pre-wrap" }}>{error}</p>
+        <p style={{ color: "var(--danger)", whiteSpace: "pre-wrap" }}>
+          {error}
+        </p>
       )}
 
       {view && (
         <section>
           <p
             style={{
-              color: "#666",
+              color: "var(--muted)",
               fontSize: "0.85rem",
               marginBottom: "0.75rem",
             }}

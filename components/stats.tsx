@@ -8,7 +8,6 @@ import {
   SEASON_LABEL,
 } from "@/lib/labels";
 import { computeStats } from "@/lib/stats";
-import { cardStyle } from "@/lib/ui";
 
 // ---------------------------------------------------------------------------
 // Primitives
@@ -22,12 +21,15 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section style={{ ...cardStyle, marginBottom: "1rem" }}>
+    <section
+      className="card"
+      style={{ marginBottom: "1rem", padding: "0.75rem" }}
+    >
       <h2
         style={{
           margin: "0 0 0.75rem",
           fontSize: "0.85rem",
-          color: "#888",
+          color: "var(--muted)",
           fontWeight: 600,
           letterSpacing: "0.04em",
           textTransform: "uppercase",
@@ -65,7 +67,7 @@ function BarRow({
         style={{
           width: labelWidth,
           fontSize: "0.82rem",
-          color: "#555",
+          color: "var(--muted)",
           flexShrink: 0,
           textAlign: "right",
         }}
@@ -75,7 +77,7 @@ function BarRow({
       <div
         style={{
           flex: 1,
-          background: "#f0f0f0",
+          background: "var(--bg)",
           borderRadius: 4,
           height: 14,
           overflow: "hidden",
@@ -84,7 +86,7 @@ function BarRow({
         <div
           style={{
             width: `${pct}%`,
-            background: "#111",
+            background: "var(--ink)",
             height: "100%",
             borderRadius: 4,
             minWidth: count > 0 ? 4 : 0,
@@ -95,7 +97,7 @@ function BarRow({
         style={{
           width: 28,
           fontSize: "0.82rem",
-          color: "#444",
+          color: "var(--ink)",
           textAlign: "right",
           flexShrink: 0,
         }}
@@ -119,7 +121,7 @@ function ColorHistogram({
         alignItems: "flex-end",
         height: 80,
         gap: 2,
-        borderBottom: "1px solid #eee",
+        borderBottom: "1px solid var(--border)",
       }}
     >
       {colors.map(([hex, { name, count }]) => (
@@ -132,7 +134,7 @@ function ColorHistogram({
             height: `${Math.max((count / maxCount) * 100, 8)}%`,
             background: hex,
             borderRadius: "3px 3px 0 0",
-            border: "1px solid rgba(0,0,0,0.08)",
+            border: "1px solid var(--border)",
             boxSizing: "border-box",
           }}
         />
@@ -148,7 +150,7 @@ function ColorHistogram({
 export function StatsView({ items }: { items: ClothingItem[] }) {
   if (items.length === 0) {
     return (
-      <p style={{ color: "#888", fontSize: "0.9rem" }}>
+      <p style={{ color: "var(--muted)", fontSize: "0.9rem" }}>
         アイテムがまだありません。
       </p>
     );
@@ -184,8 +186,8 @@ export function StatsView({ items }: { items: ClothingItem[] }) {
               style={{
                 textAlign: "center",
                 padding: "0.75rem 0.5rem",
-                background: "#fafafa",
-                borderRadius: 8,
+                background: "var(--bg)",
+                borderRadius: "var(--radius-sm)",
               }}
             >
               <div
@@ -198,7 +200,9 @@ export function StatsView({ items }: { items: ClothingItem[] }) {
               >
                 {value}
               </div>
-              <div style={{ fontSize: "0.75rem", color: "#888" }}>{label}</div>
+              <div style={{ fontSize: "0.75rem", color: "var(--muted)" }}>
+                {label}
+              </div>
             </div>
           ))}
         </div>

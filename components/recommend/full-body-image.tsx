@@ -90,24 +90,16 @@ export function FullBodyImage({
             maxWidth: 480,
             display: "block",
             margin: "0 auto",
-            borderRadius: 8,
-            border: "1px solid #eee",
+            borderRadius: "var(--radius-sm)",
+            border: "1px solid var(--border)",
           }}
         />
       )}
       {state === "idle" && (
         <button
           onClick={() => setTrigger((t) => t + 1)}
-          style={{
-            width: "100%",
-            padding: "0.7rem 0.9rem",
-            fontSize: "0.9rem",
-            background: "#fff",
-            color: "#111",
-            border: "1px solid #111",
-            borderRadius: 8,
-            cursor: "pointer",
-          }}
+          className="btn btn-outline"
+          style={{ width: "100%", padding: "0.7rem 0.9rem" }}
         >
           全身画像を生成
         </button>
@@ -116,11 +108,11 @@ export function FullBodyImage({
         <div
           style={{
             padding: "2rem 0.75rem",
-            background: "#fafafa",
-            border: "1px solid #eee",
-            borderRadius: 8,
+            background: "var(--bg)",
+            border: "1px solid var(--border)",
+            borderRadius: "var(--radius-sm)",
             fontSize: "0.85rem",
-            color: "#666",
+            color: "var(--muted)",
             textAlign: "center",
           }}
         >
@@ -131,14 +123,14 @@ export function FullBodyImage({
         <div
           style={{
             padding: "0.75rem",
-            background: "#fafafa",
-            border: "1px solid #eee",
-            borderRadius: 8,
+            background: "var(--bg)",
+            border: "1px solid var(--border)",
+            borderRadius: "var(--radius-sm)",
           }}
         >
           <p
             style={{
-              color: "#c00",
+              color: "var(--danger)",
               fontSize: "0.85rem",
               margin: "0 0 0.5rem",
             }}
@@ -147,15 +139,8 @@ export function FullBodyImage({
           </p>
           <button
             onClick={() => setTrigger((t) => t + 1)}
-            style={{
-              padding: "0.4rem 0.8rem",
-              fontSize: "0.85rem",
-              background: "#fff",
-              color: "#111",
-              border: "1px solid #111",
-              borderRadius: 6,
-              cursor: "pointer",
-            }}
+            className="btn btn-outline"
+            style={{ padding: "0.4rem 0.8rem", fontSize: "0.85rem" }}
           >
             再試行
           </button>

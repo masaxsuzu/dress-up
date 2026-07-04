@@ -103,7 +103,7 @@ export default function AddPage() {
   return (
     <main style={pageStyle(640)}>
       <p style={{ margin: "0 0 1rem" }}>
-        <a href="/" style={{ color: "#666" }}>
+        <a href="/" style={{ color: "var(--muted)" }}>
           ← 一覧に戻る
         </a>
       </p>
@@ -114,9 +114,9 @@ export default function AddPage() {
           style={{
             display: "block",
             padding: "1rem",
-            border: "2px dashed #ccc",
-            borderRadius: 10,
-            background: "#fff",
+            border: "2px dashed var(--border)",
+            borderRadius: "var(--radius)",
+            background: "var(--surface)",
             textAlign: "center",
             cursor: "pointer",
           }}
@@ -141,9 +141,9 @@ export default function AddPage() {
                 width: "100%",
                 maxHeight: "50vh",
                 objectFit: "contain",
-                borderRadius: 8,
-                border: "1px solid #eee",
-                background: "#fff",
+                borderRadius: "var(--radius-sm)",
+                border: "1px solid var(--border)",
+                background: "var(--surface)",
               }}
             />
           </div>
@@ -171,7 +171,13 @@ export default function AddPage() {
       )}
 
       {error && (
-        <p style={{ color: "#c00", whiteSpace: "pre-wrap", marginTop: "1rem" }}>
+        <p
+          style={{
+            color: "var(--danger)",
+            whiteSpace: "pre-wrap",
+            marginTop: "1rem",
+          }}
+        >
           {error}
         </p>
       )}

@@ -31,7 +31,7 @@ export function ProposalCard({
         style={{
           margin: "0 0 0.5rem",
           fontSize: "0.85rem",
-          color: "#444",
+          color: "var(--ink)",
           fontWeight: 600,
         }}
       >
@@ -42,7 +42,7 @@ export function ProposalCard({
               marginLeft: "0.5rem",
               fontSize: "0.7rem",
               color: "#fff",
-              background: "#a87",
+              background: "var(--accent)",
               borderRadius: 4,
               padding: "0.1rem 0.4rem",
             }}
@@ -58,7 +58,7 @@ export function ProposalCard({
         style={{
           margin: "0 0 0.4rem",
           fontSize: "0.75rem",
-          color: "#888",
+          color: "var(--muted)",
           fontWeight: "normal",
         }}
       >
@@ -74,7 +74,7 @@ export function ProposalCard({
         style={{
           margin: "0 0 0.4rem",
           fontSize: "0.75rem",
-          color: "#888",
+          color: "var(--muted)",
           fontWeight: "normal",
         }}
       >
