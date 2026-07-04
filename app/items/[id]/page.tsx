@@ -30,7 +30,7 @@ export default async function ItemPage({
   return (
     <main style={pageStyle(640)}>
       <p style={{ margin: "0 0 1rem" }}>
-        <Link href="/" style={{ color: "#666" }}>
+        <Link href="/" style={{ color: "var(--muted)" }}>
           ← 一覧に戻る
         </Link>
       </p>
@@ -45,13 +45,19 @@ export default async function ItemPage({
               width: "100%",
               maxHeight: "60vh",
               objectFit: "contain",
-              background: "#fff",
-              borderRadius: 10,
-              border: "1px solid #eee",
+              background: "var(--surface)",
+              borderRadius: "var(--radius)",
+              border: "1px solid var(--border)",
             }}
           />
           <div style={{ marginTop: "0.75rem" }}>
-            <p style={{ margin: "0 0 0.25rem", fontSize: "0.75rem", color: "#888" }}>
+            <p
+              style={{
+                margin: "0 0 0.25rem",
+                fontSize: "0.75rem",
+                color: "var(--muted)",
+              }}
+            >
               元の写真
             </p>
             <img
@@ -62,8 +68,8 @@ export default async function ItemPage({
                 width: 140,
                 height: 140,
                 objectFit: "cover",
-                borderRadius: 8,
-                border: "1px solid #eee",
+                borderRadius: "var(--radius-sm)",
+                border: "1px solid var(--border)",
               }}
             />
           </div>
@@ -77,22 +83,20 @@ export default async function ItemPage({
             width: "100%",
             maxHeight: "60vh",
             objectFit: "contain",
-            background: "#fff",
-            borderRadius: 10,
-            border: "1px solid #eee",
+            background: "var(--surface)",
+            borderRadius: "var(--radius)",
+            border: "1px solid var(--border)",
           }}
         />
       )}
 
       <div
+        className="card"
         style={{
           display: "grid",
           gap: "0.75rem",
           marginTop: "1rem",
-          background: "#fff",
           padding: "1rem",
-          borderRadius: 10,
-          border: "1px solid #eee",
         }}
       >
         <Row label="カテゴリ">
@@ -109,7 +113,7 @@ export default async function ItemPage({
                   alignItems: "center",
                   gap: 4,
                   padding: "2px 8px",
-                  border: "1px solid #ddd",
+                  border: "1px solid var(--border)",
                   borderRadius: 999,
                   fontSize: "0.85rem",
                 }}
@@ -120,7 +124,7 @@ export default async function ItemPage({
                     height: 12,
                     background: c.hex,
                     borderRadius: "50%",
-                    border: "1px solid #ccc",
+                    border: "1px solid var(--border)",
                   }}
                 />
                 {c.name}
@@ -151,12 +155,8 @@ export default async function ItemPage({
               {item.tags.map((t) => (
                 <span
                   key={t}
-                  style={{
-                    padding: "2px 8px",
-                    background: "#f0f0f0",
-                    borderRadius: 999,
-                    fontSize: "0.8rem",
-                  }}
+                  className="chip"
+                  style={{ color: "var(--ink)", cursor: "default" }}
                 >
                   {t}
                 </span>
@@ -200,7 +200,7 @@ function Row({
 }) {
   return (
     <div style={{ display: "grid", gap: 4 }}>
-      <span style={{ fontSize: "0.8rem", color: "#888" }}>{label}</span>
+      <span style={{ fontSize: "0.8rem", color: "var(--muted)" }}>{label}</span>
       <div style={{ fontSize: "0.95rem" }}>{children}</div>
     </div>
   );

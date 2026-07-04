@@ -105,7 +105,7 @@ export default function ProfilePage() {
   if (!loaded) {
     return (
       <main style={pageStyle(640)}>
-        <p style={{ color: "#666" }}>読み込み中…</p>
+        <p style={{ color: "var(--muted)" }}>読み込み中…</p>
       </main>
     );
   }
@@ -113,12 +113,18 @@ export default function ProfilePage() {
   return (
     <main style={pageStyle(640)}>
       <p style={{ margin: "0 0 1rem" }}>
-        <Link href="/" style={{ color: "#666" }}>
+        <Link href="/" style={{ color: "var(--muted)" }}>
           ← 一覧に戻る
         </Link>
       </p>
       <h1 style={{ margin: "0 0 0.25rem", fontSize: "1.4rem" }}>プロフィール</h1>
-      <p style={{ color: "#666", fontSize: "0.85rem", marginBottom: "1.5rem" }}>
+      <p
+        style={{
+          color: "var(--muted)",
+          fontSize: "0.85rem",
+          marginBottom: "1.5rem",
+        }}
+      >
         提案時に常に適用されます。未設定の項目はデフォルト (中性的な被写体) に
         フォールバックします。
       </p>
@@ -198,9 +204,9 @@ export default function ProfilePage() {
                 width: "100%",
                 maxHeight: "40vh",
                 objectFit: "contain",
-                borderRadius: 8,
-                border: "1px solid #eee",
-                background: "#fff",
+                borderRadius: "var(--radius-sm)",
+                border: "1px solid var(--border)",
+                background: "var(--surface)",
                 display: "block",
               }}
             />
@@ -210,10 +216,10 @@ export default function ProfilePage() {
                 marginTop: "0.4rem",
                 padding: "0.3rem 0.7rem",
                 fontSize: "0.8rem",
-                background: "#fff",
-                color: "#c00",
-                border: "1px solid #c00",
-                borderRadius: 6,
+                background: "var(--surface)",
+                color: "var(--danger)",
+                border: "1px solid var(--danger)",
+                borderRadius: "var(--radius-sm)",
                 cursor: "pointer",
               }}
             >
@@ -225,9 +231,9 @@ export default function ProfilePage() {
           style={{
             display: "block",
             padding: "1rem",
-            border: "2px dashed #ccc",
-            borderRadius: 10,
-            background: "#fff",
+            border: "2px dashed var(--border)",
+            borderRadius: "var(--radius)",
+            background: "var(--surface)",
             textAlign: "center",
             cursor: uploading ? "wait" : "pointer",
           }}
@@ -258,12 +264,24 @@ export default function ProfilePage() {
       </button>
 
       {error && (
-        <p style={{ color: "#c00", whiteSpace: "pre-wrap", marginTop: "1rem" }}>
+        <p
+          style={{
+            color: "var(--danger)",
+            whiteSpace: "pre-wrap",
+            marginTop: "1rem",
+          }}
+        >
           {error}
         </p>
       )}
       {savedAt && !error && (
-        <p style={{ color: "#666", fontSize: "0.8rem", marginTop: "0.5rem" }}>
+        <p
+          style={{
+            color: "var(--muted)",
+            fontSize: "0.8rem",
+            marginTop: "0.5rem",
+          }}
+        >
           最終更新: {new Date(savedAt).toLocaleString("ja-JP")}
         </p>
       )}

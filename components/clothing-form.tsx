@@ -34,14 +34,12 @@ export function ClothingForm({
 }) {
   return (
     <div
+      className="card"
       style={{
         display: "grid",
         gap: "1rem",
         marginBottom: "1.5rem",
-        background: "#fff",
         padding: "1rem",
-        borderRadius: 10,
-        border: "1px solid #eee",
       }}
     >
       {invalidFieldWarning && (
@@ -141,15 +139,10 @@ export function ClothingForm({
           {SEASONS.map((s) => (
             <label
               key={s}
-              style={{
-                display: "flex",
-                gap: 4,
-                alignItems: "center",
-                padding: "0.4rem 0.6rem",
-                border: "1px solid #ddd",
-                borderRadius: 6,
-                background: value.season.includes(s) ? "#eef" : "#fff",
-              }}
+              className={
+                value.season.includes(s) ? "chip chip-active" : "chip"
+              }
+              style={{ display: "flex", gap: 4, alignItems: "center" }}
             >
               <input
                 type="checkbox"
@@ -236,7 +229,9 @@ export function Field({
 }) {
   return (
     <label style={{ display: "grid", gap: 4 }}>
-      <span style={{ fontSize: "0.85rem", color: "#666" }}>{label}</span>
+      <span style={{ fontSize: "0.85rem", color: "var(--muted)" }}>
+        {label}
+      </span>
       {children}
     </label>
   );
@@ -245,9 +240,10 @@ export function Field({
 export const inputStyle: React.CSSProperties = {
   padding: "0.55rem 0.7rem",
   fontSize: "1rem",
-  border: "1px solid #ddd",
-  borderRadius: 6,
-  background: "#fff",
+  border: "1px solid var(--border)",
+  borderRadius: "var(--radius-sm)",
+  background: "var(--surface)",
+  color: "var(--ink)",
   width: "100%",
   boxSizing: "border-box",
 };

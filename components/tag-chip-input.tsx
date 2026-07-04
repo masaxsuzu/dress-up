@@ -45,9 +45,9 @@ export function TagChipInput({
         flexWrap: "wrap",
         gap: "0.35rem",
         padding: "0.4rem 0.5rem",
-        border: "1px solid #ddd",
-        borderRadius: 6,
-        background: "#fff",
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius-sm)",
+        background: "var(--surface)",
         cursor: "text",
       }}
       onClick={() => inputRef.current?.focus()}
@@ -55,14 +55,13 @@ export function TagChipInput({
       {tags.map((t) => (
         <span
           key={t}
+          className="chip"
           style={{
             display: "inline-flex",
             alignItems: "center",
             gap: 4,
-            padding: "2px 8px",
-            background: "#f0f0f0",
-            borderRadius: 999,
-            fontSize: "0.85rem",
+            color: "var(--ink)",
+            cursor: "default",
           }}
         >
           {t}
@@ -79,7 +78,7 @@ export function TagChipInput({
               cursor: "pointer",
               padding: 0,
               lineHeight: 1,
-              color: "#888",
+              color: "var(--muted)",
               fontSize: "0.9rem",
             }}
           >
@@ -99,6 +98,7 @@ export function TagChipInput({
           outline: "none",
           fontSize: "1rem",
           background: "transparent",
+          color: "var(--ink)",
           minWidth: 80,
           flex: 1,
         }}

@@ -38,7 +38,7 @@ export function ColorEditor({
               width: 36,
               height: 36,
               padding: 2,
-              border: "1px solid #ddd",
+              border: "1px solid var(--border)",
               borderRadius: 4,
               cursor: "pointer",
               flexShrink: 0,
@@ -55,13 +55,11 @@ export function ColorEditor({
             onClick={() => remove(i)}
             disabled={colors.length <= 1}
             aria-label="この色を削除"
+            className="btn btn-outline"
             style={{
               flexShrink: 0,
               padding: "0.35rem 0.6rem",
-              background: colors.length <= 1 ? "#eee" : "#fee",
-              color: colors.length <= 1 ? "#aaa" : "#c00",
-              border: "1px solid #ddd",
-              borderRadius: 6,
+              color: colors.length <= 1 ? "var(--muted)" : "var(--danger)",
               cursor: colors.length <= 1 ? "not-allowed" : "pointer",
               fontSize: "0.85rem",
             }}
@@ -74,12 +72,9 @@ export function ColorEditor({
         <button
           type="button"
           onClick={add}
+          className="btn btn-outline"
           style={{
             padding: "0.4rem 0.75rem",
-            background: "#f5f5f5",
-            border: "1px solid #ddd",
-            borderRadius: 6,
-            cursor: "pointer",
             fontSize: "0.85rem",
             alignSelf: "start",
           }}
