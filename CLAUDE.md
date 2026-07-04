@@ -40,6 +40,15 @@ lint スクリプトはまだ無い。
 - **`schema/clothing.ts` が data shape の source of truth**。`lib/vlm.ts` の tool 入力 JSON Schema は手動同期が必要
 - テストは `test/helpers/` / `e2e/helpers.ts` の共有ヘルパーを使う（重複ボイラープレート禁止）
 
+## モデルティア・ルーティング（コスト最適化）
+
+セッション既定は `claude-sonnet-4-6`（`.claude/settings.json`）。メインループが**上位モデル（Fable/Opus）で動いている場合**は役割を分離する:
+
+- **メインループ（高価）**: 計画・設計判断・調査のまとめ・self-review・マージ判断・ユーザ対話のみ
+- **実行（安価）**: 計画確定後のコード実装・テスト作成・機械的リファクタは Agent tool で `full-stack-developer`（`model: sonnet` 指定済み）に委譲する。委譲プロンプトには対象ファイル・期待する変更・検証コマンド（`npx tsc --noEmit` / `npm test`）を明記
+- 例外: 数行の trivial な修正は委譲コスト（コンテキスト転送）の方が高いのでメインループが直接行ってよい
+- メインループが Sonnet 以下のときは委譲不要（既に安い）
+
 ## PR babysitter（このリポのデフォルト動作）
 
 **PR を作ったら必ず babysit する。** `create_pull_request` 成功直後に同じ owner/repo/pullNumber で `subscribe_pr_activity` を呼ぶ（ユーザに聞かない）。続けて `ScheduleWakeup`（sentinel `<<autonomous-loop-dynamic>>`）を設定:
