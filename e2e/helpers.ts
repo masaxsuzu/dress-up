@@ -15,3 +15,23 @@ export async function clearItems(request: APIRequestContext) {
     await request.delete(`/api/items/${item.id}`);
   }
 }
+
+// POST /api/items 用の最小ペイロード。テスト側は必要な差分だけ override する。
+export function itemPayload(overrides: Record<string, unknown> = {}) {
+  return {
+    category: "tops",
+    subcategory: null,
+    colors: [{ name: "navy", hex: "#1f2a44" }],
+    pattern: null,
+    material: null,
+    silhouette: null,
+    season: ["spring"],
+    formality: 2,
+    occasion: [],
+    tags: [],
+    brand: null,
+    notes: null,
+    imageKey: "items/dummy.png",
+    ...overrides,
+  };
+}

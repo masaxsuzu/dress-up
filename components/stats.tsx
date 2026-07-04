@@ -106,6 +106,41 @@ function BarRow({
   );
 }
 
+function ColorHistogram({
+  colors,
+}: {
+  colors: [string, { name: string; count: number }][];
+}) {
+  const maxCount = Math.max(...colors.map(([, { count }]) => count), 1);
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "flex-end",
+        height: 80,
+        gap: 2,
+        borderBottom: "1px solid #eee",
+      }}
+    >
+      {colors.map(([hex, { name, count }]) => (
+        <div
+          key={hex}
+          title={`${name} (${hex}) × ${count}`}
+          style={{
+            flex: 1,
+            minWidth: 8,
+            height: `${Math.max((count / maxCount) * 100, 8)}%`,
+            background: hex,
+            borderRadius: "3px 3px 0 0",
+            border: "1px solid rgba(0,0,0,0.08)",
+            boxSizing: "border-box",
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Main export
 // ---------------------------------------------------------------------------
@@ -223,36 +258,7 @@ export function StatsView({ items }: { items: ClothingItem[] }) {
 
       {/* Colors */}
       <Section title="使用カラー">
-        {(() => {
-          const maxCount = Math.max(...s.topColors.map(([, { count }]) => count), 1);
-          return (
-            <div
-              style={{
-                display: "flex",
-                alignItems: "flex-end",
-                height: 80,
-                gap: 2,
-                borderBottom: "1px solid #eee",
-              }}
-            >
-              {s.topColors.map(([hex, { name, count }]) => (
-                <div
-                  key={hex}
-                  title={`${name} (${hex}) × ${count}`}
-                  style={{
-                    flex: 1,
-                    minWidth: 8,
-                    height: `${Math.max((count / maxCount) * 100, 8)}%`,
-                    background: hex,
-                    borderRadius: "3px 3px 0 0",
-                    border: "1px solid rgba(0,0,0,0.08)",
-                    boxSizing: "border-box",
-                  }}
-                />
-              ))}
-            </div>
-          );
-        })()}
+        <ColorHistogram colors={s.topColors} />
       </Section>
 
       {/* Brands */}

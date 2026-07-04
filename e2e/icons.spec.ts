@@ -1,25 +1,15 @@
 import { expect, test } from "@playwright/test";
-import { clearItems as clear } from "./helpers";
+import { clearItems as clear, itemPayload } from "./helpers";
 
 // ---------------------------------------------------------------------------
 // Shared helpers
 // ---------------------------------------------------------------------------
 
-const BASE_ITEM = {
-  category: "tops",
+const BASE_ITEM = itemPayload({
   subcategory: "Tシャツ",
   colors: [{ name: "white", hex: "#ffffff" }],
-  pattern: null,
-  material: null,
-  silhouette: null,
-  season: ["spring"],
-  formality: 2,
-  occasion: [],
-  tags: [],
-  brand: null,
-  notes: null,
   imageKey: "items/dummy-icon-test.png",
-};
+});
 
 // ---------------------------------------------------------------------------
 // Case 1: Gallery thumbnail when iconKey is absent

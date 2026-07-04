@@ -14,8 +14,9 @@ async function waitForApi(maxMs = 30_000) {
 
 export default async function globalSetup() {
   execSync("npx wrangler d1 migrations apply dress-up --local", { stdio: "pipe" });
+  // 前回実行の残留データがテスト間依存を生まないよう、全ユーザテーブルをクリアする。
   execSync(
-    'npx wrangler d1 execute dress-up --local --command "DELETE FROM clothing_items"',
+    'npx wrangler d1 execute dress-up --local --command "DELETE FROM clothing_items; DELETE FROM profile; DELETE FROM latest_recommendation"',
     { stdio: "pipe" },
   );
   await waitForApi();

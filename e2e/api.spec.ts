@@ -1,21 +1,16 @@
 import { expect, test } from "@playwright/test";
-import { clearItems as clear } from "./helpers";
+import { clearItems as clear, itemPayload } from "./helpers";
 
-const VALID_PAYLOAD = {
-  category: "tops",
+const VALID_PAYLOAD = itemPayload({
   subcategory: "Tシャツ",
-  colors: [{ name: "navy", hex: "#1f2a44" }],
   pattern: "solid",
   material: "cotton",
   silhouette: "regular",
   season: ["spring", "summer"],
-  formality: 2,
   occasion: ["casual"],
   tags: ["basic"],
-  brand: null,
-  notes: null,
   imageKey: "items/test.jpg",
-};
+});
 
 test.describe("/api/items", () => {
   test.beforeEach(async ({ request }) => {
