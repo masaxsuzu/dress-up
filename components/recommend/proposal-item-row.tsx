@@ -26,6 +26,7 @@ export function ProposalItemRow({ item }: { item: ProposalItem }) {
             src={`/api/images/${i.iconKey ?? i.imageKey}`}
             alt={i.subcategory ?? i.category}
             loading="lazy"
+            decoding="async"
             style={{
               width: 48,
               height: 48,

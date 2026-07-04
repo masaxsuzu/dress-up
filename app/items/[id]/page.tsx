@@ -41,6 +41,7 @@ export default async function ItemPage({
             data-testid="main-image"
             src={`/api/images/${item.iconKey}`}
             alt={item.subcategory ?? item.category}
+            decoding="async"
             style={{
               width: "100%",
               maxHeight: "60vh",
@@ -64,6 +65,7 @@ export default async function ItemPage({
               data-testid="original-image"
               src={`/api/images/${item.imageKey}`}
               alt={`${item.subcategory ?? item.category} (元の写真)`}
+              decoding="async"
               style={{
                 width: 140,
                 height: 140,
@@ -79,6 +81,7 @@ export default async function ItemPage({
           data-testid="main-image"
           src={`/api/images/${item.imageKey}`}
           alt={item.subcategory ?? item.category}
+          decoding="async"
           style={{
             width: "100%",
             maxHeight: "60vh",
