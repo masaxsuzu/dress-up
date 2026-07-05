@@ -30,6 +30,24 @@ export default tseslint.config(
         tsconfigRootDir: import.meta.dirname,
       },
     },
+    rules: {
+      "no-restricted-properties": [
+        "error",
+        {
+          object: "process",
+          property: "env",
+          message:
+            "Cloudflare bindings (env from route()) を使う。CLAUDE.md ハードルール参照",
+        },
+      ],
+    },
+  },
+  {
+    // playwright.config.ts は CI 検出のため process.env を直接読む正当な例外。
+    files: ["playwright.config.ts"],
+    rules: {
+      "no-restricted-properties": "off",
+    },
   },
   {
     // test/e2e はモック・アサーションの都合上、厳密な null チェックや

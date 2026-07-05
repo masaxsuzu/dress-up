@@ -26,7 +26,9 @@ Rules:
 - The enum fields ("category", "pattern", "season") MUST use the English values defined in the tool schema; do not translate them.
 - Always call the extract_clothing_attributes tool. Never reply with plain text.`;
 
-const TOOL_SCHEMA = {
+// vlm-schema-sync.test.ts (test/lib/) が VLMExtractionSchema (schema/clothing.ts)
+// との同期を検証するため export する。
+export const TOOL_SCHEMA = {
   type: Type.OBJECT,
   properties: {
     category: {
