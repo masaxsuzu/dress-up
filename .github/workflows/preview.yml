@@ -14,6 +14,8 @@ concurrency:
 
 jobs:
   preview:
+    # Dependabot PR には repo secrets (CLOUDFLARE_API_TOKEN) が渡らず必ず失敗するのでスキップ
+    if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     permissions:
       contents: read
