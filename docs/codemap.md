@@ -69,6 +69,7 @@
 ## test/ / e2e/
 
 - `test/lib/**` — lib/schema の unit。`test/api/**` — route() 通しの integration
+- `test/lib/vlm-schema-sync.test.ts` — `lib/vlm.ts` の TOOL_SCHEMA と `schema/clothing.ts` の Zod スキーマの同期検証
 - `test/helpers/` / `e2e/helpers.ts` — 共有ヘルパー (`docs/testing.md` 参照)
 - `e2e/*.spec.ts` — registration / filter / icons / recommend / api の 5 本
 

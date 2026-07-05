@@ -25,7 +25,7 @@ argument-hint: "<PR number>"
 
 **Tests:** `lib/*.ts` → `test/lib/*` / `app/api/**/route.ts` → `test/api/*` / e2e selector 整合
 
-**Quality:** 規約準拠 (`route()`, shared helpers, factories) / commit message 具体的 / 無関係変更無し
+**Quality:** 規約準拠 (`route()`, shared helpers, factories) / commit message 具体的 / 無関係変更無し / ファイル追加・削除・移動があるのに `docs/codemap.md` 未更新なら suspicious
 
 **Suspicious:** TODO/FIXME 残存 / `.skip`/`.only` / timeout 急増 / `as` 型 assertion 増
 
