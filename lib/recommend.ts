@@ -230,7 +230,7 @@ export async function recommendOutfits(
               name: "recommend_outfits",
               description:
                 "Record three full outfit coordinations. Each item is owned (id) or buy (category+description).",
-              parameters: TOOL_SCHEMA as never,
+              parameters: TOOL_SCHEMA,
             },
           ],
         },

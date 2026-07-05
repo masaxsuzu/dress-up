@@ -45,7 +45,7 @@ export async function createTestD1(): Promise<TestD1> {
     script: "export default { fetch() { return new Response(); } }",
     d1Databases: { DB: "test" },
   });
-  const db = (await mf.getD1Database("DB")) as unknown as D1Database;
+  const db = await mf.getD1Database("DB");
 
   for (const stmt of loadMigrationStatements()) {
     await db.prepare(stmt).run();

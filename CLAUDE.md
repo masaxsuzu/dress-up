@@ -22,13 +22,12 @@ npm run cf-typegen         # wrangler.toml から cloudflare-env.d.ts 再生成
 
 npm test                   # vitest (unit + integration)
 npm run test:e2e           # Playwright (AI API はモック)
+npm run lint               # eslint (flat config, type-checked)
 
 npm run db:migrate:local   # ローカル D1 にマイグレーション
 npm run db:migrate:remote  # 本番 D1 にマイグレーション
 npm run db:console:local -- "SELECT * FROM clothing_items"   # ad-hoc クエリ
 ```
-
-lint スクリプトはまだ無い。
 
 ## ハードルール
 

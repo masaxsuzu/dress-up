@@ -20,9 +20,9 @@ vi.mock("@opennextjs/cloudflare", async (importOriginal) => {
   const actual = (await importOriginal()) as Record<string, unknown>;
   return {
     ...actual,
-    getCloudflareContext: vi.fn().mockImplementation(async () => ({
-      env: envSlot.env,
-    })),
+    getCloudflareContext: vi.fn().mockImplementation(() =>
+      Promise.resolve({ env: envSlot.env }),
+    ),
   };
 });
 

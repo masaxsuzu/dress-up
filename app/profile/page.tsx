@@ -30,10 +30,10 @@ export default function ProfilePage() {
   const [savedAt, setSavedAt] = useState<string | null>(null);
 
   useEffect(() => {
-    (async () => {
+    void (async () => {
       try {
         const res = await fetch("/api/profile");
-        const data = (await res.json()) as { profile: Profile | null };
+        const data: { profile: Profile | null } = await res.json();
         if (data.profile) {
           setDraft({
             gender: data.profile.gender,
@@ -65,7 +65,7 @@ export default function ProfilePage() {
         method: "POST",
         body: fd,
       });
-      const data = (await res.json()) as { imageKey?: string; error?: string };
+      const data: { imageKey?: string; error?: string } = await res.json();
       if (!res.ok || !data.imageKey) {
         throw new Error(data.error ?? "アップロード失敗");
       }
@@ -86,7 +86,7 @@ export default function ProfilePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(draft),
       });
-      const data = (await res.json()) as { profile?: Profile; error?: string };
+      const data: { profile?: Profile; error?: string } = await res.json();
       if (!res.ok || !data.profile) {
         throw new Error(data.error ?? "保存失敗");
       }
@@ -241,7 +241,7 @@ export default function ProfilePage() {
           <input
             type="file"
             accept="image/*"
-            onChange={onFileChange}
+            onChange={(e) => void onFileChange(e)}
             disabled={uploading}
             style={{ display: "none" }}
           />
@@ -256,7 +256,7 @@ export default function ProfilePage() {
       </Field>
 
       <button
-        onClick={onSave}
+        onClick={() => void onSave()}
         disabled={saving}
         style={{ ...primaryBtn(saving), marginTop: "1rem" }}
       >
