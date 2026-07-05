@@ -20,6 +20,9 @@ jobs:
 
       - run: npm ci
 
+      - name: Lint (eslint)
+        run: npm run lint
+
       - name: Unit tests with coverage (vitest)
         run: npm run test:coverage
 

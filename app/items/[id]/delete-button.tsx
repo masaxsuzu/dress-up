@@ -29,7 +29,7 @@ export function DeleteButton({ id }: { id: string }) {
   return (
     <>
       <button
-        onClick={onDelete}
+        onClick={() => void onDelete()}
         disabled={deleting}
         style={actionBtnStyle({ variant: "danger", disabled: deleting })}
       >

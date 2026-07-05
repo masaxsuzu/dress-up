@@ -39,10 +39,14 @@ export function FullBodyImage({
     if (trigger === 0) return; // ボタン待ち状態
     const controller = new AbortController();
     let blobUrl: string | null = null;
+    // マウント/trigger 変化直後に生成状態へ入る必要があり、effect 外に出すと
+    // ボタン押下 → trigger 更新 → 再生成の一連の流れが崩れるため、この
+    // setState はここに置く (react-hooks/set-state-in-effect は意図的に許容)。
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- データ取得 effect の開始状態遷移。関数コンポーネント外への抽出は本 PR のスコープ外
     setState("running");
     setErrorMsg(null);
 
-    (async () => {
+    void (async () => {
       try {
         const res = await fetch("/api/outfit-image", {
           method: "POST",
@@ -56,9 +60,11 @@ export function FullBodyImage({
         });
         if (!res.ok) {
           const ct = res.headers.get("Content-Type") ?? "";
-          const msg = ct.includes("json")
-            ? (((await res.json()) as { error?: string }).error ?? "生成失敗")
-            : `${res.status}`;
+          let msg = `${res.status}`;
+          if (ct.includes("json")) {
+            const body: { error?: string } = await res.json();
+            msg = body.error ?? "生成失敗";
+          }
           throw new Error(msg);
         }
         const blob = await res.blob();

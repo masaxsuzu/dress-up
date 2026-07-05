@@ -24,6 +24,10 @@ export default function AddPage() {
   useEffect(() => {
     const f = takePendingFile();
     if (f) {
+      // takePendingFile() はモジュール変数を pop する副作用を持つため、render
+      // 本体で呼ぶと StrictMode の二重 render で消費されてしまう。mount 時に
+      // 一度だけ effect で処理する必要があるため、この setState はここに置く。
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- 外部シングルトンの一度限りの消費。render 本体への移動は StrictMode 二重実行で壊れるため不可
       setFile(f);
       setPreviewUrl(URL.createObjectURL(f));
     }
@@ -47,11 +51,11 @@ export default function AddPage() {
       const fd = new FormData();
       fd.append("file", resized);
       const res = await fetch("/api/extract", { method: "POST", body: fd });
-      const data = (await res.json()) as {
+      const data: {
         imageKey?: string;
         extraction?: VLMExtraction | null;
         error?: string;
-      };
+      } = await res.json();
       if (data.imageKey) setImageKey(data.imageKey);
       if (data.extraction) {
         setDraft(sanitizeToUpdate({ ...data.extraction, brand: null, notes: null }).sanitized);
@@ -87,7 +91,7 @@ export default function AddPage() {
       // 登録直後にアイコン化を fire-and-forget で投げる。完了を待たずに一覧へ
       // 戻るので、戻った頃にはサムネイルが入っている。失敗しても本体は登録
       // 済みなので、詳細ページの「アイコン化」ボタンから手動で再生できる。
-      const { item } = (await res.json()) as { item: { id: string } };
+      const { item }: { item: { id: string } } = await res.json();
       void fetch(`/api/items/${item.id}/iconize`, {
         method: "POST",
         keepalive: true,
@@ -152,7 +156,7 @@ export default function AddPage() {
 
       {file && !draft && (
         <button
-          onClick={onExtract}
+          onClick={() => void onExtract()}
           disabled={extracting}
           style={primaryBtn(extracting)}
         >
@@ -165,7 +169,7 @@ export default function AddPage() {
       )}
 
       {draft && (
-        <button onClick={onSave} disabled={saving} style={primaryBtn(saving)}>
+        <button onClick={() => void onSave()} disabled={saving} style={primaryBtn(saving)}>
           {saving ? "保存中..." : "保存"}
         </button>
       )}

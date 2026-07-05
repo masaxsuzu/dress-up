@@ -10,7 +10,8 @@ async function createItem(
     data: itemPayload({ colors: [{ name: "white", hex: "#ffffff" }], ...overrides }),
   });
   expect(res.ok()).toBeTruthy();
-  return (await res.json()).item;
+  const body: { item: unknown } = await res.json();
+  return body.item;
 }
 
 test.describe("/ 絞り込み", () => {

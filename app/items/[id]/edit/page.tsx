@@ -26,7 +26,9 @@ export default function EditPage({
 
   useEffect(() => {
     fetch(`/api/items/${id}`)
-      .then((r) => r.json() as Promise<{ item?: ClothingItem; error?: string }>)
+      .then(
+        (r): Promise<{ item?: ClothingItem; error?: string }> => r.json(),
+      )
       .then((data) => {
         if (!data.item) {
           setError(data.error ?? "not found");
@@ -114,7 +116,7 @@ export default function EditPage({
         />
       )}
 
-      <button onClick={onSave} disabled={saving || !draft} style={primaryBtn(saving || !draft)}>
+      <button onClick={() => void onSave()} disabled={saving || !draft} style={primaryBtn(saving || !draft)}>
         {saving ? "保存中..." : "保存"}
       </button>
 

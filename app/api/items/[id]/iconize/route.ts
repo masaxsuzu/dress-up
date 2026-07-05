@@ -50,8 +50,7 @@ export const POST = route<IdParams>(async ({ env, user, params }) => {
     return errorResponse(message, 500);
   }
 
-  const bytes = Uint8Array.from(atob(data), (c) => c.charCodeAt(0))
-    .buffer as ArrayBuffer;
+  const bytes = Uint8Array.from(atob(data), (c) => c.charCodeAt(0)).buffer;
 
   const iconKey = await putIcon(env.IMAGES, params.id, bytes, mimeType);
   await setIconKey(env.DB, user, params.id, iconKey);

@@ -32,7 +32,7 @@ export function IconizeButton({ id, hasIcon }: { id: string; hasIcon: boolean })
 
   return (
     <button
-      onClick={handleClick}
+      onClick={() => void handleClick()}
       disabled={status === "loading"}
       style={actionBtnStyle({
         variant: status === "error" ? "danger" : "secondary",

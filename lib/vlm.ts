@@ -115,7 +115,7 @@ export async function extractClothing(
               name: "extract_clothing_attributes",
               description:
                 "Record structured attributes extracted from a clothing photo.",
-              parameters: TOOL_SCHEMA as never,
+              parameters: TOOL_SCHEMA,
             },
           ],
         },

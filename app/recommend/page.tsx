@@ -43,11 +43,11 @@ export default function RecommendPage() {
   // 初回マウントで最新を読み込む
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    void (async () => {
       try {
         const res = await fetch("/api/recommend/latest");
         if (!res.ok) return;
-        const data = (await res.json()) as LatestResponse;
+        const data: LatestResponse = await res.json();
         if (cancelled || !data.latest) return;
         setView({
           kind: "restored",
@@ -77,7 +77,7 @@ export default function RecommendPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tpo: trimmed }),
       });
-      const data = (await res.json()) as RecommendResponse;
+      const data: RecommendResponse = await res.json();
       if (!res.ok) {
         throw new Error(data.error ?? "提案に失敗しました");
       }
@@ -135,7 +135,7 @@ export default function RecommendPage() {
           />
         </label>
         <button
-          onClick={onSubmit}
+          onClick={() => void onSubmit()}
           disabled={loading || !tpo.trim()}
           style={{
             ...primaryBtn(loading || !tpo.trim()),

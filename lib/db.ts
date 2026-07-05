@@ -4,7 +4,9 @@ import type {
   ClothingItem,
   ClothingItemInput,
   ClothingItemUpdate,
+  Color,
   Pattern,
+  Season,
 } from "@/schema/clothing";
 
 interface Row {
@@ -33,14 +35,14 @@ function rowToItem(row: Row): ClothingItem {
     id: row.id,
     category: row.category as ClothingCategory,
     subcategory: row.subcategory,
-    colors: JSON.parse(row.colors),
+    colors: JSON.parse(row.colors) as Color[],
     pattern: row.pattern as Pattern | null,
     material: row.material,
     silhouette: row.silhouette,
-    season: JSON.parse(row.season),
+    season: JSON.parse(row.season) as Season[],
     formality: row.formality,
-    occasion: JSON.parse(row.occasion),
-    tags: JSON.parse(row.tags),
+    occasion: JSON.parse(row.occasion) as string[],
+    tags: JSON.parse(row.tags) as string[],
     brand: row.brand,
     notes: row.notes,
     imageKey: row.image_key,
