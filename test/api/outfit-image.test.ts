@@ -6,6 +6,7 @@ import { createTestR2, type TestR2 } from "@/test/helpers/r2";
 import { ALICE, makeItemInput } from "@/test/helpers/factories";
 import { imageResponse, installGenAIMock } from "@/test/helpers/gemini";
 import { callRoute, setTestEnv } from "@/test/helpers/route-runner";
+import { setProfile } from "@/lib/profile";
 
 const generateContentMock = installGenAIMock();
 const { POST } = await import("@/app/api/outfit-image/route");
@@ -108,5 +109,76 @@ describe("POST /api/outfit-image", () => {
     });
     expect(res.status).toBe(500);
     expect(await res.json()).toEqual({ error: "upstream 429" });
+  });
+
+  it("Error インスタンスでない例外は String(e) で 500 になる", async () => {
+    const item = await createItem(ALICE);
+    generateContentMock.mockRejectedValue("plain string rejection");
+    const res = await callRoute(POST, {
+      user: ALICE,
+      body: {
+        items: [{ kind: "owned", id: item.id }],
+        tpo: "x",
+      },
+    });
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: "plain string rejection" });
+  });
+
+  it("プロフィールに参考画像があれば Gemini への contents に同梱される", async () => {
+    await r2.bucket.put("profile/ref.jpg", new Uint8Array([9, 9, 9]), {
+      httpMetadata: { contentType: "image/jpeg" },
+    });
+    await setProfile(d1.db, ALICE, {
+      gender: null,
+      heightCm: null,
+      weightKg: null,
+      bodyType: null,
+      referenceImageKey: "profile/ref.jpg",
+    });
+    const item = await createItem(ALICE);
+    generateContentMock.mockResolvedValue(imageResponse("image/jpeg", "QUFB"));
+
+    const res = await callRoute(POST, {
+      user: ALICE,
+      body: {
+        items: [{ kind: "owned", id: item.id }],
+        tpo: "週末",
+      },
+    });
+    expect(res.status).toBe(200);
+
+    const call = generateContentMock.mock.calls[0]![0] as {
+      contents: Array<{ parts: Array<{ text?: string }> }>;
+    };
+    const texts = call.contents[0]!.parts.map((p) => p.text).filter(Boolean);
+    expect(texts.some((t) => t?.includes("reference photo of the subject"))).toBe(true);
+  });
+
+  it("プロフィールに参考画像キーはあるが R2 に実体が無い場合は参考画像無しで続行する", async () => {
+    await setProfile(d1.db, ALICE, {
+      gender: null,
+      heightCm: null,
+      weightKg: null,
+      bodyType: null,
+      referenceImageKey: "profile/missing.jpg",
+    });
+    const item = await createItem(ALICE);
+    generateContentMock.mockResolvedValue(imageResponse("image/jpeg", "QUFB"));
+
+    const res = await callRoute(POST, {
+      user: ALICE,
+      body: {
+        items: [{ kind: "owned", id: item.id }],
+        tpo: "週末",
+      },
+    });
+    expect(res.status).toBe(200);
+
+    const call = generateContentMock.mock.calls[0]![0] as {
+      contents: Array<{ parts: Array<{ text?: string }> }>;
+    };
+    const texts = call.contents[0]!.parts.map((p) => p.text).filter(Boolean);
+    expect(texts.some((t) => t?.includes("reference photo of the subject"))).toBe(false);
   });
 });

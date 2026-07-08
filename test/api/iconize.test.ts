@@ -77,4 +77,35 @@ describe("POST /api/items/[id]/iconize", () => {
     expect(res.status).toBe(500);
     expect(await res.json()).toEqual({ error: "upstream 503" });
   });
+
+  it("Gemini が画像パートを返さないと 500", async () => {
+    const item = await setupItem(ALICE);
+    generateContentMock.mockResolvedValue({
+      candidates: [{ content: { parts: [{ text: "no image, sorry" }] } }],
+    });
+    const res = await callRoute(POST, { user: ALICE, params: { id: item.id } });
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: "画像が返されませんでした" });
+  });
+
+  it("mimeType が無いレスポンスは image/png にフォールバックする", async () => {
+    const item = await setupItem(ALICE);
+    generateContentMock.mockResolvedValue({
+      candidates: [
+        { content: { parts: [{ inlineData: { data: "QUFB" } }] } },
+      ],
+    });
+    const res = await callRoute(POST, { user: ALICE, params: { id: item.id } });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { iconKey: string };
+    expect(body.iconKey).toBe(`icons/${item.id}.png`);
+  });
+
+  it("Error インスタンスでない例外は String(e) で 500 になる", async () => {
+    const item = await setupItem(ALICE);
+    generateContentMock.mockRejectedValue("plain string rejection");
+    const res = await callRoute(POST, { user: ALICE, params: { id: item.id } });
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: "plain string rejection" });
+  });
 });

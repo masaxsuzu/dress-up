@@ -101,4 +101,43 @@ describe("POST /api/recommend", () => {
     expect(res.status).toBe(500);
     expect(await res.json()).toEqual({ error: "upstream 503" });
   });
+
+  it("Error インスタンスでない例外は String(e) で 500 になる", async () => {
+    generateContentMock.mockRejectedValue({ code: 429 });
+    const res = await callRoute(POST, { user: ALICE, body: { tpo: "x" } });
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: "[object Object]" });
+  });
+
+  it("R2 に画像が無いアイテムは除外され、Gemini には画像パート無しで渡る", async () => {
+    // items/route 経由で imageKey だけ登録し、R2 には実体を置かない
+    // (loadImageBase64 が null を返し、そのアイテムは images から除外される)
+    const createRes = await callRoute(itemsPOST, {
+      user: ALICE,
+      body: makeItemInput({ imageKey: "items/missing.jpg" }),
+    });
+    expect(createRes.status).toBe(201);
+    const item = ((await createRes.json()) as { item: { id: string } }).item;
+
+    generateContentMock.mockResolvedValue(
+      toolCallResponse("recommend_outfits", {
+        proposals: [
+          { items: [{ kind: "owned", id: item.id }], reason: "1" },
+          SAMPLE_PROPOSALS[1],
+          SAMPLE_PROPOSALS[2],
+        ],
+      }),
+    );
+
+    const res = await callRoute(POST, { user: ALICE, body: { tpo: "週末" } });
+    expect(res.status).toBe(200);
+
+    const call = generateContentMock.mock.calls[0]![0] as {
+      contents: Array<{
+        parts: Array<{ inlineData?: unknown; text?: string }>;
+      }>;
+    };
+    const hasImagePart = call.contents[0]!.parts.some((p) => "inlineData" in p);
+    expect(hasImagePart).toBe(false);
+  });
 });
