@@ -79,5 +79,6 @@
 - `wrangler.toml` — 本番 + pr-0〜pr-8 プレビュースロットの bindings
 - `.github/workflows/` — ci.yml (lint+unit+e2e) / preview.yml (PR プレビュー) / deploy.yml (main)
 - `.github/workflows/codeql.yml` — CodeQL 静的解析 (push/PR to main + 週次)
+- `.github/workflows/dependabot-automerge.yml` — Dependabot patch/minor の auto-merge 有効化 (major は対象外)
 - `.github/dependabot.yml` — npm / github-actions の週次依存更新
 - `scripts/` — プレビュー環境セットアップ・検証

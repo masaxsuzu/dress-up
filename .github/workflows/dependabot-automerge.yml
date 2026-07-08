@@ -1,0 +1,30 @@
+name: Dependabot auto-merge
+
+on: pull_request
+
+# Dependabot がトリガーする run の GITHUB_TOKEN はデフォルト read-only。
+# auto-merge フラグを立てるために明示的に write を付与する。
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  automerge:
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # patch / minor のみ auto-merge を有効化。required checks
+      # (test / Build) が green になった時点で GitHub 本体がマージする。
+      # major は API 変更の吟味に価値があるため対象外 (/merge-deps で処理)。
+      - name: Enable auto-merge (patch / minor only)
+        if: steps.metadata.outputs.update-type == 'version-update:semver-patch' || steps.metadata.outputs.update-type == 'version-update:semver-minor'
+        run: gh pr merge --auto --merge "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
