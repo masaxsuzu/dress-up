@@ -2,6 +2,8 @@
 
 オープン中の Dependabot PR を **read → validate → merge** の固定順で処理する。判断の飛ばし・順序入れ替え禁止。
 
+**前提**: patch / minor の green PR は `dependabot-automerge.yml` が自動マージするため、このスキルの対象は **check が red の PR と major bump のみ**。green の patch/minor が残っている場合は auto-merge が動いていない兆候（リポ設定「Allow auto-merge」が無効の可能性）なので、手動マージしつつユーザに報告する。
+
 ## 手順
 
 1. `list_pull_requests` (state=open) で `dependabot[bot]` の PR を列挙（`per_page: 20`、body は読まない）

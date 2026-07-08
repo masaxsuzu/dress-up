@@ -68,9 +68,9 @@ npm run db:console:local -- "SELECT * FROM clothing_items"   # ad-hoc クエリ
 
 ## Dependabot PR の扱い
 
-週次で npm / github-actions の更新 PR が自動で開く。`/merge-deps` の手順で処理する。要点:
+**patch / minor は自動**: `dependabot-automerge.yml` が auto-merge を有効化し、required checks（test / Build）green で GitHub 本体がマージする（rebase 待ち・SHA 照合も GitHub 側が処理）。エージェントの出番は以下のみ:
 
-- **実質ゲートは test / Build / CodeQL**。preview は Dependabot PR ではスキップ（secrets 非供給のため、`preview.yml` の `if` 参照）
-- **check の SHA と head SHA の一致を確認してから判断**（rebase 直後は古い commit の check が残る）。`@dependabot rebase` の処理は数分〜15分かかることがあり、15分待って未処理ならゲート check green を条件にそのままマージ可
-- 既知の非互換 major（例: workers-types v5 は wrangler の peerOptional `^4` により `npm ci` が ERESOLVE）は `@dependabot ignore this major version` + 理由コメントでクローズ
+- **check が red の PR**: `/merge-deps` でトリアージ（構造的失敗ならマージ可、依存起因なら修正 or ignore）
+- **major bump**: auto-merge 対象外。`/merge-deps` で判断。既知の非互換 major（例: workers-types v5 は wrangler の peerOptional `^4` により `npm ci` が ERESOLVE）は `@dependabot ignore this major version` + 理由コメントでクローズ
+- preview は Dependabot PR ではスキップ（secrets 非供給のため、`preview.yml` の `if` 参照）
 - CI 設定変更と依存マージが重なる場合は、**設定変更を先にマージして main が green になってから**依存 PR を処理する
