@@ -89,4 +89,25 @@ describe("POST /api/extract", () => {
     const body = (await res.json()) as { error: string };
     expect(body.error).toMatch(/unsupported content type/);
   });
+
+  it("上限 (5MB) を超える画像は 413", async () => {
+    const big = new Uint8Array(5_000_001);
+    const file = new File([big], "big.jpg", { type: "image/jpeg" });
+    const res = await callRoute(POST, { formData: imageForm(file, "big.jpg") });
+    expect(res.status).toBe(413);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toMatch(/image too large/);
+  });
+
+  it("VLM が Error インスタンスでない値で reject しても 200 + String(e) の error", async () => {
+    generateContentMock.mockRejectedValue({ code: 503 });
+
+    const file = new File([new Uint8Array([1])], "x.jpg", { type: "image/jpeg" });
+    const res = await callRoute(POST, { formData: imageForm(file) });
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { extraction: unknown; error: string };
+    expect(body.extraction).toBeNull();
+    expect(body.error).toBe("[object Object]");
+  });
 });

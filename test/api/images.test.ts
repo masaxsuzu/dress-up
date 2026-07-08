@@ -101,6 +101,115 @@ describe("GET /api/images/[...key]", () => {
     expect(bytes.byteLength).toBe(0);
   });
 
+  it("If-None-Match がトリムすると空文字になる値だと無視され通常の 200 になる", async () => {
+    await createItemAs(ALICE, "items/blank.jpg");
+    // 素の半角スペースだけだと fetch の Headers 実装自体が前後を trim して "" にしてしまい
+    // route 側では raw 自体が falsy になる (!raw 分岐) だけで `trimmed` の空文字分岐までは
+    // 届かない。Headers の前後除去は 0x09/0x20 のみが対象なので、JS の String#trim() では
+    // 消えるが Headers では残る垂直タブ (\u000B) を使い、raw は truthy かつ trimmed が空、
+    // という分岐を確実に踏む。
+    const res = await callRoute(GET, {
+      user: ALICE,
+      params: { key: ["items", "blank.jpg"] },
+      headers: { "If-None-Match": "\u000B" },
+    });
+    expect(res.status).toBe(200);
+  });
+
+  it("クォートのみ (中身が空) の ETag はフォールバックせず通常の 200 になる", async () => {
+    await createItemAs(ALICE, "items/empty-quoted.jpg");
+    const res = await callRoute(GET, {
+      user: ALICE,
+      params: { key: ["items", "empty-quoted.jpg"] },
+      headers: { "If-None-Match": '""' },
+    });
+    expect(res.status).toBe(200);
+  });
+
+  it("If-None-Match: * はオブジェクトが存在すれば常に 304", async () => {
+    await createItemAs(ALICE, "items/wild.jpg");
+    const res = await callRoute(GET, {
+      user: ALICE,
+      params: { key: ["items", "wild.jpg"] },
+      headers: { "If-None-Match": "*" },
+    });
+    expect(res.status).toBe(304);
+  });
+
+  it("W/ (weak validator) プレフィックス付きでも ETag が一致すれば 304", async () => {
+    await createItemAs(ALICE, "items/weak.jpg");
+    const first = await callRoute(GET, {
+      user: ALICE,
+      params: { key: ["items", "weak.jpg"] },
+    });
+    const etag = first.headers.get("ETag");
+    expect(etag).toBeTruthy();
+
+    const second = await callRoute(GET, {
+      user: ALICE,
+      params: { key: ["items", "weak.jpg"] },
+      headers: { "If-None-Match": `W/${etag}` },
+    });
+    expect(second.status).toBe(304);
+  });
+
+  it("If-None-Match が不一致だと 200 (body 付き) のまま返す", async () => {
+    await createItemAs(ALICE, "items/mismatch.jpg");
+    const res = await callRoute(GET, {
+      user: ALICE,
+      params: { key: ["items", "mismatch.jpg"] },
+      headers: { "If-None-Match": '"totally-different-etag"' },
+    });
+    expect(res.status).toBe(200);
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    expect(bytes.length).toBeGreaterThan(0);
+  });
+
+  it("R2.get が例外を投げると (壊れた onlyIf 等) 404 で透過する", async () => {
+    await createItemAs(ALICE, "items/throwing.jpg");
+    setTestEnv({
+      DB: d1.db,
+      IMAGES: {
+        get: () => {
+          throw new Error("boom");
+        },
+      } as unknown as R2Bucket,
+      GEMINI_API_KEY: "test-key",
+    } as unknown as CloudflareEnv);
+
+    const res = await callRoute(GET, {
+      user: ALICE,
+      params: { key: ["items", "throwing.jpg"] },
+    });
+    expect(res.status).toBe(404);
+  });
+
+  it("DB には所有記録があるが R2 から削除済みの画像は 404", async () => {
+    await createItemAs(ALICE, "items/deleted.jpg");
+    await r2.bucket.delete("items/deleted.jpg");
+    const res = await callRoute(GET, {
+      user: ALICE,
+      params: { key: ["items", "deleted.jpg"] },
+    });
+    expect(res.status).toBe(404);
+  });
+
+  it("httpMetadata.contentType が無いと application/octet-stream にフォールバックする", async () => {
+    await r2.bucket.put("items/no-content-type.bin", new Uint8Array([9, 9, 9]));
+    const res = await callRoute(itemsPOST, {
+      user: ALICE,
+      body: makeItemInput({ imageKey: "items/no-content-type.bin" }),
+    });
+    expect(res.status).toBe(201);
+
+    const getRes = await callRoute(GET, {
+      user: ALICE,
+      params: { key: ["items", "no-content-type.bin"] },
+    });
+    expect(getRes.status).toBe(200);
+    expect(getRes.headers.get("Content-Type")).toBe("application/octet-stream");
+  });
+
   it("items/ キーの Cache-Control は immutable、icons/ は付かない", async () => {
     await createItemAs(ALICE, "items/cache-check.jpg");
     const itemRes = await callRoute(GET, {
