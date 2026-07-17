@@ -1,21 +1,21 @@
 ---
-description: PR の diff (静的) + CI preview job (deploy 検証済) を judge して verdict を PR コメント投稿。babysitter gate 前段。
+description: PR の diff を fresh-context subagent に judge させ verdict を PR コメント投稿。アプリコード diff のみ対象（CLAUDE.md「PR フロー」参照）。
 argument-hint: "<PR number>"
 ---
 
 # /self-review
 
 3 値判定:
-- ✓ clean — gate を merge へ進める
+- ✓ clean — auto-merge 有効化へ進める
 - ⚠ suspicious — `AskUserQuestion` で user に投げる
-- ✗ broken — 同じブランチに修正 push し gate Step 1 へ戻る
+- ✗ broken — 同じブランチに修正 push し再レビュー
 
 ## 手順
 
 1. `pull_request_read` で get / get_diff / get_files
-2. 下チェックリスト通過 (diff ≤100 行は全読、超なら additions 多いファイル優先)
-3. `pull_request_read get_check_runs` で `preview` ジョブ確認: success → deploy verify pass / failure/cancelled/skipped → broken
-4. verdict 決定 → `add_issue_comment` で投稿 (下フォーマット)
+2. diff がアプリコード（`app/` `lib/` `components/` `schema/` `migrations/`）に触れない場合はここで終了（コメント投稿も不要、スキップした旨だけ報告）
+3. **判定は Agent tool の fresh-context subagent（general-purpose）に委譲する** — 実装した本人（メインループ）が採点しない（self-preference バイアス対策）。渡すのは diff・下チェックリスト・「正しさと要件に影響する問題のみ報告し、健全なコードに無理に指摘を作らない」という指示のみ。会話の文脈は渡さない
+4. subagent の verdict と根拠をメインループが妥当性確認 → `add_issue_comment` で投稿（下フォーマット）
 
 ## チェックリスト (このリポ固有)
 
@@ -32,14 +32,14 @@ argument-hint: "<PR number>"
 ## 出力 (PR コメント本文)
 
 ```
-**Self-review: <verdict>** (commit `<short-sha>`)
+**Self-review: <verdict>** (commit `<short-sha>`, fresh-context subagent による判定)
 Static: <1 文>
-Deploy: ✓ preview ジョブ green | ✗ preview ジョブ failure
 
 [suspicious / broken のみ 1〜3 個の懸念点]
 ```
 
 ## ルール
-- MCP github tool で完結 (skill / agent / Bash 不使用)
-- 「他人の PR ならここ指摘するか」目線で甘くしない
-- verdict コメント必須投稿
+
+- deploy 検証は required checks（preview を含む）が担うため、CI の完了を待たずに PR 作成直後に実行してよい
+- レビュアには「欠陥を探せ」ではなく「正しさ・要件に影響するもののみ報告」と指示する（過剰指摘バイアス対策）
+- verdict コメントは skip 時以外必須投稿

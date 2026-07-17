@@ -36,6 +36,7 @@
       "mcp__github__add_issue_comment",
       "mcp__github__resolve_review_thread",
       "mcp__github__merge_pull_request",
+      "mcp__github__enable_pr_auto_merge",
       "mcp__github__update_pull_request"
     ]
   }

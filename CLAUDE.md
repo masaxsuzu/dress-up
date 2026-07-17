@@ -48,23 +48,20 @@ npm run db:console:local -- "SELECT * FROM clothing_items"   # ad-hoc クエリ
 - 例外: 数行の trivial な修正は委譲コスト（コンテキスト転送）の方が高いのでメインループが直接行ってよい
 - メインループが Sonnet 以下のときは委譲不要（既に安い）
 
-## PR babysitter（このリポのデフォルト動作）
+## PR フロー（このリポのデフォルト動作: イベント駆動、ポーリング禁止）
 
-**PR を作ったら必ず babysit する。** `create_pull_request` 成功直後に同じ owner/repo/pullNumber で `subscribe_pr_activity` を呼ぶ（ユーザに聞かない）。続けて `ScheduleWakeup`（sentinel `<<autonomous-loop-dynamic>>`）を設定:
+`create_pull_request` 成功直後に同じ PR で:
 
-- **check が in_progress/queued の間: 90s burst**（CI は約 100s。webhook は CI 成功を届けないため）
-- **全 check 完了後: 3600s fallback**（merge / push / conflict の取りこぼし用）
+1. `subscribe_pr_activity`（ユーザに聞かない。red check・レビューコメントは webhook で届く）
+2. `/self-review <PR>` — **diff がアプリコード（`app/` `lib/` `components/` `schema/` `migrations/`）に触れる場合のみ**。テスト・docs・設定のみの diff はスキップ
+3. verdict `✓ clean`（またはスキップ）→ `enable_pr_auto_merge`（MERGE）。以降は required checks green で GitHub 本体がマージする / `⚠ suspicious` → `AskUserQuestion` / `✗ broken` → fix push → 2 へ
+4. **ここでターン終了。`ScheduleWakeup` でのポーリングはしない**（CI 成功の監視とマージ実行は GitHub の仕事）
 
-各 wake で `pull_request_read` (method=`get_check_runs`) を 1 回だけ呼び、次の delay を決める。タイトループ禁止。PR が merge/close されたら購読は自動解除、再購読しない。
+PR body の `## Test plan` は**作成時点で検証済みの項目のみ、`- [x]` 済みで書く**。CI 項目は required checks が担うため書かない。
 
-**イベント対応:** 小さく確実に直せる → 即 fix & push / 曖昧・アーキテクチャに関わる → `AskUserQuestion` / bot 通知 → 一行で流す。ユーザのレビューコメントは auto-merge gate より優先。
+**イベント対応（webhook 駆動）:** red check → `get_job_logs` で診断 → 小さく確実に直せる → fix & push（auto-merge は維持され green で自動マージ）/ 曖昧・アーキテクチャに関わる → `AskUserQuestion` / bot 通知 → 一行で流す / merged → 完了報告。ユーザのレビューコメントは常に最優先。
 
-**Auto-merge gate**（open thread も actionable も無いとき）:
-
-1. `get_check_runs` で全 check `status: completed` を確認（未完なら次の wake まで待つ）
-2. 全 check `conclusion: "success"`（失敗は `get_job_logs` で診断 → fix or ask）
-3. `/self-review <PR>` を実行。verdict を PR コメントに投稿: `✓ clean` → 次へ / `⚠ suspicious` → `AskUserQuestion` / `✗ broken` → 同ブランチで fix push → step 1 へ
-4. PR body の `## Test plan` の `- [ ]` を全て `- [x]` に更新（`update_pull_request`）→ `merge_pull_request`（`merge_method: "merge"`）。head ブランチはリポ設定で自動削除される
+auto-merge が有効化できない場合（リポ設定「Allow auto-merge」無効等）のみ旧手順にフォールバック: check 完了を待って全 `success` を確認 → `merge_pull_request`（`merge_method: "merge"`）。
 
 ## Dependabot PR の扱い
 
