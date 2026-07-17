@@ -20,7 +20,8 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       # patch / minor のみ auto-merge を有効化。required checks
-      # (test / Build) が green になった時点で GitHub 本体がマージする。
+      # (test / Build / preview — Dependabot では preview は skipped で通過)
+      # が green になった時点で GitHub 本体がマージする。
       # major は API 変更の吟味に価値があるため対象外 (/merge-deps で処理)。
       - name: Enable auto-merge (patch / minor only)
         if: steps.metadata.outputs.update-type == 'version-update:semver-patch' || steps.metadata.outputs.update-type == 'version-update:semver-minor'

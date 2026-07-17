@@ -65,7 +65,7 @@
 - `ClothingItemSchema` — Input + `id`/`iconKey`/`createdAt`/`updatedAt`（D1 が返す形）
 - `ClothingItemUpdateSchema` — 編集フォーム（imageKey なし）
 
-`schema/recommend.ts` が提案の input/draft 形。`lib/vlm.ts` の tool 入力 JSON Schema は `VLMExtractionSchema` と**手動で**同期（Zod から自動導出していない）。
+`schema/recommend.ts` が提案の input/draft 形。`lib/vlm.ts` の tool 入力 JSON Schema は `VLMExtractionSchema` と**手動で**同期（Zod から自動導出していない）。同期ズレは `test/lib/vlm-schema-sync.test.ts` が CI で検出する。
 
 ## D1 シリアライズ
 
@@ -88,5 +88,5 @@
 
 - `next.config.ts` の `initOpenNextCloudflareForDev()` が `npm run dev` 中の bindings をシム
 - `open-next.config.ts` + `wrangler.toml` が Workers デプロイ設定
-- CI（`.github/workflows/`）: PR で unit + e2e、`main` は wrangler でデプロイ
+- CI（`.github/workflows/ci.yml`）: PR で `test` ジョブ（lint + unit + e2e）と `Build (deploy parity)` ジョブ（OpenNext ビルド）、`main` は wrangler でデプロイ。branch protection の required checks は test / Build / preview の 3 つ
 - PR プレビュー: `preview.yml` が同一 `dress-up` Worker にプレビューバージョンをアップロード。PR 番号 % 9 のスロット（`pr-0`〜`pr-8`）ごとに専用 D1/R2 が付くので本番・並行 PR とデータが混ざらない。詳細は `docs/preview-deployments.md`
