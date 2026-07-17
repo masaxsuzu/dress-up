@@ -45,11 +45,3 @@ done
 3. 以降の `versions upload` で `Version Preview URL: https://<id>-dress-up.<acct>.workers.dev` が出力される
 
 これを有効化していない場合、CI は Version ID だけを PR にコメントし、URL は手動で構築する必要がある (`https://<version-id>-dress-up.<your-workers-subdomain>.workers.dev`)。
-
-## 旧 `[env.preview]` ブロックについて
-
-以前は全 PR で `dress-up-preview` D1 / `dress-up-images-preview` R2 を共有していた。per-digit 分離に移行したため、旧 `[env.preview]` ブロックは wrangler.toml から削除済み。共有していた D1 / R2 は Cloudflare ダッシュボードから手動で削除してよい (移行後は誰も触らない)。
-
-## 旧 `dress-up-preview` Worker について
-
-さらに以前は別 Worker (`dress-up-preview`) を作っていたが、Worker 統合により**不要**になった。Cloudflare ダッシュボードから手動で削除してよい。
