@@ -15,6 +15,7 @@
    5. failure あり → `get_job_logs` で診断:
       - **構造的**（preview の secrets 非供給など、変更内容と無関係）→ ゲート check green ならマージ可
       - **依存起因**（`npm ci` ERESOLVE、型エラー等）→ 最小修正を push するか、非互換 major なら `@dependabot ignore this major version` + 理由コメントでクローズ
+      - **Dependabot 生成 lockfile の破損**（`npm ci` が `Missing: ... from lock file`、types-only bump まで同時多発が典型）→ branch 個別修復は禁物（人が触ると auto-rebase 喪失 → 連鎖 conflict）。自ブランチで対象バージョンをまとめて bump + `npm install` で lockfile 再生成 → `npm ci --dry-run` で整合確認 → 集約 PR 1 本で置き換え、元 PR は理由コメント付きクローズ（前例: #109〜#113 → #115）
 3. 処理が全 PR 分終わったら **merged / ignored / waiting の一覧を 1 メッセージで報告**（PR ごとの逐次報告はしない）
 
 ## ルール
