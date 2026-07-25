@@ -7,7 +7,7 @@ import {
   PATTERN_LABEL,
   SEASON_LABEL,
 } from "@/lib/labels";
-import { computeStats } from "@/lib/stats";
+import { computeStats } from "../_lib/stats";
 
 // ---------------------------------------------------------------------------
 // Primitives

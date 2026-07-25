@@ -6,8 +6,8 @@ import {
   matchesSeason,
   matchesText,
   parseParams,
-} from "@/lib/gallery-filters";
-import { makeItem } from "../helpers/factories";
+} from "./gallery-filters";
+import { makeItem } from "@/test/helpers/factories";
 
 describe("matchesText", () => {
   const item = makeItem({

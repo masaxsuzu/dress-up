@@ -14,8 +14,10 @@ export default defineConfig({
         "lib/**/*.ts",
         "schema/**/*.ts",
         "app/api/**/route.ts",
-        // 機能固有 lib は app/api/**/_lib/ に colocate 済み
-        "app/api/**/_lib/**/*.ts",
+        // 機能固有 lib は各ルートセグメント配下の _lib/ に colocate してある。
+        // `app/api/**` に限定すると (home) や stats などページ側の _lib が
+        // 計測対象から静かに漏れるため、app 全体を対象にする。
+        "app/**/_lib/**/*.ts",
       ],
       exclude: [
         // colocate したテスト自身を計測対象に含めない

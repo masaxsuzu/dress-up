@@ -4,7 +4,7 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { getUserEmailFromHeaders } from "@/lib/auth";
 import { listItems } from "@/lib/db";
 import { AddButton } from "@/components/add-button";
-import { Gallery } from "@/components/gallery";
+import { Gallery } from "./_components/gallery";
 import { pageStyle, pillLinkStyle, pillLinkFilledStyle } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
