@@ -1,4 +1,4 @@
-// lib/vlm.ts の TOOL_SCHEMA (Gemini `@google/genai` の Type.* ベースで手書き) と
+// 隣の vlm.ts の TOOL_SCHEMA (Gemini `@google/genai` の Type.* ベースで手書き) と
 // schema/clothing.ts の VLMExtractionSchema (data shape の source of truth) が
 // ズレていないかを検証する。CLAUDE.md ハードルール「tool 入力 JSON Schema は
 // 手動同期が必要」を機械的に担保するテスト。
