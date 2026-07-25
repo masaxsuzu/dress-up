@@ -46,7 +46,6 @@
 | `app/_lib/db.ts` | clothing_items の D1 CRUD + `rowToItem` |
 | `app/_lib/profile.ts` | profile テーブルの D1 読み書き |
 | `app/_lib/r2.ts` | R2 キー生成・アップロード・所有チェック |
-| `app/_lib/outfit-layout.ts` | 提案アイテムの main/side 振り分け（**未使用**。どこからも import されていない。削除候補として要判断） |
 | `app/_lib/labels.ts` | enum → 日本語ラベル + `itemLabel` |
 | `app/_lib/season.ts` | 月 → シーズン判定 |
 | `app/_lib/sanitize.ts` | ファイル名等のサニタイズ (add / items/[id]/edit の 2 ページ) |
