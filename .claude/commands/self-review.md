@@ -23,7 +23,7 @@ argument-hint: "<PR number>"
 
 **Security:** `/api/images` の owner check / multipart upload の content-type & size 上限 / secret 直書き無し
 
-**Tests:** `lib/*.ts` → `test/lib/*` / `app/api/**/route.ts` → `test/api/*` / e2e selector 整合
+**Tests:** `lib/*.ts` → `test/lib/*` / `app/api/**/route.ts` → `test/api/*` / e2e selector 整合（例外: `recommend`/`outfit-image` の feature 固有 lib は `app/api/**/_lib/` に colocate 済みだがテスト自体は `test/lib/**` に残す。`docs/codemap.md` 参照）
 
 **Quality:** 規約準拠 (`route()`, shared helpers, factories) / commit message 具体的 / 無関係変更無し / ファイル追加・削除・移動があるのに `docs/codemap.md` 未更新なら suspicious
 

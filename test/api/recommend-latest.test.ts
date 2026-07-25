@@ -2,7 +2,7 @@
 // 保存後にアイテムが削除されても安全に placeholder で読み戻せること。
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { setLatestRecommendation } from "@/lib/latest-recommendation";
+import { setLatestRecommendation } from "@/app/api/recommend/_lib/latest-recommendation";
 import { createTestD1, type TestD1 } from "@/test/helpers/d1";
 import { createTestR2, type TestR2 } from "@/test/helpers/r2";
 import { ALICE, BOB, makeItemInput } from "@/test/helpers/factories";

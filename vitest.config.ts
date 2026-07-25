@@ -12,6 +12,8 @@ export default defineConfig({
         "lib/**/*.ts",
         "schema/**/*.ts",
         "app/api/**/route.ts",
+        // recommend / outfit-image 機能の lib は app/api/**/_lib/ に colocate 済み
+        "app/api/**/_lib/**/*.ts",
       ],
       // UI helpers (React only), 画像リサイズ (browser canvas)、static maps はテスト対象外。
       exclude: [

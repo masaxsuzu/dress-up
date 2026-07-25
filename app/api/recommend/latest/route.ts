@@ -1,7 +1,7 @@
 import { listItems } from "@/lib/db";
-import { getLatestRecommendation } from "@/lib/latest-recommendation";
-import { hydrateProposals } from "@/lib/proposal-hydrate";
 import { route } from "@/lib/route-handler";
+import { getLatestRecommendation } from "../_lib/latest-recommendation";
+import { hydrateProposals } from "../_lib/proposal-hydrate";
 
 export const GET = route(async ({ env, user }) => {
   const latest = await getLatestRecommendation(env.DB, user);

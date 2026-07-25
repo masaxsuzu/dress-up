@@ -3,7 +3,7 @@ import { makeItem } from "@/test/helpers/factories";
 import { imageResponse, installGenAIMock } from "@/test/helpers/gemini";
 
 const generateContentMock = installGenAIMock();
-const { generateOutfitImage } = await import("@/lib/outfit-image");
+const { generateOutfitImage } = await import("@/app/api/outfit-image/_lib/outfit-image");
 
 beforeEach(() => generateContentMock.mockReset());
 
