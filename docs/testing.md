@@ -23,6 +23,7 @@ npm run test:e2e           # Playwright (e2e/**)
 | `r2.ts` | `createTestR2()` → `{ bucket, reset, dispose }` — Miniflare R2 |
 | `gemini.ts` | `installGenAIMock()`（`@google/genai` の hoisted `vi.mock`）、`toolCallResponse(name, args)`、`imageResponse(mediaType?, base64?)`（デフォルト `"AAAA"` で `atob` が壊れない） |
 | `route-runner.ts` | `setTestEnv({ DB, IMAGES, ... })` + `callRoute(handler, { user?, body?, formData?, params? })` |
+| `browser.ts` | `installCanvasMock()` / `installCreateImageBitmapMock()` — canvas・`createImageBitmap` の記録付き fake。node 環境で `resize-image` / `export-pdf` を unit テストするために使う (`vi.stubGlobal` 実装なので後片付けは `vi.unstubAllGlobals()`) |
 
 ### `e2e/helpers.ts`（Playwright 用）
 

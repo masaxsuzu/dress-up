@@ -23,9 +23,10 @@ export default defineConfig({
         // colocate したテスト自身を計測対象に含めない
         // (`_lib/**/*.ts` が `_lib/vlm.test.ts` にもマッチするため必須)
         "**/*.test.ts",
-        // UI helpers (React only), 画像リサイズ (browser canvas)、static maps はテスト対象外。
+        // UI helpers (React only)、static maps はテスト対象外。
+        // canvas / createImageBitmap を使うモジュール (resize-image, export-pdf)
+        // は test/helpers/browser.ts の fake で unit テスト済みなので除外しない。
         "app/_lib/labels.ts",
-        "app/_lib/resize-image.ts",
         "app/_lib/ui.ts",
       ],
       thresholds: {
