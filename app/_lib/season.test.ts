@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { currentSeason } from "@/lib/season";
+import { currentSeason } from "./season";
 
 function d(month: number): Date {
   // 2024年の各月1日を使って境界を検証する

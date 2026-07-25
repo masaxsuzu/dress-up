@@ -5,7 +5,7 @@ import {
   putIcon,
   putImage,
   putProfileImage,
-} from "@/lib/r2";
+} from "./r2";
 import { createTestR2, type TestR2 } from "@/test/helpers/r2";
 
 let env: TestR2;

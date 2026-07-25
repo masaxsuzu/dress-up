@@ -2,17 +2,17 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { getUserEmailFromHeaders } from "@/lib/auth";
-import { getItem } from "@/lib/db";
+import { getUserEmailFromHeaders } from "@/app/_lib/auth";
+import { getItem } from "@/app/_lib/db";
 import {
   FORMALITY_LABEL,
   PATTERN_LABEL,
   SEASON_LABEL,
   itemLabel,
-} from "@/lib/labels";
+} from "@/app/_lib/labels";
 import { DeleteButton } from "./delete-button";
 import { IconizeButton } from "./iconize-button";
-import { pageStyle, actionBtnStyle } from "@/lib/ui";
+import { pageStyle, actionBtnStyle } from "@/app/_lib/ui";
 
 export const dynamic = "force-dynamic";
 

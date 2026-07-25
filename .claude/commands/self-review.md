@@ -13,7 +13,7 @@ argument-hint: "<PR number>"
 ## 手順
 
 1. `pull_request_read` で get / get_diff / get_files
-2. diff がアプリコード（`app/` `lib/` `components/` `schema/` `migrations/`）に触れない場合はここで終了（コメント投稿も不要、スキップした旨だけ報告）
+2. diff がアプリコード（`app/` `schema/` `migrations/`）に触れない場合はここで終了（コメント投稿も不要、スキップした旨だけ報告）
 3. **判定は Agent tool の fresh-context subagent（general-purpose）に委譲する** — 実装した本人（メインループ）が採点しない（self-preference バイアス対策）。渡すのは diff・下チェックリスト・「正しさと要件に影響する問題のみ報告し、健全なコードに無理に指摘を作らない」という指示のみ。会話の文脈は渡さない
 4. subagent の verdict と根拠をメインループが妥当性確認 → `add_issue_comment` で投稿（下フォーマット）
 
@@ -23,7 +23,7 @@ argument-hint: "<PR number>"
 
 **Security:** `/api/images` の owner check / multipart upload の content-type & size 上限 / secret 直書き無し
 
-**Tests:** テストは**ソースの隣**に置く（`app/**/_lib/x.ts` → 同ディレクトリの `x.test.ts`、`app/api/**/route.ts` → 同ディレクトリの `route.test.ts`）。未 colocate の共有 `lib/*.ts` `schema/*.ts` のみ `test/lib/*` / e2e selector 整合。`docs/codemap.md`「ファイル配置方針」参照
+**Tests:** テストは**ソースの隣**に置く（`x.ts` → 同ディレクトリの `x.test.ts`、`route.ts` → 同ディレクトリの `route.test.ts`）。ソースを新しい場所に足したら `vitest.config.ts` の `test.include` がその場所を拾うか確認（取りこぼすとテストが黙って発見されなくなる）/ e2e selector 整合。`docs/codemap.md`「ファイル配置方針」参照
 
 **Quality:** 規約準拠 (`route()`, shared helpers, factories) / commit message 具体的 / 無関係変更無し / ファイル追加・削除・移動があるのに `docs/codemap.md` 未更新なら suspicious
 

@@ -10,8 +10,8 @@
 
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { z, type ZodType } from "zod";
-import { validationError } from "@/lib/api-response";
-import { getUserEmail } from "@/lib/auth";
+import { validationError } from "@/app/_lib/api-response";
+import { getUserEmail } from "@/app/_lib/auth";
 
 export type RouteContext<P = Record<string, never>> = {
   req: Request;

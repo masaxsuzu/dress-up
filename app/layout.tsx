@@ -1,6 +1,6 @@
 import type { Viewport } from "next";
 import "./globals.css";
-import { BottomNav } from "@/components/bottom-nav";
+import { BottomNav } from "@/app/_components/bottom-nav";
 
 export const metadata = {
   title: "dress-up",

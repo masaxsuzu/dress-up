@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sanitizeToUpdate } from "@/lib/sanitize";
+import { sanitizeToUpdate } from "./sanitize";
 import type { ClothingItemUpdate } from "@/schema/clothing";
 
 const base: Parameters<typeof sanitizeToUpdate>[0] = {

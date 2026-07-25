@@ -3,30 +3,30 @@ import path from "node:path";
 
 export default defineConfig({
   test: {
-    // テストはソースの隣に colocate する (app/**)。test/ 配下に残るのは
-    // 未 colocate の共有 lib のテストと test/helpers/ のみ。
-    include: ["app/**/*.test.ts", "test/**/*.test.ts"],
+    // テストはソースの隣に colocate する。ソースが置かれうる場所を全て
+    // 列挙すること — 取りこぼすとテストが黙って発見されなくなる
+    // (schema/ を書き忘れて 8 件が消えた実績あり)。
+    include: ["app/**/*.test.ts", "schema/**/*.test.ts"],
     environment: "node",
     coverage: {
       provider: "v8",
       reporter: ["text", "json-summary", "html"],
       include: [
-        "lib/**/*.ts",
-        "schema/**/*.ts",
-        "app/api/**/route.ts",
-        // 機能固有 lib は各ルートセグメント配下の _lib/ に colocate してある。
-        // `app/api/**` に限定すると (home) や stats などページ側の _lib が
-        // 計測対象から静かに漏れるため、app 全体を対象にする。
+        // ロジックは全て app 配下の _lib/ に置く (全体共有は app/_lib/、
+        // ルート固有は app/<route>/_lib/)。`app/**/_lib/` の ** は 0 段も
+        // マッチするので app/_lib/ もこの 1 パターンで拾える。
         "app/**/_lib/**/*.ts",
+        "app/api/**/route.ts",
+        "schema/**/*.ts",
       ],
       exclude: [
         // colocate したテスト自身を計測対象に含めない
         // (`_lib/**/*.ts` が `_lib/vlm.test.ts` にもマッチするため必須)
         "**/*.test.ts",
         // UI helpers (React only), 画像リサイズ (browser canvas)、static maps はテスト対象外。
-        "lib/labels.ts",
-        "lib/resize-image.ts",
-        "lib/ui.ts",
+        "app/_lib/labels.ts",
+        "app/_lib/resize-image.ts",
+        "app/_lib/ui.ts",
       ],
       thresholds: {
         lines: 80,

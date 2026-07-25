@@ -1,5 +1,5 @@
-import { listItems } from "@/lib/db";
-import { route } from "@/lib/route-handler";
+import { listItems } from "@/app/_lib/db";
+import { route } from "@/app/_lib/route-handler";
 import { getLatestRecommendation } from "../_lib/latest-recommendation";
 import { hydrateProposals } from "../_lib/proposal-hydrate";
 

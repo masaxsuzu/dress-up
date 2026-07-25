@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { AddButton } from "@/components/add-button";
+import { AddButton } from "@/app/_components/add-button";
 
 function GridIcon() {
   return (

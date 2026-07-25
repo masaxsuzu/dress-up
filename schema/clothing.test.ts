@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   ClothingItemInputSchema,
   VLMExtractionSchema,
-} from "@/schema/clothing";
+} from "./clothing";
 
 describe("VLMExtractionSchema", () => {
   const valid = {

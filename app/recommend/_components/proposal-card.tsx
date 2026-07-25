@@ -2,7 +2,7 @@
 
 // 提案 1 案のカード: 全身画像 (full-body-image.tsx) + 構成リスト
 // (proposal-item-row.tsx) + 説明文。
-import { cardStyle } from "@/lib/ui";
+import { cardStyle } from "@/app/_lib/ui";
 import type { Season } from "@/schema/clothing";
 import type { Proposal } from "@/schema/recommend";
 import { FullBodyImage } from "./full-body-image";

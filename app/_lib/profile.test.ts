@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { getProfile, setProfile } from "@/lib/profile";
+import { getProfile, setProfile } from "./profile";
 import { createTestD1, type TestD1 } from "@/test/helpers/d1";
 import { ALICE, BOB } from "@/test/helpers/factories";
 

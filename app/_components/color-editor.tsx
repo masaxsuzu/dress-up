@@ -1,7 +1,7 @@
 "use client";
 
 import type { Color } from "@/schema/clothing";
-import { inputStyle } from "@/components/clothing-form";
+import { inputStyle } from "@/app/_components/clothing-form";
 
 export function ColorEditor({
   colors,

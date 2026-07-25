@@ -3,7 +3,7 @@ import {
   DEV_USER_EMAIL,
   getUserEmail,
   getUserEmailFromHeaders,
-} from "@/lib/auth";
+} from "./auth";
 
 function req(headers: Record<string, string> = {}): Request {
   return new Request("https://example.com/api/x", { headers });

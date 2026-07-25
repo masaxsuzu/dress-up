@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { errorResponse, validationError } from "@/lib/api-response";
+import { errorResponse, validationError } from "./api-response";
 
 describe("errorResponse", () => {
   it("指定したメッセージと status コードで { error: string } を返す", async () => {

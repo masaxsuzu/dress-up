@@ -1,5 +1,5 @@
-import { imageKeyOwnedBy } from "@/lib/db";
-import { route } from "@/lib/route-handler";
+import { imageKeyOwnedBy } from "@/app/_lib/db";
+import { route } from "@/app/_lib/route-handler";
 
 type KeyParams = { key: string[] };
 

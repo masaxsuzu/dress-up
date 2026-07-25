@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { getUserEmailFromHeaders } from "@/lib/auth";
-import { listItems } from "@/lib/db";
+import { getUserEmailFromHeaders } from "@/app/_lib/auth";
+import { listItems } from "@/app/_lib/db";
 import { StatsView } from "./_components/stats";
-import { pageStyle, pillLinkStyle } from "@/lib/ui";
+import { pageStyle, pillLinkStyle } from "@/app/_lib/ui";
 
 export const dynamic = "force-dynamic";
 

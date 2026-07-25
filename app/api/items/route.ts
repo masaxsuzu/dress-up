@@ -1,5 +1,5 @@
-import { createItem, listItems } from "@/lib/db";
-import { parseJson, route } from "@/lib/route-handler";
+import { createItem, listItems } from "@/app/_lib/db";
+import { parseJson, route } from "@/app/_lib/route-handler";
 import { ClothingItemInputSchema } from "@/schema/clothing";
 
 export const GET = route(async ({ env, user }) => {

@@ -6,11 +6,11 @@ import {
   type ClothingItemUpdate,
   type VLMExtraction,
 } from "@/schema/clothing";
-import { takePendingFile } from "@/components/add-button";
-import { resizeImageForUpload } from "@/lib/resize-image";
-import { ClothingForm, primaryBtn } from "@/components/clothing-form";
-import { pageStyle } from "@/lib/ui";
-import { sanitizeToUpdate } from "@/lib/sanitize";
+import { takePendingFile } from "@/app/_components/add-button";
+import { resizeImageForUpload } from "@/app/_lib/resize-image";
+import { ClothingForm, primaryBtn } from "@/app/_components/clothing-form";
+import { pageStyle } from "@/app/_lib/ui";
+import { sanitizeToUpdate } from "@/app/_lib/sanitize";
 
 export default function AddPage() {
   const [file, setFile] = useState<File | null>(null);

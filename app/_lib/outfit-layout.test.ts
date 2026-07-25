@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ClothingCategory } from "@/schema/clothing";
-import { layoutOutfitBoard } from "@/lib/outfit-layout";
+import { layoutOutfitBoard } from "./outfit-layout";
 import { makeItem } from "@/test/helpers/factories";
 
 function item(id: string, category: ClothingCategory) {

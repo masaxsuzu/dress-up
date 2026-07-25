@@ -1,11 +1,11 @@
 import { Suspense } from "react";
 import { headers } from "next/headers";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { getUserEmailFromHeaders } from "@/lib/auth";
-import { listItems } from "@/lib/db";
-import { AddButton } from "@/components/add-button";
+import { getUserEmailFromHeaders } from "@/app/_lib/auth";
+import { listItems } from "@/app/_lib/db";
+import { AddButton } from "@/app/_components/add-button";
 import { Gallery } from "./_components/gallery";
-import { pageStyle, pillLinkStyle, pillLinkFilledStyle } from "@/lib/ui";
+import { pageStyle, pillLinkStyle, pillLinkFilledStyle } from "@/app/_lib/ui";
 
 export const dynamic = "force-dynamic";
 

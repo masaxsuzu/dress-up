@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { actionBtnStyle } from "@/lib/ui";
+import { actionBtnStyle } from "@/app/_lib/ui";
 
 export function DeleteButton({ id }: { id: string }) {
   const [deleting, setDeleting] = useState(false);

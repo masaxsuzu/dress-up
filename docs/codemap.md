@@ -24,35 +24,35 @@
 | `app/globals.css` | ボトムナビ・レスポンシブヘッダの CSS |
 | `app/api/**/route.ts` | API ルート — 一覧は `docs/architecture.md` の「API ルート」参照 |
 
-## components/ (複数ルートから使う共有 UI のみ)
+## app/_components/ (複数ルートから使う共有 UI)
 
 | ファイル | 役割 |
 |---|---|
-| `components/clothing-form.tsx` | 追加/編集共通の属性フォーム (add / items/[id]/edit / profile / recommend の 4 ページが使用) |
-| `components/color-editor.tsx` | カラー配列の編集 UI (clothing-form の子) |
-| `components/tag-chip-input.tsx` | タグ・シーン等のチップ入力 (clothing-form の子) |
-| `components/add-button.tsx` | 「+ 服を追加」リンクボタン (home / add / bottom-nav が使用) |
-| `components/bottom-nav.tsx` | モバイル用ボトムナビ (5 タブ)。root layout 経由で全ページに出るグローバル UI |
+| `app/_components/clothing-form.tsx` | 追加/編集共通の属性フォーム (add / items/[id]/edit / profile / recommend の 4 ページが使用) |
+| `app/_components/color-editor.tsx` | カラー配列の編集 UI (clothing-form の子) |
+| `app/_components/tag-chip-input.tsx` | タグ・シーン等のチップ入力 (clothing-form の子) |
+| `app/_components/add-button.tsx` | 「+ 服を追加」リンクボタン (home / add / bottom-nav が使用) |
+| `app/_components/bottom-nav.tsx` | モバイル用ボトムナビ (5 タブ)。root layout 経由で全ページに出るグローバル UI |
 
-単一ルートしか使わない UI はここには置かず、そのルート配下の `_components/` に colocate する（下記「ファイル配置方針」）。PR3 で `app/_components/` への集約を予定。
+単一ルートしか使わない UI はここには置かず、そのルート配下の `_components/` に colocate する（下記「ファイル配置方針」）。
 
-## lib/ (ロジック。全て unit テスト対象)
+## app/_lib/ (複数ルートから使う共有ロジック。全て unit テスト対象、テストは隣)
 
 | ファイル | 役割 |
 |---|---|
-| `lib/route-handler.ts` | `route()` ラッパー: env/user/params 抽出 (全 API ルートが使用) |
-| `lib/api-response.ts` | `{ error }` 形状の統一レスポンス + `parseJson` |
-| `lib/auth.ts` | Cloudflare Access ヘッダから user email 抽出 (`dev@local` フォールバック) |
-| `lib/db.ts` | clothing_items の D1 CRUD + `rowToItem` |
-| `lib/profile.ts` | profile テーブルの D1 読み書き |
-| `lib/r2.ts` | R2 キー生成・アップロード・所有チェック |
-| `lib/outfit-layout.ts` | 提案アイテムの main/side 振り分け（**未使用**。どこからも import されていない。削除候補として要判断） |
-| `lib/labels.ts` | enum → 日本語ラベル + `itemLabel` |
-| `lib/season.ts` | 月 → シーズン判定 |
-| `lib/sanitize.ts` | ファイル名等のサニタイズ (add / items/[id]/edit の 2 ページ) |
-| `lib/resize-image.ts` | クライアント側の画像縮小 (add / profile の 2 ページ) |
-| `lib/ui.ts` | 共有インラインスタイル定数 |
-| `lib/version.ts` | **gitignore 対象・自動生成**。`scripts/generate-version.mjs` が `package.json` の version + git commit sha から書き出す。`APP_VERSION` を export |
+| `app/_lib/route-handler.ts` | `route()` ラッパー: env/user/params 抽出 (全 API ルートが使用) |
+| `app/_lib/api-response.ts` | `{ error }` 形状の統一レスポンス + `parseJson` |
+| `app/_lib/auth.ts` | Cloudflare Access ヘッダから user email 抽出 (`dev@local` フォールバック) |
+| `app/_lib/db.ts` | clothing_items の D1 CRUD + `rowToItem` |
+| `app/_lib/profile.ts` | profile テーブルの D1 読み書き |
+| `app/_lib/r2.ts` | R2 キー生成・アップロード・所有チェック |
+| `app/_lib/outfit-layout.ts` | 提案アイテムの main/side 振り分け（**未使用**。どこからも import されていない。削除候補として要判断） |
+| `app/_lib/labels.ts` | enum → 日本語ラベル + `itemLabel` |
+| `app/_lib/season.ts` | 月 → シーズン判定 |
+| `app/_lib/sanitize.ts` | ファイル名等のサニタイズ (add / items/[id]/edit の 2 ページ) |
+| `app/_lib/resize-image.ts` | クライアント側の画像縮小 (add / profile の 2 ページ) |
+| `app/_lib/ui.ts` | 共有インラインスタイル定数 |
+| `app/_lib/version.ts` | **gitignore 対象・自動生成**。`scripts/generate-version.mjs` が `package.json` の version + git commit sha から書き出す。`APP_VERSION` を export |
 
 ## schema/ (Zod、data shape の source of truth)
 
@@ -73,36 +73,34 @@
 - **複数ルートから使われるものだけ**を全体共有として置く
 - **テストはソースの隣に置く**（`app/api/extract/_lib/vlm.test.ts` のように）。ルート自体の integration テストは `route.test.ts` としてルートの隣
 
-移行は 3 PR に分割。**PR1 (#129) = API 側 / PR2 (このコミット) = ページ側 / PR3 (予定) = 共有コードの `app/_lib/`・`app/_components/` 集約**。
-
-colocate 済み:
+移行は 3 PR に分割して完了済み（#129 = API 側 / #130 = ページ側 / PR3 = 共有コード集約）。結果として **`lib/` と `components/` は消滅**し、アプリコードは全て `app/` 配下にある。
 
 | 場所 | 内容 |
 |---|---|
-| `app/api/extract/_lib/vlm.ts` | 写真 → 属性抽出。`extract` ルート専用 |
-| `app/api/items/[id]/iconize/_lib/icon-prompt.ts` | アイコン化のプロンプト組み立て。`iconize` ルート専用 |
-| `app/api/recommend/_lib/*.ts` `app/api/outfit-image/_lib/*.ts` | #128 |
-| `app/api/**/route.test.ts` `app/api/**/_lib/*.test.ts` | API 側テスト (#129) |
-| `app/recommend/_components/*.tsx` | 提案ページ専用 UI (#128) |
-| `app/(home)/{page.tsx,_components/gallery.tsx,_lib/*}` | 一覧ページ一式 (PR2) |
-| `app/stats/{_components/stats.tsx,_lib/stats.ts}` | 統計ページ一式 (PR2) |
+| `app/_lib/` `app/_components/` | 複数ルートから使う共有ロジック・UI（上記の表） |
+| `app/(home)/` `app/stats/` | 一覧・統計ページ一式（`page.tsx` + `_components/` + `_lib/`） |
+| `app/recommend/_components/` | 提案ページ専用 UI |
+| `app/api/*/\_lib/` | そのルート専用のロジック（extract の vlm、iconize の icon-prompt、recommend、outfit-image） |
+| `app/**/*.test.ts` `schema/*.test.ts` | 全テスト（ソースの隣） |
 
-**route group `(home)` を使う理由**: 一覧ページはルートセグメント (`app/page.tsx`) なので、その専用コードを素直に置くと「全体共有の `app/_components/`」と同じ場所になり、PR3 で作る共有フォルダと混ざる。`(home)` で囲むと **URL は `/` のまま**（route group は URL に現れない）で、共有と一覧専用を構造的に分離できる。ビルド出力のルート一覧が移動前後で不変であることを確認済み。
+**route group `(home)` を使う理由**: 一覧ページはルートセグメント (`app/page.tsx`) なので、その専用コードを素直に置くと全体共有の `app/_components/` `app/_lib/` と同じ場所になり混ざる。`(home)` で囲むと **URL は `/` のまま**（route group は URL に現れない）で、共有と一覧専用を構造的に分離できる。ビルド出力のルート一覧が移動前後で不変であることを確認済み。
 
 **colocate しないもの:**
-- `schema/*` — client と server 双方が参照する型契約。CLAUDE.md のハードルールが参照先として名指ししているため top-level に固定
-- `test/helpers/` — 全テストが使う共有テストインフラ (`d1` `r2` `factories` `gemini` `route-runner`)。colocate したテストからは `@/test/helpers/...` で参照する（`test/lib/` からの相対 `../helpers/...` は移動で壊れるため）
+- `schema/*` — client と server 双方が参照する型契約。CLAUDE.md のハードルールが参照先として名指ししているため top-level に固定（テストは `schema/clothing.test.ts` として隣に置く）
+- `test/helpers/` — 全テストが使う共有テストインフラ (`d1` `r2` `factories` `gemini` `route-runner`)。テストからは `@/test/helpers/...` で参照する（相対パスは移動で壊れるため）
 
-**colocate に伴う設定側の変更点 (見落とすと壊れる):**
-- `vitest.config.ts` — `test.include` に `app/**/*.test.ts` を追加。`coverage.exclude` に `**/*.test.ts` が**必須**（`app/api/**/_lib/**/*.ts` が `_lib/vlm.test.ts` にもマッチしてテスト自身を計測対象にしてしまうため）
-- `eslint.config.mjs` — テスト用のルール緩和 override を「置き場所 (`test/**`)」ではなく**ファイル名 (`**/*.test.{ts,tsx}`)** で対象指定するよう変更（colocate 後は `test/**` に当たらなくなり `no-unnecessary-type-assertion` 等で lint が落ちる）
+**この移行で実際に踏んだ設定側の罠（同種の移動をするとき必ず確認する）:**
+- `vitest.config.ts` の **`test.include`** — ソースを置きうる場所を全部列挙しないと**テストが黙って発見されなくなる**。`schema/**/*.test.ts` を書き忘れて 8 件が消えた（テスト件数を移動前と突き合わせて発覚）
+- `vitest.config.ts` の **`coverage.include`** — 移動先を足し忘れると**カバレッジから静かに漏れて数値が上がる**。ページ側 `_lib` の漏れで 81%→98% に「改善」した（数値が良くなったら疑う）
+- `vitest.config.ts` の **`coverage.exclude`** — `**/*.test.ts` が必須。`_lib/**/*.ts` は `_lib/vlm.test.ts` にもマッチするのでテスト自身が計測対象になる
+- `eslint.config.mjs` — テスト用のルール緩和 override を「置き場所 (`test/**`)」ではなく**ファイル名 (`**/*.test.{ts,tsx}`)** で指定する。置き場所基準だと colocate した瞬間に外れて lint が落ちる（92 errors で発覚）
+- `.gitignore` / `scripts/generate-version.mjs` — 生成物 `version.ts` の出力先とignore パスの両方を追従させる
 
 ## test/ / e2e/
 
-- `app/**/*.test.ts` — colocate 済みのテスト（上記「ファイル配置方針」参照）
-- `test/lib/**` — **未 colocate の共有 lib** の unit（PR3 で移動予定）
+- `app/**/*.test.ts` / `schema/*.test.ts` — 全テストはソースの隣（上記「ファイル配置方針」参照）。ルートの integration テストは `route.test.ts`
 - `app/api/extract/_lib/vlm-schema-sync.test.ts` — `vlm.ts` の TOOL_SCHEMA と `schema/clothing.ts` の Zod スキーマの同期検証
-- `test/helpers/` / `e2e/helpers.ts` — 共有ヘルパー (`docs/testing.md` 参照)
+- `test/helpers/` / `e2e/helpers.ts` — 共有ヘルパー (`docs/testing.md` 参照)。`test/` 配下に残るのはこれだけ
 - `e2e/*.spec.ts` — registration / filter / icons / recommend / api / export-pdf の 6 本
 
 ## その他
