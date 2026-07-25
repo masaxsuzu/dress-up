@@ -12,6 +12,7 @@
 | `app/items/[id]/edit/page.tsx` | 編集フォーム (ClothingForm 再利用) |
 | `app/items/[id]/delete-button.tsx` / `iconize-button.tsx` | 詳細ページのクライアントボタン |
 | `app/recommend/page.tsx` | コーデ提案ページ (TPO 入力 → 3 案表示、保存提案の復元) |
+| `app/recommend/_components/*.tsx` | 提案ページ専用コンポーネント (下記「機能ごとの colocation」参照) |
 | `app/profile/page.tsx` | プロフィール設定フォーム |
 | `app/stats/page.tsx` | 統計ダッシュボード (server component → StatsView) |
 | `app/layout.tsx` | ルートレイアウト (globals.css、BottomNav) |
@@ -29,9 +30,8 @@
 | `components/add-button.tsx` | 「+ 服を追加」リンクボタン |
 | `components/bottom-nav.tsx` | モバイル用ボトムナビ (5 タブ) |
 | `components/stats.tsx` | 統計ビュー (集計は lib/stats.ts) |
-| `components/recommend/proposal-card.tsx` | 提案 1 案のカード (画像 + 構成 + 説明) |
-| `components/recommend/full-body-image.tsx` | 全身画像の生成・表示 (自動 or ボタン) |
-| `components/recommend/proposal-item-row.tsx` | 提案内の 1 アイテム行 (所有/買い足し) |
+
+`recommend` 機能の UI は `app/recommend/_components/` に colocate 済み（下記参照）。他機能から参照されない限りここには置かない。
 
 ## lib/ (ロジック。全て unit テスト対象)
 
@@ -42,14 +42,10 @@
 | `lib/auth.ts` | Cloudflare Access ヘッダから user email 抽出 (`dev@local` フォールバック) |
 | `lib/db.ts` | clothing_items の D1 CRUD + `rowToItem` |
 | `lib/profile.ts` | profile テーブルの D1 読み書き |
-| `lib/latest-recommendation.ts` | 提案 draft の保存/取得 |
-| `lib/proposal-hydrate.ts` | draft → 現ワードローブで Proposal 復元 |
 | `lib/r2.ts` | R2 キー生成・アップロード・所有チェック |
 | `lib/vlm.ts` | 写真 → 属性抽出 (Gemini function calling) |
-| `lib/recommend.ts` | ワードローブ + TPO → 3 案 (Gemini) |
-| `lib/outfit-image.ts` | 全身コーデ画像生成 (Gemini flash-image) |
-| `lib/outfit-prompt.ts` / `lib/icon-prompt.ts` | 画像生成プロンプト組み立て |
-| `lib/outfit-layout.ts` | 提案アイテムの main/side 振り分け |
+| `lib/icon-prompt.ts` | アイコン化 (`/api/items/[id]/iconize`) のプロンプト組み立て |
+| `lib/outfit-layout.ts` | 提案アイテムの main/side 振り分け（**未使用**。どこからも import されていない。削除候補として要判断） |
 | `lib/gallery-filters.ts` | ギャラリー絞り込み + URL パラメータ変換 (純粋関数) |
 | `lib/stats.ts` | ワードローブ統計の集計 (純粋関数) |
 | `lib/labels.ts` | enum → 日本語ラベル + `itemLabel` |
@@ -66,7 +62,22 @@
 |---|---|
 | `schema/clothing.ts` | 服アイテム (VLM → Input → Item の層構造) |
 | `schema/profile.ts` | プロフィール |
-| `schema/recommend.ts` | 提案 (リクエスト / draft / Proposal) |
+| `schema/recommend.ts` | 提案 (リクエスト / draft / Proposal)。ページ/コンポーネント (client) と `_lib` (server) の両方から参照される型契約なので、他の `schema/*` 同様 top-level に置く (feature フォルダには入れない) |
+
+## 機能ごとの colocation (recommend / outfit-image)
+
+`recommend`・`outfit-image` の feature 固有ロジックは、他機能から一切参照されないことを import 元の grep で確認した上で、App Router の `_` プレフィックスフォルダ (ルーティング対象外) に colocate している:
+
+| 場所 | 内容 |
+|---|---|
+| `app/recommend/_components/*.tsx` | 提案ページ専用 UI (旧 `components/recommend/`) |
+| `app/api/recommend/_lib/{recommend,latest-recommendation,proposal-hydrate}.ts` | `app/api/recommend/**` の 2 ルートのみが使う |
+| `app/api/outfit-image/_lib/{outfit-image,outfit-prompt}.ts` | `app/api/outfit-image/route.ts` のみが使う |
+
+**colocate しなかったもの:**
+- `schema/recommend.ts` — client (page/components) と server (`_lib`) の両方が参照するため top-level のまま
+- `lib/db.ts` `lib/r2.ts` `lib/profile.ts` `lib/route-handler.ts` `lib/api-response.ts` `lib/season.ts` `lib/labels.ts` 等 — ほぼ全ルートから使われる横断的ロジックなので top-level `lib/` のまま (colocate すると「共有 lib」と「feature 内 lib」の二重構造になり複雑化するだけ)
+- テストファイル (`test/lib/*.test.ts` / `test/api/*.test.ts`) — import 先パスだけ更新し、`test/` 配下からは移動していない (`vitest.config.ts` の `test.include` は `test/**/*.test.ts` のまま、`coverage.include` に `app/api/**/_lib/**/*.ts` を追加)
 
 ## test/ / e2e/
 

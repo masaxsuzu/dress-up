@@ -2,7 +2,7 @@
 // Gemini を mock し、hydrate と latest_recommendation への保存も検証する。
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { getLatestRecommendation } from "@/lib/latest-recommendation";
+import { getLatestRecommendation } from "@/app/api/recommend/_lib/latest-recommendation";
 import { createTestD1, type TestD1 } from "@/test/helpers/d1";
 import { createTestR2, type TestR2 } from "@/test/helpers/r2";
 import {

@@ -8,7 +8,7 @@ npm run test:e2e           # Playwright (e2e/**)
 
 ## 構成
 
-- **Unit** (`test/lib/**`) — `lib/*` と `schema/*` を単体で
+- **Unit** (`test/lib/**`) — `lib/*` と `schema/*` を単体で。`recommend`/`outfit-image` 機能の lib は `app/api/**/_lib/` に colocate 済みだが、テストファイル自体は移動せず `test/lib/**` に残し import 元パスだけ向け直している（`docs/codemap.md` の「機能ごとの colocation」参照）
 - **Integration** (`test/api/**`) — `route()` を端から端まで（auth ヘッダ → env → handler → Response）
 - **E2E** (`e2e/**`) — 実 AI API は呼ばない。Gemini 依存エンドポイントは Playwright `page.route()` でモック。dev サーバはローカル D1/R2 実 bindings で動く
 

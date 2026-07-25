@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildOutfitPrompt } from "@/lib/outfit-prompt";
+import { buildOutfitPrompt } from "@/app/api/outfit-image/_lib/outfit-prompt";
 import { makeItem, makeProfile } from "@/test/helpers/factories";
 
 describe("buildOutfitPrompt", () => {

@@ -1,16 +1,16 @@
 import { z } from "zod";
 import { errorResponse } from "@/lib/api-response";
 import { getItem } from "@/lib/db";
-import {
-  generateOutfitImage,
-  type OutfitImageInput,
-  type ReferenceImageInput,
-} from "@/lib/outfit-image";
-import type { PromptItem } from "@/lib/outfit-prompt";
 import { getProfile } from "@/lib/profile";
 import { loadImageBase64 } from "@/lib/r2";
 import { parseJson, route } from "@/lib/route-handler";
 import { currentSeason } from "@/lib/season";
+import {
+  generateOutfitImage,
+  type OutfitImageInput,
+  type ReferenceImageInput,
+} from "./_lib/outfit-image";
+import type { PromptItem } from "./_lib/outfit-prompt";
 import { ClothingCategorySchema } from "@/schema/clothing";
 
 // owned / buy 両方を受ける。owned は wardrobe の id、buy は category + description。

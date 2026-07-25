@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hydrateProposals } from "@/lib/proposal-hydrate";
+import { hydrateProposals } from "@/app/api/recommend/_lib/proposal-hydrate";
 import type { ProposalDraft } from "@/schema/recommend";
 import { makeItem } from "@/test/helpers/factories";
 

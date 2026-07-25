@@ -1,12 +1,12 @@
 import { errorResponse } from "@/lib/api-response";
 import { listItems } from "@/lib/db";
-import { setLatestRecommendation } from "@/lib/latest-recommendation";
 import { getProfile } from "@/lib/profile";
-import { hydrateProposals } from "@/lib/proposal-hydrate";
 import { loadImageBase64 } from "@/lib/r2";
-import { recommendOutfits, type ItemImage } from "@/lib/recommend";
 import { parseJson, route } from "@/lib/route-handler";
 import { currentSeason } from "@/lib/season";
+import { setLatestRecommendation } from "./_lib/latest-recommendation";
+import { hydrateProposals } from "./_lib/proposal-hydrate";
+import { recommendOutfits, type ItemImage } from "./_lib/recommend";
 import type { ClothingItem } from "@/schema/clothing";
 import { RecommendInputSchema } from "@/schema/recommend";
 

@@ -6,7 +6,7 @@ import type { Season } from "@/schema/clothing";
 import { primaryBtn } from "@/components/clothing-form";
 import { pageStyle } from "@/lib/ui";
 import { SEASON_LABEL } from "@/lib/labels";
-import { ProposalCard } from "@/components/recommend/proposal-card";
+import { ProposalCard } from "./_components/proposal-card";
 import type { Proposal } from "@/schema/recommend";
 
 type RecommendResponse = {

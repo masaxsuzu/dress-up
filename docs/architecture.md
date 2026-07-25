@@ -40,8 +40,8 @@
 | 用途 | モデル | 場所 |
 |-----|-------|------|
 | 属性抽出（forced function calling） | `gemini-2.5-flash` | `lib/vlm.ts` |
-| コーデ提案（マルチモーダル + forced function calling） | `gemini-2.5-pro` | `lib/recommend.ts` |
-| アイコン生成・全身イメージ | `gemini-2.5-flash-image` | `lib/outfit-image.ts`、`app/api/items/[id]/iconize/route.ts`（プロンプトは `lib/icon-prompt.ts` / `lib/outfit-prompt.ts`） |
+| コーデ提案（マルチモーダル + forced function calling） | `gemini-2.5-pro` | `app/api/recommend/_lib/recommend.ts` |
+| アイコン生成・全身イメージ | `gemini-2.5-flash-image` | `app/api/outfit-image/_lib/outfit-image.ts`、`app/api/items/[id]/iconize/route.ts`（プロンプトは `lib/icon-prompt.ts` / `app/api/outfit-image/_lib/outfit-prompt.ts`） |
 
 ## API ルート
 
