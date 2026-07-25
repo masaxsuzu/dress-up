@@ -57,6 +57,7 @@
 | `lib/sanitize.ts` | ファイル名等のサニタイズ |
 | `lib/resize-image.ts` | クライアント側の画像縮小 |
 | `lib/ui.ts` | 共有インラインスタイル定数 |
+| `lib/version.ts` | **gitignore 対象・自動生成**。`scripts/generate-version.mjs` が `package.json` の version + git commit sha から書き出す。`APP_VERSION` を export |
 
 ## schema/ (Zod、data shape の source of truth)
 
@@ -81,4 +82,4 @@
 - `.github/workflows/codeql.yml` — CodeQL 静的解析 (push/PR to main + 週次)
 - `.github/workflows/dependabot-automerge.yml` — Dependabot patch/minor の auto-merge 有効化 (major は対象外)
 - `.github/dependabot.yml` — npm / github-actions の週次依存更新
-- `scripts/` — プレビュー環境セットアップ・検証
+- `scripts/` — プレビュー環境セットアップ・検証、`generate-version.mjs`（`lib/version.ts` 生成、`npm ci` の `prepare` フックと `next.config.ts` から呼ばれる）

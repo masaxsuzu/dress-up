@@ -5,6 +5,7 @@ import Link from "next/link";
 import { resizeImageForUpload } from "@/lib/resize-image";
 import { primaryBtn, Field, inputStyle } from "@/components/clothing-form";
 import { pageStyle } from "@/lib/ui";
+import { APP_VERSION } from "@/lib/version";
 import type { Gender, Profile, ProfileInput } from "@/schema/profile";
 
 const GENDER_LABEL: Record<Gender, string> = {
@@ -112,6 +113,16 @@ export default function ProfilePage() {
 
   return (
     <main style={pageStyle(640)}>
+      <p
+        style={{
+          margin: "0 0 0.5rem",
+          color: "var(--muted)",
+          fontSize: "0.7rem",
+          textAlign: "right",
+        }}
+      >
+        v{APP_VERSION}
+      </p>
       <p style={{ margin: "0 0 1rem" }}>
         <Link href="/" style={{ color: "var(--muted)" }}>
           ← 一覧に戻る
