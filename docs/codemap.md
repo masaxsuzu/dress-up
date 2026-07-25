@@ -56,6 +56,7 @@
 | `lib/season.ts` | 月 → シーズン判定 |
 | `lib/sanitize.ts` | ファイル名等のサニタイズ |
 | `lib/resize-image.ts` | クライアント側の画像縮小 |
+| `lib/export-pdf.ts` | アイテム一覧を写真付き PDF に書き出す (クライアント専用、canvas ラスタライズで日本語描画) |
 | `lib/ui.ts` | 共有インラインスタイル定数 |
 | `lib/version.ts` | **gitignore 対象・自動生成**。`scripts/generate-version.mjs` が `package.json` の version + git commit sha から書き出す。`APP_VERSION` を export |
 
@@ -72,7 +73,7 @@
 - `test/lib/**` — lib/schema の unit。`test/api/**` — route() 通しの integration
 - `test/lib/vlm-schema-sync.test.ts` — `lib/vlm.ts` の TOOL_SCHEMA と `schema/clothing.ts` の Zod スキーマの同期検証
 - `test/helpers/` / `e2e/helpers.ts` — 共有ヘルパー (`docs/testing.md` 参照)
-- `e2e/*.spec.ts` — registration / filter / icons / recommend / api の 5 本
+- `e2e/*.spec.ts` — registration / filter / icons / recommend / api / export-pdf の 6 本
 
 ## その他
 

@@ -15,6 +15,17 @@ import {
   parseParams,
 } from "@/lib/gallery-filters";
 
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 // ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
@@ -99,6 +110,24 @@ export function Gallery({ items }: { items: ClothingItem[] }) {
     () => items.filter((item) => matchesAll(item, { q, categories, seasons })),
     [items, q, categories, seasons],
   );
+
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  async function onExportPdf() {
+    setExporting(true);
+    setExportError(null);
+    try {
+      const { buildWardrobePdf } = await import("@/lib/export-pdf");
+      const blob = await buildWardrobePdf(filtered);
+      const date = new Date().toISOString().slice(0, 10);
+      downloadBlob(blob, `dress-up-wardrobe-${date}.pdf`);
+    } catch (e) {
+      setExportError((e as Error).message);
+    } finally {
+      setExporting(false);
+    }
+  }
 
   return (
     <>
@@ -190,17 +219,48 @@ export function Gallery({ items }: { items: ClothingItem[] }) {
         )}
       </div>
 
-      {/* Item count */}
-      <p
-        data-testid="item-count"
-        style={{ color: "#666", fontSize: "0.9rem", margin: "0 0 1rem" }}
+      {/* Item count + PDF export */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "0.5rem",
+          margin: "0 0 1rem",
+        }}
       >
-        {items.length === 0
-          ? "まだアイテムがありません。"
-          : activeFilterCount > 0
-            ? `${filtered.length} / ${items.length} 件`
-            : `${items.length} 件のアイテム`}
-      </p>
+        <p data-testid="item-count" style={{ color: "#666", fontSize: "0.9rem", margin: 0 }}>
+          {items.length === 0
+            ? "まだアイテムがありません。"
+            : activeFilterCount > 0
+              ? `${filtered.length} / ${items.length} 件`
+              : `${items.length} 件のアイテム`}
+        </p>
+        {items.length > 0 && (
+          <button
+            data-testid="export-pdf-button"
+            onClick={() => void onExportPdf()}
+            disabled={exporting || filtered.length === 0}
+            className="chip"
+            style={{
+              fontSize: "0.8rem",
+              cursor: exporting
+                ? "wait"
+                : filtered.length === 0
+                  ? "not-allowed"
+                  : "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {exporting ? "PDF 生成中…" : "写真付き PDF"}
+          </button>
+        )}
+      </div>
+      {exportError && (
+        <p style={{ color: "var(--danger)", fontSize: "0.8rem", margin: "0 0 1rem" }}>
+          PDF 生成に失敗しました: {exportError}
+        </p>
+      )}
 
       {/* Gallery grid */}
       <div
