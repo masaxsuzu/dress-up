@@ -103,9 +103,23 @@ export default function ProfilePage() {
     setDraft((d) => ({ ...d, referenceImageKey: null }));
   }
 
+  const versionLine = (
+    <p
+      style={{
+        margin: "0 0 0.5rem",
+        color: "var(--muted)",
+        fontSize: "0.7rem",
+        textAlign: "right",
+      }}
+    >
+      v{APP_VERSION}
+    </p>
+  );
+
   if (!loaded) {
     return (
       <main style={pageStyle(640)}>
+        {versionLine}
         <p style={{ color: "var(--muted)" }}>読み込み中…</p>
       </main>
     );
@@ -113,16 +127,7 @@ export default function ProfilePage() {
 
   return (
     <main style={pageStyle(640)}>
-      <p
-        style={{
-          margin: "0 0 0.5rem",
-          color: "var(--muted)",
-          fontSize: "0.7rem",
-          textAlign: "right",
-        }}
-      >
-        v{APP_VERSION}
-      </p>
+      {versionLine}
       <p style={{ margin: "0 0 1rem" }}>
         <Link href="/" style={{ color: "var(--muted)" }}>
           ← 一覧に戻る
