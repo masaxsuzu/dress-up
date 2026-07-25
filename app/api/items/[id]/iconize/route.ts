@@ -1,7 +1,7 @@
 import { GoogleGenAI, Modality } from "@google/genai";
 import { errorResponse } from "@/lib/api-response";
 import { getItem, setIconKey } from "@/lib/db";
-import { buildIconPrompt } from "@/lib/icon-prompt";
+import { buildIconPrompt } from "./_lib/icon-prompt";
 import { loadImageBase64, putIcon } from "@/lib/r2";
 import { route } from "@/lib/route-handler";
 

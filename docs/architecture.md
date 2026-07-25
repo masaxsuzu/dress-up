@@ -39,9 +39,9 @@
 
 | 用途 | モデル | 場所 |
 |-----|-------|------|
-| 属性抽出（forced function calling） | `gemini-2.5-flash` | `lib/vlm.ts` |
+| 属性抽出（forced function calling） | `gemini-2.5-flash` | `app/api/extract/_lib/vlm.ts` |
 | コーデ提案（マルチモーダル + forced function calling） | `gemini-2.5-pro` | `app/api/recommend/_lib/recommend.ts` |
-| アイコン生成・全身イメージ | `gemini-2.5-flash-image` | `app/api/outfit-image/_lib/outfit-image.ts`、`app/api/items/[id]/iconize/route.ts`（プロンプトは `lib/icon-prompt.ts` / `app/api/outfit-image/_lib/outfit-prompt.ts`） |
+| アイコン生成・全身イメージ | `gemini-2.5-flash-image` | `app/api/outfit-image/_lib/outfit-image.ts`、`app/api/items/[id]/iconize/route.ts`（プロンプトは `app/api/items/[id]/iconize/_lib/icon-prompt.ts` / `app/api/outfit-image/_lib/outfit-prompt.ts`） |
 
 ## API ルート
 
@@ -65,7 +65,7 @@
 - `ClothingItemSchema` — Input + `id`/`iconKey`/`createdAt`/`updatedAt`（D1 が返す形）
 - `ClothingItemUpdateSchema` — 編集フォーム（imageKey なし）
 
-`schema/recommend.ts` が提案の input/draft 形。`lib/vlm.ts` の tool 入力 JSON Schema は `VLMExtractionSchema` と**手動で**同期（Zod から自動導出していない）。同期ズレは `test/lib/vlm-schema-sync.test.ts` が CI で検出する。
+`schema/recommend.ts` が提案の input/draft 形。`app/api/extract/_lib/vlm.ts` の tool 入力 JSON Schema は `VLMExtractionSchema` と**手動で**同期（Zod から自動導出していない）。同期ズレは隣の `vlm-schema-sync.test.ts` が CI で検出する。
 
 ## D1 シリアライズ
 

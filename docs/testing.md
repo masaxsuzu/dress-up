@@ -1,15 +1,15 @@
 # テスト
 
 ```bash
-npm test                   # vitest (unit: test/lib/**, integration: test/api/**)
+npm test                   # vitest (colocate 済み: app/**/*.test.ts、未移行の共有 lib: test/lib/**)
 npm run test:coverage      # vitest + v8 coverage
 npm run test:e2e           # Playwright (e2e/**)
 ```
 
 ## 構成
 
-- **Unit** (`test/lib/**`) — `lib/*` と `schema/*` を単体で。`recommend`/`outfit-image` 機能の lib は `app/api/**/_lib/` に colocate 済みだが、テストファイル自体は移動せず `test/lib/**` に残し import 元パスだけ向け直している（`docs/codemap.md` の「機能ごとの colocation」参照）
-- **Integration** (`test/api/**`) — `route()` を端から端まで（auth ヘッダ → env → handler → Response）
+- **Unit** — テストは**ソースの隣**に置く（`app/api/extract/_lib/vlm.test.ts` のように）。未 colocate の共有 `lib/*` と `schema/*` のテストのみ `test/lib/**` に残っている（PR3 で移動予定。`docs/codemap.md`「ファイル配置方針」参照）
+- **Integration** (`app/api/**/route.test.ts`) — `route()` を端から端まで（auth ヘッダ → env → handler → Response）。対象ルートの隣に置く
 - **E2E** (`e2e/**`) — 実 AI API は呼ばない。Gemini 依存エンドポイントは Playwright `page.route()` でモック。dev サーバはローカル D1/R2 実 bindings で動く
 
 ## 共有ヘルパー
@@ -37,7 +37,7 @@ npm run test:e2e           # Playwright (e2e/**)
 // vitest: beforeAll で D1/R2 作成、afterAll で dispose、beforeEach で reset + setTestEnv
 installGenAIMock(); // トップレベル必須 (vi.mock hoisting のため、Gemini を使うモジュールの import より前)
 
-const { extractAttributes } = await import("@/lib/vlm"); // モック後に dynamic import
+const { extractClothing } = await import("./vlm"); // モック後に dynamic import (colocate 済みなら相対)
 ```
 
 - Gemini モックは **top-level で `installGenAIMock()`** → 対象モジュールは `await import()` で後から読む

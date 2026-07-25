@@ -1,11 +1,11 @@
-// lib/vlm.ts の TOOL_SCHEMA (Gemini `@google/genai` の Type.* ベースで手書き) と
+// 隣の vlm.ts の TOOL_SCHEMA (Gemini `@google/genai` の Type.* ベースで手書き) と
 // schema/clothing.ts の VLMExtractionSchema (data shape の source of truth) が
 // ズレていないかを検証する。CLAUDE.md ハードルール「tool 入力 JSON Schema は
 // 手動同期が必要」を機械的に担保するテスト。
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { ColorSchema, VLMExtractionSchema } from "@/schema/clothing";
-import { TOOL_SCHEMA } from "@/lib/vlm";
+import { TOOL_SCHEMA } from "./vlm";
 
 // @google/genai の Schema 型は minItems/maxItems が string 型など癖があるため、
 // このテストで参照する分だけの最小限の shape を自前で定義する。

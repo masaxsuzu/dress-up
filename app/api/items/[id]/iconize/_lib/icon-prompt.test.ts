@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ClothingCategory } from "@/schema/clothing";
-import { buildIconPrompt } from "@/lib/icon-prompt";
+import { buildIconPrompt } from "./icon-prompt";
 
 const ALL_CATEGORIES: ClothingCategory[] = [
   "tops",

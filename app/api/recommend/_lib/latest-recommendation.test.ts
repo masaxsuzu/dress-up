@@ -2,7 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
   getLatestRecommendation,
   setLatestRecommendation,
-} from "@/app/api/recommend/_lib/latest-recommendation";
+} from "./latest-recommendation";
 import { createTestD1, type TestD1 } from "@/test/helpers/d1";
 import { ALICE, BOB, SAMPLE_PROPOSALS } from "@/test/helpers/factories";
 

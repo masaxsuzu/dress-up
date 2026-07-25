@@ -36,7 +36,8 @@ npm run db:console:local -- "SELECT * FROM clothing_items"   # ad-hoc クエリ
 - **全 D1 クエリは `user_email` でスコープ**（`lib/db.ts`/`lib/profile.ts` の第一非 db 引数）。`/api/images` は owner check 必須
 - **Gemini 503/429 でリトライしない**（Worker レスポンス期限のため）。即エラー返却、ユーザが UI で再試行
 - **D1 の配列フィールドは JSON 文字列**（`lib/db.ts:rowToItem` でパース）。スキーマ後方互換は取らない
-- **`schema/clothing.ts` が data shape の source of truth**。`lib/vlm.ts` の tool 入力 JSON Schema との同期は `test/lib/vlm-schema-sync.test.ts` が CI で検証する
+- **`schema/clothing.ts` が data shape の source of truth**。`app/api/extract/_lib/vlm.ts` の tool 入力 JSON Schema との同期は隣の `vlm-schema-sync.test.ts` が CI で検証する
+- **ファイル配置は Next.js 公式の「機能/ルートで分割」戦略**（消費元が 1 ルートならそのセグメント配下の `_lib/` `_components/` に colocate、複数ルートで使うものだけ共有に置く。テストはソースの隣）。詳細と移行状況は `docs/codemap.md`「ファイル配置方針」
 - テストは `test/helpers/` / `e2e/helpers.ts` の共有ヘルパーを使う（重複ボイラープレート禁止）
 
 ## モデルティア・ルーティング（コスト最適化）

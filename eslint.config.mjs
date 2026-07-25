@@ -52,7 +52,9 @@ export default tseslint.config(
   {
     // test/e2e はモック・アサーションの都合上、厳密な null チェックや
     // any の扱いが本番コードほど重要ではないため一部ルールを緩和する。
-    files: ["test/**/*.{ts,tsx}", "e2e/**/*.{ts,tsx}"],
+    // テストはソースの隣に colocate するため (`app/**/*.test.ts`)、置き場所では
+    // なく **ファイル名** で対象を決める。`test/**` は共有ヘルパー用。
+    files: ["**/*.test.{ts,tsx}", "test/**/*.{ts,tsx}", "e2e/**/*.{ts,tsx}"],
     rules: {
       "@typescript-eslint/no-non-null-assertion": "off",
       "@typescript-eslint/no-explicit-any": "off",
