@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { installGenAIMock, toolCallResponse } from "@/test/helpers/gemini";
 
 const generateContentMock = installGenAIMock();
-const { extractClothing } = await import("@/lib/vlm");
+const { extractClothing } = await import("./vlm");
 
 const VALID_EXTRACTION = {
   category: "tops",

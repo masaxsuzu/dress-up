@@ -43,8 +43,6 @@
 | `lib/db.ts` | clothing_items の D1 CRUD + `rowToItem` |
 | `lib/profile.ts` | profile テーブルの D1 読み書き |
 | `lib/r2.ts` | R2 キー生成・アップロード・所有チェック |
-| `lib/vlm.ts` | 写真 → 属性抽出 (Gemini function calling) |
-| `lib/icon-prompt.ts` | アイコン化 (`/api/items/[id]/iconize`) のプロンプト組み立て |
 | `lib/outfit-layout.ts` | 提案アイテムの main/side 振り分け（**未使用**。どこからも import されていない。削除候補として要判断） |
 | `lib/gallery-filters.ts` | ギャラリー絞り込み + URL パラメータ変換 (純粋関数) |
 | `lib/stats.ts` | ワードローブ統計の集計 (純粋関数) |
@@ -64,25 +62,44 @@
 | `schema/profile.ts` | プロフィール |
 | `schema/recommend.ts` | 提案 (リクエスト / draft / Proposal)。ページ/コンポーネント (client) と `_lib` (server) の両方から参照される型契約なので、他の `schema/*` 同様 top-level に置く (feature フォルダには入れない) |
 
-## 機能ごとの colocation (recommend / outfit-image)
+## ファイル配置方針 (Next.js 公式「機能/ルートで分割」戦略)
 
-`recommend`・`outfit-image` の feature 固有ロジックは、他機能から一切参照されないことを import 元の grep で確認した上で、App Router の `_` プレフィックスフォルダ (ルーティング対象外) に colocate している:
+[Next.js 公式](https://nextjs.org/docs/app/getting-started/project-structure) が挙げる 3 つの整理戦略のうち **「Split project files by feature or route」** を採用する（公式は「正解はない、選んで一貫させよ」という立場）:
+
+> globally shared code is stored at the root of the `app` directory, but context-specific application code is co-located within the directories of the route segments it applies to.
+
+**ルール:**
+- **消費元が 1 ルートだけのファイルは、そのルートセグメント配下に colocate する**（`_components/` `_lib/`）。`_` プレフィックスは Next.js の private folder 規約でルーティング対象外になる
+- **複数ルートから使われるものだけ**を全体共有として置く
+- **テストはソースの隣に置く**（`app/api/extract/_lib/vlm.test.ts` のように）。ルート自体の integration テストは `route.test.ts` としてルートの隣
+
+移行は 3 PR に分割して進行中。**PR1 (このコミット) = API 側**:
 
 | 場所 | 内容 |
 |---|---|
-| `app/recommend/_components/*.tsx` | 提案ページ専用 UI (旧 `components/recommend/`) |
-| `app/api/recommend/_lib/{recommend,latest-recommendation,proposal-hydrate}.ts` | `app/api/recommend/**` の 2 ルートのみが使う |
-| `app/api/outfit-image/_lib/{outfit-image,outfit-prompt}.ts` | `app/api/outfit-image/route.ts` のみが使う |
+| `app/api/extract/_lib/vlm.ts` | 写真 → 属性抽出 (Gemini function calling)。`extract` ルート専用 |
+| `app/api/items/[id]/iconize/_lib/icon-prompt.ts` | アイコン化のプロンプト組み立て。`iconize` ルート専用 |
+| `app/api/recommend/_lib/*.ts` `app/api/outfit-image/_lib/*.ts` | PR #128 で移動済み |
+| `app/api/**/route.test.ts` | 各ルートの integration テスト (旧 `test/api/*.test.ts`) |
+| `app/api/**/_lib/*.test.ts` | 各 `_lib` の unit テスト (旧 `test/lib/*.test.ts`) |
+| `app/recommend/_components/*.tsx` | 提案ページ専用 UI (PR #128) |
 
-**colocate しなかったもの:**
-- `schema/recommend.ts` — client (page/components) と server (`_lib`) の両方が参照するため top-level のまま
-- `lib/db.ts` `lib/r2.ts` `lib/profile.ts` `lib/route-handler.ts` `lib/api-response.ts` `lib/season.ts` `lib/labels.ts` 等 — ほぼ全ルートから使われる横断的ロジックなので top-level `lib/` のまま (colocate すると「共有 lib」と「feature 内 lib」の二重構造になり複雑化するだけ)
-- テストファイル (`test/lib/*.test.ts` / `test/api/*.test.ts`) — import 先パスだけ更新し、`test/` 配下からは移動していない (`vitest.config.ts` の `test.include` は `test/**/*.test.ts` のまま、`coverage.include` に `app/api/**/_lib/**/*.ts` を追加)
+**PR2 (予定)**: ページ側 — route group `app/(home)/` + gallery / stats の colocate
+**PR3 (予定)**: 共有コード — `app/_lib/` `app/_components/` への集約 + 残りのテスト colocate
+
+**colocate しないもの:**
+- `schema/*` — client と server 双方が参照する型契約。CLAUDE.md のハードルールが参照先として名指ししているため top-level に固定
+- `test/helpers/` — 全テストが使う共有テストインフラ (`d1` `r2` `factories` `gemini` `route-runner`)
+
+**colocate に伴う設定側の変更点 (見落とすと壊れる):**
+- `vitest.config.ts` — `test.include` に `app/**/*.test.ts` を追加。`coverage.exclude` に `**/*.test.ts` が**必須**（`app/api/**/_lib/**/*.ts` が `_lib/vlm.test.ts` にもマッチしてテスト自身を計測対象にしてしまうため）
+- `eslint.config.mjs` — テスト用のルール緩和 override を「置き場所 (`test/**`)」ではなく**ファイル名 (`**/*.test.{ts,tsx}`)** で対象指定するよう変更（colocate 後は `test/**` に当たらなくなり `no-unnecessary-type-assertion` 等で lint が落ちる）
 
 ## test/ / e2e/
 
-- `test/lib/**` — lib/schema の unit。`test/api/**` — route() 通しの integration
-- `test/lib/vlm-schema-sync.test.ts` — `lib/vlm.ts` の TOOL_SCHEMA と `schema/clothing.ts` の Zod スキーマの同期検証
+- `app/**/*.test.ts` — colocate 済みのテスト（上記「ファイル配置方針」参照）
+- `test/lib/**` — **未 colocate の共有 lib** の unit（PR3 で移動予定）
+- `app/api/extract/_lib/vlm-schema-sync.test.ts` — `vlm.ts` の TOOL_SCHEMA と `schema/clothing.ts` の Zod スキーマの同期検証
 - `test/helpers/` / `e2e/helpers.ts` — 共有ヘルパー (`docs/testing.md` 参照)
 - `e2e/*.spec.ts` — registration / filter / icons / recommend / api / export-pdf の 6 本
 

@@ -7,7 +7,7 @@ import {
 import { makeItem, SAMPLE_PROPOSALS } from "@/test/helpers/factories";
 
 const generateContentMock = installGenAIMock();
-const { recommendOutfits } = await import("@/app/api/recommend/_lib/recommend");
+const { recommendOutfits } = await import("./recommend");
 
 const ITEMS: ClothingItem[] = [
   makeItem({ id: "tops-1" }),
