@@ -1,7 +1,7 @@
-import { errorResponse } from "@/lib/api-response";
-import { deleteItem, getItem, updateItem } from "@/lib/db";
-import { deleteImage } from "@/lib/r2";
-import { parseJson, route } from "@/lib/route-handler";
+import { errorResponse } from "@/app/_lib/api-response";
+import { deleteItem, getItem, updateItem } from "@/app/_lib/db";
+import { deleteImage } from "@/app/_lib/r2";
+import { parseJson, route } from "@/app/_lib/route-handler";
 import { ClothingItemUpdateSchema } from "@/schema/clothing";
 
 type IdParams = { id: string };

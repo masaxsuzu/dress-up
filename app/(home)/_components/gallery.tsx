@@ -7,7 +7,7 @@ import { useCallback, useMemo, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { ClothingCategory, ClothingItem, Season } from "@/schema/clothing";
 import { ClothingCategorySchema, SeasonSchema } from "@/schema/clothing";
-import { CATEGORY_LABEL, SEASON_LABEL, itemLabel } from "@/lib/labels";
+import { CATEGORY_LABEL, SEASON_LABEL, itemLabel } from "@/app/_lib/labels";
 import {
   type GalleryParams,
   buildURL,

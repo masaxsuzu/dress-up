@@ -1,6 +1,6 @@
-import { errorResponse } from "@/lib/api-response";
-import { putProfileImage } from "@/lib/r2";
-import { route } from "@/lib/route-handler";
+import { errorResponse } from "@/app/_lib/api-response";
+import { putProfileImage } from "@/app/_lib/r2";
+import { route } from "@/app/_lib/route-handler";
 
 // extract と同じポリシー: 5MB / ホワイトリスト Content-Type。
 const ALLOWED_TYPES = new Set([

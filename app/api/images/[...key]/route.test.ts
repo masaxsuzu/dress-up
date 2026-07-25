@@ -5,7 +5,7 @@ import { createTestD1, type TestD1 } from "@/test/helpers/d1";
 import { createTestR2, type TestR2 } from "@/test/helpers/r2";
 import { ALICE, BOB, makeItemInput } from "@/test/helpers/factories";
 import { callRoute, setTestEnv } from "@/test/helpers/route-runner";
-import { setIconKey } from "@/lib/db";
+import { setIconKey } from "@/app/_lib/db";
 
 const { GET } = await import("@/app/api/images/[...key]/route");
 const { POST: itemsPOST } = await import("@/app/api/items/route");

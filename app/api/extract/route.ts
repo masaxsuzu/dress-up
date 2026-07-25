@@ -1,6 +1,6 @@
-import { errorResponse } from "@/lib/api-response";
-import { putImage } from "@/lib/r2";
-import { route } from "@/lib/route-handler";
+import { errorResponse } from "@/app/_lib/api-response";
+import { putImage } from "@/app/_lib/r2";
+import { route } from "@/app/_lib/route-handler";
 import { extractClothing } from "./_lib/vlm";
 
 const ALLOWED_TYPES = new Set([

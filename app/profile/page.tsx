@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { resizeImageForUpload } from "@/lib/resize-image";
-import { primaryBtn, Field, inputStyle } from "@/components/clothing-form";
-import { pageStyle } from "@/lib/ui";
-import { APP_VERSION } from "@/lib/version";
+import { resizeImageForUpload } from "@/app/_lib/resize-image";
+import { primaryBtn, Field, inputStyle } from "@/app/_components/clothing-form";
+import { pageStyle } from "@/app/_lib/ui";
+import { APP_VERSION } from "@/app/_lib/version";
 import type { Gender, Profile, ProfileInput } from "@/schema/profile";
 
 const GENDER_LABEL: Record<Gender, string> = {

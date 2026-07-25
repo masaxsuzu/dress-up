@@ -1,14 +1,14 @@
 # テスト
 
 ```bash
-npm test                   # vitest (colocate 済み: app/**/*.test.ts、未移行の共有 lib: test/lib/**)
+npm test                   # vitest (テストはソースの隣: app/**/*.test.ts, schema/**/*.test.ts)
 npm run test:coverage      # vitest + v8 coverage
 npm run test:e2e           # Playwright (e2e/**)
 ```
 
 ## 構成
 
-- **Unit** — テストは**ソースの隣**に置く（`app/api/extract/_lib/vlm.test.ts` のように）。未 colocate の共有 `lib/*` と `schema/*` のテストのみ `test/lib/**` に残っている（PR3 で移動予定。`docs/codemap.md`「ファイル配置方針」参照）
+- **Unit** — テストは**ソースの隣**に置く（`app/_lib/db.test.ts`、`app/api/extract/_lib/vlm.test.ts`、`schema/clothing.test.ts` のように）。`test/` 配下に残るのは共有ヘルパーだけ（`docs/codemap.md`「ファイル配置方針」参照）
 - **Integration** (`app/api/**/route.test.ts`) — `route()` を端から端まで（auth ヘッダ → env → handler → Response）。対象ルートの隣に置く
 - **E2E** (`e2e/**`) — 実 AI API は呼ばない。Gemini 依存エンドポイントは Playwright `page.route()` でモック。dev サーバはローカル D1/R2 実 bindings で動く
 

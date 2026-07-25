@@ -6,9 +6,9 @@ import {
   type ClothingItem,
   type ClothingItemUpdate,
 } from "@/schema/clothing";
-import { ClothingForm, primaryBtn } from "@/components/clothing-form";
-import { pageStyle } from "@/lib/ui";
-import { sanitizeToUpdate } from "@/lib/sanitize";
+import { ClothingForm, primaryBtn } from "@/app/_components/clothing-form";
+import { pageStyle } from "@/app/_lib/ui";
+import { sanitizeToUpdate } from "@/app/_lib/sanitize";
 
 export default function EditPage({
   params,

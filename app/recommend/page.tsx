@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Season } from "@/schema/clothing";
-import { primaryBtn } from "@/components/clothing-form";
-import { pageStyle } from "@/lib/ui";
-import { SEASON_LABEL } from "@/lib/labels";
+import { primaryBtn } from "@/app/_components/clothing-form";
+import { pageStyle } from "@/app/_lib/ui";
+import { SEASON_LABEL } from "@/app/_lib/labels";
 import { ProposalCard } from "./_components/proposal-card";
 import type { Proposal } from "@/schema/recommend";
 

@@ -1,5 +1,5 @@
 node_modules/
-lib/version.ts
+app/_lib/version.ts
 .next/
 .open-next/
 .wrangler/

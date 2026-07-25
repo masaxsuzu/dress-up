@@ -31,11 +31,11 @@ npm run db:console:local -- "SELECT * FROM clothing_items"   # ad-hoc クエリ
 
 ## ハードルール
 
-- **`process.env` 禁止**（eslint `no-restricted-properties` で強制。例外は `playwright.config.ts` のみ）— `DB`/`IMAGES`/`GEMINI_API_KEY`/`ASSETS` は Cloudflare bindings。API ルートは `route()` ラッパー（`lib/route-handler.ts`）が `env`/`user`/`params` を自動抽出するので、route body 内で `getCloudflareContext`/`getUserEmail`/`await args.params` を手動で呼ばない
+- **`process.env` 禁止**（eslint `no-restricted-properties` で強制。例外は `playwright.config.ts` のみ）— `DB`/`IMAGES`/`GEMINI_API_KEY`/`ASSETS` は Cloudflare bindings。API ルートは `route()` ラッパー（`app/_lib/route-handler.ts`）が `env`/`user`/`params` を自動抽出するので、route body 内で `getCloudflareContext`/`getUserEmail`/`await args.params` を手動で呼ばない
 - **JSON body は `parseJson(req, ZodSchema)`**、エラーレスポンスは全ルート `{ error: string }`
-- **全 D1 クエリは `user_email` でスコープ**（`lib/db.ts`/`lib/profile.ts` の第一非 db 引数）。`/api/images` は owner check 必須
+- **全 D1 クエリは `user_email` でスコープ**（`app/_lib/db.ts`/`app/_lib/profile.ts` の第一非 db 引数）。`/api/images` は owner check 必須
 - **Gemini 503/429 でリトライしない**（Worker レスポンス期限のため）。即エラー返却、ユーザが UI で再試行
-- **D1 の配列フィールドは JSON 文字列**（`lib/db.ts:rowToItem` でパース）。スキーマ後方互換は取らない
+- **D1 の配列フィールドは JSON 文字列**（`app/_lib/db.ts:rowToItem` でパース）。スキーマ後方互換は取らない
 - **`schema/clothing.ts` が data shape の source of truth**。`app/api/extract/_lib/vlm.ts` の tool 入力 JSON Schema との同期は隣の `vlm-schema-sync.test.ts` が CI で検証する
 - **ファイル配置は Next.js 公式の「機能/ルートで分割」戦略**（消費元が 1 ルートならそのセグメント配下の `_lib/` `_components/` に colocate、複数ルートで使うものだけ共有に置く。テストはソースの隣）。詳細と移行状況は `docs/codemap.md`「ファイル配置方針」
 - テストは `test/helpers/` / `e2e/helpers.ts` の共有ヘルパーを使う（重複ボイラープレート禁止）
@@ -54,7 +54,7 @@ npm run db:console:local -- "SELECT * FROM clothing_items"   # ad-hoc クエリ
 `create_pull_request` 成功直後に同じ PR で:
 
 1. `subscribe_pr_activity`（ユーザに聞かない。red check・レビューコメントは webhook で届く）
-2. `/self-review <PR>` — **diff がアプリコード（`app/` `lib/` `components/` `schema/` `migrations/`）に触れる場合のみ**。テスト・docs・設定のみの diff はスキップ
+2. `/self-review <PR>` — **diff がアプリコード（`app/` `schema/` `migrations/`）に触れる場合のみ**。テスト・docs・設定のみの diff はスキップ
 3. verdict `✓ clean`（またはスキップ）→ `enable_pr_auto_merge`（MERGE）。以降は required checks green で GitHub 本体がマージする / `⚠ suspicious` → `AskUserQuestion` / `✗ broken` → fix push → 2 へ
 4. **ここでターン終了。`ScheduleWakeup` でのポーリングはしない**（CI 成功の監視とマージ実行は GitHub の仕事）
 

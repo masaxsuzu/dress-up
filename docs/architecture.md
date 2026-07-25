@@ -54,7 +54,7 @@
 - `GET/PUT /api/profile`、`POST /api/profile/reference-image` — プロフィール（1 ユーザ 1 行）
 - `GET /api/images/[...key]` — R2 プロキシ（owner check 付き。フロントは R2 に直接触らない）
 
-エラーレスポンスは全ルート `{ error: string }`（`lib/api-response.ts`）。Zod エラーは 1 つの可読文字列に flatten。
+エラーレスポンスは全ルート `{ error: string }`（`app/_lib/api-response.ts`）。Zod エラーは 1 つの可読文字列に flatten。
 
 ## スキーマ（`schema/` が source of truth）
 
@@ -69,13 +69,13 @@
 
 ## D1 シリアライズ
 
-配列フィールド（`colors`/`season`/`occasion`/`tags`）は JSON 文字列で保存し `lib/db.ts:rowToItem` でパース。**スキーマ後方互換は取らない** — 破壊的変更時はデータを drop して再登録。
+配列フィールド（`colors`/`season`/`occasion`/`tags`）は JSON 文字列で保存し `app/_lib/db.ts:rowToItem` でパース。**スキーマ後方互換は取らない** — 破壊的変更時はデータを drop して再登録。
 
 ## 認証・マルチテナント
 
 - 認証コードはリポジトリに 1 行もない。Cloudflare Access が外側で守る（email allowlist）
-- Access が付与する `Cf-Access-Authenticated-User-Email` ヘッダを `lib/auth.ts` が抽出・小文字化。ヘッダ無し（ローカル/E2E）は `dev@local` にフォールバック
-- 全アイテム・プロフィールは `user_email` でスコープ。`lib/db.ts` / `lib/profile.ts` の全クエリは user email を第一引数（`db` の次）に取る
+- Access が付与する `Cf-Access-Authenticated-User-Email` ヘッダを `app/_lib/auth.ts` が抽出・小文字化。ヘッダ無し（ローカル/E2E）は `dev@local` にフォールバック
+- 全アイテム・プロフィールは `user_email` でスコープ。`app/_lib/db.ts` / `app/_lib/profile.ts` の全クエリは user email を第一引数（`db` の次）に取る
 - `GET /api/images/[...key]` は `imageKeyOwnedBy` で所有チェック（URL 推測対策）
 
 ## 設計判断

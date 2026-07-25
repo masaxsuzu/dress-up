@@ -1,6 +1,6 @@
-import { getProfile, setProfile } from "@/lib/profile";
-import { deleteImage } from "@/lib/r2";
-import { parseJson, route } from "@/lib/route-handler";
+import { getProfile, setProfile } from "@/app/_lib/profile";
+import { deleteImage } from "@/app/_lib/r2";
+import { parseJson, route } from "@/app/_lib/route-handler";
 import { ProfileInputSchema } from "@/schema/profile";
 
 export const GET = route(async ({ env, user }) => {

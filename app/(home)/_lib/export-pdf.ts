@@ -3,7 +3,7 @@
 // せず 1 ページを canvas に丸ごとラスタライズして画像として埋め込む
 // (ブラウザの canvas 2D テキスト描画は OS の日本語フォントを使える)。
 import type { ClothingItem } from "@/schema/clothing";
-import { itemLabel, SEASON_LABEL, PATTERN_LABEL, FORMALITY_LABEL } from "@/lib/labels";
+import { itemLabel, SEASON_LABEL, PATTERN_LABEL, FORMALITY_LABEL } from "@/app/_lib/labels";
 
 const PX_PER_MM = 4;
 const PAGE_W = 210 * PX_PER_MM;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { actionBtnStyle } from "@/lib/ui";
+import { actionBtnStyle } from "@/app/_lib/ui";
 
 export function IconizeButton({ id, hasIcon }: { id: string; hasIcon: boolean }) {
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">(

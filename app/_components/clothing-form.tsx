@@ -11,10 +11,10 @@ import {
   FORMALITY_LABEL,
   PATTERN_LABEL,
   SEASON_LABEL,
-} from "@/lib/labels";
-import { ColorEditor } from "@/components/color-editor";
-import { TagChipInput } from "@/components/tag-chip-input";
-import { actionBtnStyle } from "@/lib/ui";
+} from "@/app/_lib/labels";
+import { ColorEditor } from "@/app/_components/color-editor";
+import { TagChipInput } from "@/app/_components/tag-chip-input";
+import { actionBtnStyle } from "@/app/_lib/ui";
 
 const CATEGORIES = ClothingCategorySchema.options;
 const PATTERNS = PatternSchema.options;

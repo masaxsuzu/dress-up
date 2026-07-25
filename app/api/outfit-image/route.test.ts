@@ -6,7 +6,7 @@ import { createTestR2, type TestR2 } from "@/test/helpers/r2";
 import { ALICE, makeItemInput } from "@/test/helpers/factories";
 import { imageResponse, installGenAIMock } from "@/test/helpers/gemini";
 import { callRoute, setTestEnv } from "@/test/helpers/route-runner";
-import { setProfile } from "@/lib/profile";
+import { setProfile } from "@/app/_lib/profile";
 
 const generateContentMock = installGenAIMock();
 const { POST } = await import("@/app/api/outfit-image/route");

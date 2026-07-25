@@ -6,7 +6,7 @@ import {
   FORMALITY_LABEL,
   PATTERN_LABEL,
   SEASON_LABEL,
-} from "@/lib/labels";
+} from "@/app/_lib/labels";
 import { computeStats } from "../_lib/stats";
 
 // ---------------------------------------------------------------------------

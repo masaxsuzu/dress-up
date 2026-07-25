@@ -1,10 +1,10 @@
 import { z } from "zod";
-import { errorResponse } from "@/lib/api-response";
-import { getItem } from "@/lib/db";
-import { getProfile } from "@/lib/profile";
-import { loadImageBase64 } from "@/lib/r2";
-import { parseJson, route } from "@/lib/route-handler";
-import { currentSeason } from "@/lib/season";
+import { errorResponse } from "@/app/_lib/api-response";
+import { getItem } from "@/app/_lib/db";
+import { getProfile } from "@/app/_lib/profile";
+import { loadImageBase64 } from "@/app/_lib/r2";
+import { parseJson, route } from "@/app/_lib/route-handler";
+import { currentSeason } from "@/app/_lib/season";
 import {
   generateOutfitImage,
   type OutfitImageInput,

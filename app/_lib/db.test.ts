@@ -7,8 +7,8 @@ import {
   listItems,
   setIconKey,
   updateItem,
-} from "@/lib/db";
-import { setProfile } from "@/lib/profile";
+} from "./db";
+import { setProfile } from "@/app/_lib/profile";
 import { createTestD1, type TestD1 } from "@/test/helpers/d1";
 import {
   ALICE,

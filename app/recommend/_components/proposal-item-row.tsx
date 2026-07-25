@@ -2,7 +2,7 @@
 
 // 提案内の 1 アイテム行。owned はアイコン + 詳細リンク、buy は買い足しプレースホルダ。
 import Link from "next/link";
-import { itemLabel } from "@/lib/labels";
+import { itemLabel } from "@/app/_lib/labels";
 import type { ProposalItem } from "@/schema/recommend";
 
 export function ProposalItemRow({ item }: { item: ProposalItem }) {
