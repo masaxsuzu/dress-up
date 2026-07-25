@@ -39,7 +39,7 @@ export interface FakeCtx2D {
   lineTo: (...args: unknown[]) => void;
 }
 
-export function createFakeCtx2D(): FakeCtx2D {
+function createFakeCtx2D(): FakeCtx2D {
   const calls: Ctx2DCall[] = [];
   const rec =
     (method: string) =>
@@ -81,6 +81,8 @@ export interface FakeCanvas {
   width: number;
   height: number;
   ctx: FakeCtx2D;
+  /** `toBlob` に渡されたエンコード指定 (形式・品質の検証用) */
+  toBlobArgs: { type?: string; quality?: number }[];
   getContext: (id: string) => FakeCtx2D | null;
   toDataURL: (type?: string, quality?: number) => string;
   toBlob: (
@@ -99,8 +101,6 @@ export interface CanvasMockHandle {
   failContext: () => void;
   /** `toBlob` が null を返すようにする */
   failToBlob: () => void;
-  /** `toBlob` が返す Blob を差し替える */
-  setBlob: (blob: Blob) => void;
 }
 
 /**
@@ -131,9 +131,13 @@ export function installCanvasMock(
       width: 0,
       height: 0,
       ctx,
+      toBlobArgs: [],
       getContext: (id) => (id === "2d" && !contextFails ? ctx : null),
       toDataURL: () => "data:image/jpeg;base64,ZmFrZQ==",
-      toBlob: (cb) => cb(blob),
+      toBlob: (cb, type, quality) => {
+        canvas.toBlobArgs.push({ type, quality });
+        cb(blob);
+      },
     };
     canvases.push(canvas);
     return canvas;
@@ -153,9 +157,6 @@ export function installCanvasMock(
     },
     failToBlob: () => {
       blob = null;
-    },
-    setBlob: (b) => {
-      blob = b;
     },
   };
 }

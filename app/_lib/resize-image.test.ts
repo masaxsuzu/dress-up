@@ -83,9 +83,11 @@ describe("resizeImageForUpload", () => {
   });
 
   it("canvas に bitmap を描いてから close する", async () => {
-    bitmap.setImpl(() =>
-      Promise.resolve({ width: 800, height: 600, close: () => undefined }),
-    );
+    // close を数えたいので setImpl で差し替えず、既定 impl (close を計上する)
+    // をそのまま使う。
+    vi.unstubAllGlobals();
+    canvas = installCanvasMock();
+    bitmap = installCreateImageBitmapMock({ width: 800, height: 600 });
     const { resizeImageForUpload } = await loadModule();
 
     await resizeImageForUpload(jpegFile());
@@ -93,6 +95,18 @@ describe("resizeImageForUpload", () => {
     const draws = canvas.canvases[0].ctx.callsOf("drawImage");
     expect(draws).toHaveLength(1);
     expect(draws[0].args.slice(1)).toEqual([0, 0, 800, 600]);
+    // 対応検出 probe の bitmap と、実ファイルの bitmap の 2 つとも解放する
+    expect(bitmap.closed()).toBe(2);
+  });
+
+  it("JPEG 品質 0.85 でエンコードする", async () => {
+    const { resizeImageForUpload } = await loadModule();
+
+    await resizeImageForUpload(jpegFile());
+
+    expect(canvas.canvases[0].toBlobArgs).toEqual([
+      { type: "image/jpeg", quality: 0.85 },
+    ]);
   });
 
   describe("失敗時は元のファイルをそのまま返す", () => {
