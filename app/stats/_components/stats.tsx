@@ -1,4 +1,4 @@
-// /stats のワードローブ統計ビュー (集計ロジックは lib/stats.ts)
+// /stats のワードローブ統計ビュー (集計ロジックは隣の _lib/stats.ts)
 import type { ClothingItem } from "@/schema/clothing";
 import { ClothingCategorySchema, SeasonSchema } from "@/schema/clothing";
 import {

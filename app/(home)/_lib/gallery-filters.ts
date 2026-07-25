@@ -1,5 +1,5 @@
 // ギャラリーの絞り込み条件 (テキスト/カテゴリ/シーズン) と URL パラメータ変換。
-// 純粋関数のみ。ビューは components/gallery.tsx。
+// 純粋関数のみ。ビューは ../_components/gallery.tsx。
 import type { ClothingCategory, ClothingItem, Season } from "@/schema/clothing";
 import { ClothingCategorySchema, SeasonSchema } from "@/schema/clothing";
 

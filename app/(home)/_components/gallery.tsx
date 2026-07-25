@@ -1,7 +1,7 @@
 "use client";
 
 // 一覧ページのギャラリービュー: 検索/絞り込み UI + アイテムグリッド。
-// 絞り込みロジックと URL パラメータ変換は lib/gallery-filters.ts。
+// 絞り込みロジックと URL パラメータ変換は隣の _lib/gallery-filters.ts。
 import Link from "next/link";
 import { useCallback, useMemo, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
