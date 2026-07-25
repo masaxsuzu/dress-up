@@ -36,7 +36,7 @@ test.describe("/api/items", () => {
     const res = await request.post("/api/items", { data: {} });
     expect(res.status()).toBe(400);
     const body = await res.json();
-    // エラー形状は { error: string } に統一されている (lib/api-response.ts)。
+    // エラー形状は { error: string } に統一されている (app/_lib/api-response.ts)。
     expect(typeof body.error).toBe("string");
     expect(body.error).toMatch(/category/);
   });
