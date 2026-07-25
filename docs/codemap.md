@@ -86,7 +86,7 @@
 
 **colocate しないもの:**
 - `schema/*` — client と server 双方が参照する型契約。CLAUDE.md のハードルールが参照先として名指ししているため top-level に固定（テストは `schema/clothing.test.ts` として隣に置く）
-- `test/helpers/` — 全テストが使う共有テストインフラ (`d1` `r2` `factories` `gemini` `route-runner`)。テストからは `@/test/helpers/...` で参照する（相対パスは移動で壊れるため）
+- `test/helpers/` — 全テストが使う共有テストインフラ (`d1` `r2` `factories` `gemini` `route-runner` `browser`)。テストからは `@/test/helpers/...` で参照する（相対パスは移動で壊れるため）
 
 **この移行で実際に踏んだ設定側の罠（同種の移動をするとき必ず確認する）:**
 - `vitest.config.ts` の **`test.include`** — ソースを置きうる場所を全部列挙しないと**テストが黙って発見されなくなる**。`schema/**/*.test.ts` を書き忘れて 8 件が消えた（テスト件数を移動前と突き合わせて発覚）
@@ -99,7 +99,7 @@
 
 - `app/**/*.test.ts` / `schema/*.test.ts` — 全テストはソースの隣（上記「ファイル配置方針」参照）。ルートの integration テストは `route.test.ts`
 - `app/api/extract/_lib/vlm-schema-sync.test.ts` — `vlm.ts` の TOOL_SCHEMA と `schema/clothing.ts` の Zod スキーマの同期検証
-- `test/helpers/` / `e2e/helpers.ts` — 共有ヘルパー (`docs/testing.md` 参照)。`test/` 配下に残るのはこれだけ
+- `test/helpers/` / `e2e/helpers.ts` — 共有ヘルパー (`docs/testing.md` 参照)。`test/` 配下に残るのはこれだけ。`browser.ts` は canvas / `createImageBitmap` の fake で、node 環境で `resize-image` / `export-pdf` を unit テストするために使う
 - `e2e/*.spec.ts` — registration / filter / icons / recommend / api / export-pdf の 6 本
 
 ## その他
