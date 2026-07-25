@@ -33,6 +33,17 @@ check_status() {
   fi
 }
 
+check_body_match() {
+  local method="$1" path="$2" pattern="$3" label="$4"
+  local body
+  body=$(curl -sS -X "$method" "$URL$path")
+  if echo "$body" | grep -qE "$pattern"; then
+    pass "$label"
+  else
+    fail "$label (pattern not found: $pattern)"
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # Pages: server-rendered shell が 200 で返ることだけ確認。AI を使うページ
 # (/add /recommend) も page mount 時点では AI を呼ばないので 200 でよい。
@@ -42,6 +53,11 @@ check_status GET /          200
 check_status GET /add       200
 check_status GET /profile   200
 check_status GET /recommend 200
+
+# /profile はビルド時生成の APP_VERSION (lib/version.ts) を表示する。
+# "v" と数値の間に React が hydration 用コメントを挟むため v は含めない。
+check_body_match GET /profile '[0-9]+\.[0-9]+\.[0-9]+\+[0-9a-f]{7}' \
+  "GET /profile に app version (semver+commit) が表示されている"
 
 # ---------------------------------------------------------------------------
 # Read-only APIs (no AI)
