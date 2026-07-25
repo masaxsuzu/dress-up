@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { computeStats } from "@/lib/stats";
-import { makeItem } from "../helpers/factories";
+import { computeStats } from "./stats";
+import { makeItem } from "@/test/helpers/factories";
 
 describe("computeStats", () => {
   it("空配列: 全カウント 0", () => {

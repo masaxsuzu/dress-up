@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { getUserEmailFromHeaders } from "@/lib/auth";
 import { listItems } from "@/lib/db";
-import { StatsView } from "@/components/stats";
+import { StatsView } from "./_components/stats";
 import { pageStyle, pillLinkStyle } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";

@@ -6,32 +6,35 @@
 
 | ファイル | 役割 |
 |---|---|
-| `app/page.tsx` | 一覧ページ (D1 から全アイテム取得 → Gallery) |
+| `app/(home)/page.tsx` | 一覧ページ (D1 から全アイテム取得 → Gallery)。URL は `/`（route group `(home)` は URL に出ない） |
+| `app/(home)/_components/gallery.tsx` | 一覧のギャラリービュー (検索/チップ UI + グリッド) |
+| `app/(home)/_lib/gallery-filters.ts` | ギャラリー絞り込み + URL パラメータ変換 (純粋関数) |
+| `app/(home)/_lib/export-pdf.ts` | アイテム一覧を写真付き PDF に書き出す (クライアント専用、canvas ラスタライズで日本語描画) |
 | `app/add/page.tsx` | 服追加フォーム (アップロード → /api/extract → 確認 → 保存) |
 | `app/items/[id]/page.tsx` | アイテム詳細 (属性表・編集/アイコン化/削除ボタン) |
 | `app/items/[id]/edit/page.tsx` | 編集フォーム (ClothingForm 再利用) |
 | `app/items/[id]/delete-button.tsx` / `iconize-button.tsx` | 詳細ページのクライアントボタン |
 | `app/recommend/page.tsx` | コーデ提案ページ (TPO 入力 → 3 案表示、保存提案の復元) |
-| `app/recommend/_components/*.tsx` | 提案ページ専用コンポーネント (下記「機能ごとの colocation」参照) |
+| `app/recommend/_components/*.tsx` | 提案ページ専用コンポーネント |
 | `app/profile/page.tsx` | プロフィール設定フォーム |
 | `app/stats/page.tsx` | 統計ダッシュボード (server component → StatsView) |
-| `app/layout.tsx` | ルートレイアウト (globals.css、BottomNav) |
+| `app/stats/_components/stats.tsx` | 統計ビュー |
+| `app/stats/_lib/stats.ts` | ワードローブ統計の集計 (純粋関数) |
+| `app/layout.tsx` | ルートレイアウト (globals.css、BottomNav)。route group の外＝全ルート共通 |
 | `app/globals.css` | ボトムナビ・レスポンシブヘッダの CSS |
 | `app/api/**/route.ts` | API ルート — 一覧は `docs/architecture.md` の「API ルート」参照 |
 
-## components/
+## components/ (複数ルートから使う共有 UI のみ)
 
 | ファイル | 役割 |
 |---|---|
-| `components/gallery.tsx` | 一覧のギャラリービュー (検索/チップ UI + グリッド) |
-| `components/clothing-form.tsx` | 追加/編集共通の属性フォーム |
-| `components/color-editor.tsx` | カラー配列の編集 UI |
-| `components/tag-chip-input.tsx` | タグ・シーン等のチップ入力 |
-| `components/add-button.tsx` | 「+ 服を追加」リンクボタン |
-| `components/bottom-nav.tsx` | モバイル用ボトムナビ (5 タブ) |
-| `components/stats.tsx` | 統計ビュー (集計は lib/stats.ts) |
+| `components/clothing-form.tsx` | 追加/編集共通の属性フォーム (add / items/[id]/edit / profile / recommend の 4 ページが使用) |
+| `components/color-editor.tsx` | カラー配列の編集 UI (clothing-form の子) |
+| `components/tag-chip-input.tsx` | タグ・シーン等のチップ入力 (clothing-form の子) |
+| `components/add-button.tsx` | 「+ 服を追加」リンクボタン (home / add / bottom-nav が使用) |
+| `components/bottom-nav.tsx` | モバイル用ボトムナビ (5 タブ)。root layout 経由で全ページに出るグローバル UI |
 
-`recommend` 機能の UI は `app/recommend/_components/` に colocate 済み（下記参照）。他機能から参照されない限りここには置かない。
+単一ルートしか使わない UI はここには置かず、そのルート配下の `_components/` に colocate する（下記「ファイル配置方針」）。PR3 で `app/_components/` への集約を予定。
 
 ## lib/ (ロジック。全て unit テスト対象)
 
@@ -44,13 +47,10 @@
 | `lib/profile.ts` | profile テーブルの D1 読み書き |
 | `lib/r2.ts` | R2 キー生成・アップロード・所有チェック |
 | `lib/outfit-layout.ts` | 提案アイテムの main/side 振り分け（**未使用**。どこからも import されていない。削除候補として要判断） |
-| `lib/gallery-filters.ts` | ギャラリー絞り込み + URL パラメータ変換 (純粋関数) |
-| `lib/stats.ts` | ワードローブ統計の集計 (純粋関数) |
 | `lib/labels.ts` | enum → 日本語ラベル + `itemLabel` |
 | `lib/season.ts` | 月 → シーズン判定 |
-| `lib/sanitize.ts` | ファイル名等のサニタイズ |
-| `lib/resize-image.ts` | クライアント側の画像縮小 |
-| `lib/export-pdf.ts` | アイテム一覧を写真付き PDF に書き出す (クライアント専用、canvas ラスタライズで日本語描画) |
+| `lib/sanitize.ts` | ファイル名等のサニタイズ (add / items/[id]/edit の 2 ページ) |
+| `lib/resize-image.ts` | クライアント側の画像縮小 (add / profile の 2 ページ) |
 | `lib/ui.ts` | 共有インラインスタイル定数 |
 | `lib/version.ts` | **gitignore 対象・自動生成**。`scripts/generate-version.mjs` が `package.json` の version + git commit sha から書き出す。`APP_VERSION` を export |
 
@@ -73,23 +73,25 @@
 - **複数ルートから使われるものだけ**を全体共有として置く
 - **テストはソースの隣に置く**（`app/api/extract/_lib/vlm.test.ts` のように）。ルート自体の integration テストは `route.test.ts` としてルートの隣
 
-移行は 3 PR に分割して進行中。**PR1 (このコミット) = API 側**:
+移行は 3 PR に分割。**PR1 (#129) = API 側 / PR2 (このコミット) = ページ側 / PR3 (予定) = 共有コードの `app/_lib/`・`app/_components/` 集約**。
+
+colocate 済み:
 
 | 場所 | 内容 |
 |---|---|
-| `app/api/extract/_lib/vlm.ts` | 写真 → 属性抽出 (Gemini function calling)。`extract` ルート専用 |
+| `app/api/extract/_lib/vlm.ts` | 写真 → 属性抽出。`extract` ルート専用 |
 | `app/api/items/[id]/iconize/_lib/icon-prompt.ts` | アイコン化のプロンプト組み立て。`iconize` ルート専用 |
-| `app/api/recommend/_lib/*.ts` `app/api/outfit-image/_lib/*.ts` | PR #128 で移動済み |
-| `app/api/**/route.test.ts` | 各ルートの integration テスト (旧 `test/api/*.test.ts`) |
-| `app/api/**/_lib/*.test.ts` | 各 `_lib` の unit テスト (旧 `test/lib/*.test.ts`) |
-| `app/recommend/_components/*.tsx` | 提案ページ専用 UI (PR #128) |
+| `app/api/recommend/_lib/*.ts` `app/api/outfit-image/_lib/*.ts` | #128 |
+| `app/api/**/route.test.ts` `app/api/**/_lib/*.test.ts` | API 側テスト (#129) |
+| `app/recommend/_components/*.tsx` | 提案ページ専用 UI (#128) |
+| `app/(home)/{page.tsx,_components/gallery.tsx,_lib/*}` | 一覧ページ一式 (PR2) |
+| `app/stats/{_components/stats.tsx,_lib/stats.ts}` | 統計ページ一式 (PR2) |
 
-**PR2 (予定)**: ページ側 — route group `app/(home)/` + gallery / stats の colocate
-**PR3 (予定)**: 共有コード — `app/_lib/` `app/_components/` への集約 + 残りのテスト colocate
+**route group `(home)` を使う理由**: 一覧ページはルートセグメント (`app/page.tsx`) なので、その専用コードを素直に置くと「全体共有の `app/_components/`」と同じ場所になり、PR3 で作る共有フォルダと混ざる。`(home)` で囲むと **URL は `/` のまま**（route group は URL に現れない）で、共有と一覧専用を構造的に分離できる。ビルド出力のルート一覧が移動前後で不変であることを確認済み。
 
 **colocate しないもの:**
 - `schema/*` — client と server 双方が参照する型契約。CLAUDE.md のハードルールが参照先として名指ししているため top-level に固定
-- `test/helpers/` — 全テストが使う共有テストインフラ (`d1` `r2` `factories` `gemini` `route-runner`)
+- `test/helpers/` — 全テストが使う共有テストインフラ (`d1` `r2` `factories` `gemini` `route-runner`)。colocate したテストからは `@/test/helpers/...` で参照する（`test/lib/` からの相対 `../helpers/...` は移動で壊れるため）
 
 **colocate に伴う設定側の変更点 (見落とすと壊れる):**
 - `vitest.config.ts` — `test.include` に `app/**/*.test.ts` を追加。`coverage.exclude` に `**/*.test.ts` が**必須**（`app/api/**/_lib/**/*.ts` が `_lib/vlm.test.ts` にもマッチしてテスト自身を計測対象にしてしまうため）

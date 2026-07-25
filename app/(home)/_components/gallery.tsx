@@ -1,7 +1,7 @@
 "use client";
 
 // 一覧ページのギャラリービュー: 検索/絞り込み UI + アイテムグリッド。
-// 絞り込みロジックと URL パラメータ変換は lib/gallery-filters.ts。
+// 絞り込みロジックと URL パラメータ変換は隣の _lib/gallery-filters.ts。
 import Link from "next/link";
 import { useCallback, useMemo, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -13,7 +13,7 @@ import {
   buildURL,
   matchesAll,
   parseParams,
-} from "@/lib/gallery-filters";
+} from "../_lib/gallery-filters";
 
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
@@ -118,7 +118,7 @@ export function Gallery({ items }: { items: ClothingItem[] }) {
     setExporting(true);
     setExportError(null);
     try {
-      const { buildWardrobePdf } = await import("@/lib/export-pdf");
+      const { buildWardrobePdf } = await import("../_lib/export-pdf");
       const blob = await buildWardrobePdf(filtered);
       const date = new Date().toISOString().slice(0, 10);
       downloadBlob(blob, `dress-up-wardrobe-${date}.pdf`);
