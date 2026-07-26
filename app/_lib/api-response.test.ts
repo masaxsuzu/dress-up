@@ -3,25 +3,20 @@ import { z } from "zod";
 import { errorResponse, validationError } from "./api-response";
 
 describe("errorResponse", () => {
-  it("指定したメッセージと status コードで { error: string } を返す", async () => {
-    const res = errorResponse("not found", 404);
-    expect(res.status).toBe(404);
-    const body = await res.json();
-    expect(body).toEqual({ error: "not found" });
-  });
+  // status で分岐しない素通しの関数なので、コード別にケースを分けても
+  // 同じ経路を 3 回通るだけ。代表値をまとめて 1 ケースで見る。
+  it("渡したメッセージと status をそのまま { error: string } にする", async () => {
+    const cases = [
+      ["not found", 404],
+      ["bad request", 400],
+      ["internal error", 500],
+    ] as const;
 
-  it("400 ステータスで動作する", async () => {
-    const res = errorResponse("bad request", 400);
-    expect(res.status).toBe(400);
-    const body = await res.json();
-    expect(body).toEqual({ error: "bad request" });
-  });
-
-  it("500 ステータスで動作する", async () => {
-    const res = errorResponse("internal error", 500);
-    expect(res.status).toBe(500);
-    const body = await res.json();
-    expect(body).toEqual({ error: "internal error" });
+    for (const [message, status] of cases) {
+      const res = errorResponse(message, status);
+      expect(res.status).toBe(status);
+      expect(await res.json()).toEqual({ error: message });
+    }
   });
 });
 
