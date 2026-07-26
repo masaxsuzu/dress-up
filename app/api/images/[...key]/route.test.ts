@@ -4,6 +4,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createTestD1, type TestD1 } from "@/test/helpers/d1";
 import { createTestR2, type TestR2 } from "@/test/helpers/r2";
 import { ALICE, BOB, makeItemInput } from "@/test/helpers/factories";
+import { recordUpload } from "@/app/_lib/uploads";
 import { callRoute, setTestEnv } from "@/test/helpers/route-runner";
 import { setIconKey } from "@/app/_lib/db";
 
@@ -35,6 +36,7 @@ async function createItemAs(user: string, key: string) {
   await r2.bucket.put(key, new Uint8Array([1, 2, 3]), {
     httpMetadata: { contentType: "image/jpeg" },
   });
+  await recordUpload(d1.db, user, key);
   const res = await callRoute(itemsPOST, {
     user,
     body: makeItemInput({ imageKey: key }),
@@ -196,6 +198,7 @@ describe("GET /api/images/[...key]", () => {
 
   it("httpMetadata.contentType が無いと application/octet-stream にフォールバックする", async () => {
     await r2.bucket.put("items/no-content-type.bin", new Uint8Array([9, 9, 9]));
+    await recordUpload(d1.db, ALICE, "items/no-content-type.bin");
     const res = await callRoute(itemsPOST, {
       user: ALICE,
       body: makeItemInput({ imageKey: "items/no-content-type.bin" }),
@@ -222,6 +225,7 @@ describe("GET /api/images/[...key]", () => {
     await r2.bucket.put("icons/cache-check.png", new Uint8Array([1]), {
       httpMetadata: { contentType: "image/png" },
     });
+    await recordUpload(d1.db, ALICE, "icons/cache-check.png");
     await setIconKey(d1.db, ALICE, created.id, "icons/cache-check.png");
 
     const iconRes = await callRoute(GET, {

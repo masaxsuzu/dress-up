@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { clearItems as clearAll, itemPayload } from "./helpers";
+import { clearItems as clearAll, seedItem } from "./helpers";
 
 test.describe("/ 写真付き PDF エクスポート", () => {
   test.beforeEach(async ({ request }) => {
@@ -15,10 +15,7 @@ test.describe("/ 写真付き PDF エクスポート", () => {
     page,
     request,
   }) => {
-    const res = await request.post("/api/items", {
-      data: itemPayload({ category: "tops" }),
-    });
-    expect(res.ok()).toBeTruthy();
+    await seedItem(request, { category: "tops" });
 
     await page.goto("/");
     await expect(page.locator("article")).toHaveCount(1);
@@ -42,9 +39,7 @@ test.describe("/ 写真付き PDF エクスポート", () => {
     page,
     request,
   }) => {
-    await request.post("/api/items", {
-      data: itemPayload({ category: "tops" }),
-    });
+    await seedItem(request, { category: "tops" });
     await page.goto("/");
     await expect(page.locator("article")).toHaveCount(1);
 

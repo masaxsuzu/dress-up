@@ -3,12 +3,10 @@ import {
   createItem,
   deleteItem,
   getItem,
-  imageKeyOwnedBy,
   listItems,
   setIconKey,
   updateItem,
 } from "./db";
-import { setProfile } from "@/app/_lib/profile";
 import { createTestD1, type TestD1 } from "@/test/helpers/d1";
 import {
   ALICE,
@@ -172,40 +170,5 @@ describe("setIconKey", () => {
       makeItemUpdate({ brand: "new-brand" }),
     );
     expect(updated!.iconKey).toBe("icons/y.png");
-  });
-});
-
-describe("imageKeyOwnedBy", () => {
-  it("自分の item.imageKey は true、他人は false", async () => {
-    const item = await createItem(
-      env.db,
-      ALICE,
-      makeItemInput({ imageKey: "items/alice.jpg" }),
-    );
-    expect(await imageKeyOwnedBy(env.db, ALICE, item.imageKey)).toBe(true);
-    expect(await imageKeyOwnedBy(env.db, BOB, item.imageKey)).toBe(false);
-  });
-
-  it("iconKey もチェック対象", async () => {
-    const item = await createItem(env.db, ALICE, makeItemInput());
-    await setIconKey(env.db, ALICE, item.id, "icons/alice-x.png");
-    expect(await imageKeyOwnedBy(env.db, ALICE, "icons/alice-x.png")).toBe(true);
-    expect(await imageKeyOwnedBy(env.db, BOB, "icons/alice-x.png")).toBe(false);
-  });
-
-  it("profile.reference_image_key もチェック対象", async () => {
-    await setProfile(env.db, ALICE, {
-      gender: null,
-      heightCm: null,
-      weightKg: null,
-      bodyType: null,
-      referenceImageKey: "profile/alice-ref.jpg",
-    });
-    expect(await imageKeyOwnedBy(env.db, ALICE, "profile/alice-ref.jpg")).toBe(true);
-    expect(await imageKeyOwnedBy(env.db, BOB, "profile/alice-ref.jpg")).toBe(false);
-  });
-
-  it("どこにも紐付かない key は false", async () => {
-    expect(await imageKeyOwnedBy(env.db, ALICE, "items/unknown.jpg")).toBe(false);
   });
 });

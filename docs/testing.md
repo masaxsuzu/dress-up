@@ -31,6 +31,7 @@ npm run test:e2e           # Playwright (e2e/**)
 |--------|-----|
 | `TINY_PNG` | 1x1 透明 PNG バッファ（アップロード・画像モック用） |
 | `clearItems(request)` | API 経由で全アイテム削除（テスト間の独立性） |
+| `uploadImage(request)` / `seedItem(request, overrides?)` | 実フロー通り `/api/extract` で画像を上げて imageKey を得てからアイテムを作る。**任意の key を直接 POST しても所有者でないため 400 になる**ので、seed は必ずこれを使う |
 
 ## パターン
 

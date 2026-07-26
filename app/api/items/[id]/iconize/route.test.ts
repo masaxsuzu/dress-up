@@ -5,6 +5,7 @@ import { createTestD1, type TestD1 } from "@/test/helpers/d1";
 import { createTestR2, type TestR2 } from "@/test/helpers/r2";
 import { ALICE, BOB, makeItemInput } from "@/test/helpers/factories";
 import { imageResponse, installGenAIMock } from "@/test/helpers/gemini";
+import { recordUpload } from "@/app/_lib/uploads";
 import { callRoute, setTestEnv } from "@/test/helpers/route-runner";
 
 const generateContentMock = installGenAIMock();
@@ -37,6 +38,7 @@ async function setupItem(user: string) {
   await r2.bucket.put("items/own.jpg", new Uint8Array([1, 2, 3]), {
     httpMetadata: { contentType: "image/jpeg" },
   });
+  await recordUpload(d1.db, user, "items/own.jpg");
   const res = await callRoute(itemsPOST, {
     user,
     body: makeItemInput({ imageKey: "items/own.jpg" }),

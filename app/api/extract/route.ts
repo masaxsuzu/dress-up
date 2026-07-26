@@ -1,5 +1,6 @@
 import { errorResponse } from "@/app/_lib/api-response";
 import { putImage } from "@/app/_lib/r2";
+import { recordUpload } from "@/app/_lib/uploads";
 import { route } from "@/app/_lib/route-handler";
 import { extractClothing } from "./_lib/vlm";
 
@@ -14,7 +15,7 @@ const ALLOWED_TYPES = new Set([
 // メモリと、フォームアップロードのレイテンシを考えて 5MB を上限にする。
 const MAX_IMAGE_BYTES = 5_000_000;
 
-export const POST = route(async ({ req, env }) => {
+export const POST = route(async ({ req, env, user }) => {
   const form = await req.formData();
   const file = form.get("file");
   if (!(file instanceof File)) {
@@ -32,6 +33,8 @@ export const POST = route(async ({ req, env }) => {
 
   const bytes = await file.arrayBuffer();
   const imageKey = await putImage(env.IMAGES, bytes, file.type);
+  // 所有権は発行したここで確定させる (client の申告は信じない)。
+  await recordUpload(env.DB, user, imageKey);
   const base64 = Buffer.from(bytes).toString("base64");
 
   try {

@@ -1,6 +1,7 @@
 import { errorResponse } from "@/app/_lib/api-response";
 import { deleteItem, getItem, updateItem } from "@/app/_lib/db";
 import { deleteImage } from "@/app/_lib/r2";
+import { forgetUpload } from "@/app/_lib/uploads";
 import { parseJson, route } from "@/app/_lib/route-handler";
 import { ClothingItemUpdateSchema } from "@/schema/clothing";
 
@@ -26,9 +27,11 @@ export const DELETE = route<IdParams>(async ({ env, user, params }) => {
 
   await deleteItem(env.DB, user, params.id);
   await deleteImage(env.IMAGES, item.imageKey);
+  await forgetUpload(env.DB, item.imageKey);
   // アイコン (生成済みなら) も R2 から消す。残しておくと R2 にオーファンが残る。
   if (item.iconKey) {
     await deleteImage(env.IMAGES, item.iconKey).catch(() => {});
+    await forgetUpload(env.DB, item.iconKey);
   }
   return new Response(null, { status: 204 });
 });

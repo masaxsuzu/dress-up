@@ -34,6 +34,7 @@ npm run db:console:local -- "SELECT * FROM clothing_items"   # ad-hoc クエリ
 - **`process.env` 禁止**（eslint `no-restricted-properties` で強制。例外は `playwright.config.ts` のみ）— `DB`/`IMAGES`/`GEMINI_API_KEY`/`ASSETS` は Cloudflare bindings。API ルートは `route()` ラッパー（`app/_lib/route-handler.ts`）が `env`/`user`/`params` を自動抽出するので、route body 内で `getCloudflareContext`/`getUserEmail`/`await args.params` を手動で呼ばない
 - **JSON body は `parseJson(req, ZodSchema)`**、エラーレスポンスは全ルート `{ error: string }`
 - **全 D1 クエリは `user_email` でスコープ**（`app/_lib/db.ts`/`app/_lib/profile.ts` の第一非 db 引数）。`/api/images` は owner check 必須
+- **client 由来の R2 キーを信用しない** — `imageKey`/`referenceImageKey` は body で送られてくる。保存前に必ず `isUploadedBy()`（`app/_lib/uploads.ts`）を通す。所有権は R2 put と同時に `recordUpload()` で記録した事実のみを根拠にする（申告ベースにすると他人の画像を閲覧・削除できる）
 - **Gemini 503/429 でリトライしない**（Worker レスポンス期限のため）。即エラー返却、ユーザが UI で再試行
 - **D1 の配列フィールドは JSON 文字列**（`app/_lib/db.ts:rowToItem` でパース）。スキーマ後方互換は取らない
 - **`schema/clothing.ts` が data shape の source of truth**。`app/api/extract/_lib/vlm.ts` の tool 入力 JSON Schema との同期は隣の `vlm-schema-sync.test.ts` が CI で検証する

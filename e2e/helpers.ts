@@ -17,6 +17,8 @@ export async function clearItems(request: APIRequestContext) {
 }
 
 // POST /api/items 用の最小ペイロード。テスト側は必要な差分だけ override する。
+// imageKey は seedItem() が実アップロードで得た値を差し込むので、ここでは
+// 埋めない (勝手な key を渡しても所有者でないため 400 になる)。
 export function itemPayload(overrides: Record<string, unknown> = {}) {
   return {
     category: "tops",
@@ -31,7 +33,38 @@ export function itemPayload(overrides: Record<string, unknown> = {}) {
     tags: [],
     brand: null,
     notes: null,
-    imageKey: "items/dummy.png",
     ...overrides,
   };
+}
+
+// 画像をアップロードして imageKey を得る。所有権は /api/extract が記録するので、
+// アイテム登録にはこの経路で得た key を使う必要がある (client が任意の key を
+// 名乗れないようにするため)。VLM は失敗してよく、その場合も 200 で key が返る。
+export async function uploadImage(request: APIRequestContext): Promise<string> {
+  const res = await request.post("/api/extract", {
+    multipart: {
+      file: { name: "seed.png", mimeType: "image/png", buffer: TINY_PNG },
+    },
+  });
+  const body: { imageKey?: string } = await res.json();
+  if (!body.imageKey) {
+    throw new Error(`uploadImage: imageKey が返らなかった (status ${res.status()})`);
+  }
+  return body.imageKey;
+}
+
+// 実フロー通りに「アップロード → アイテム登録」を行う seed。
+export async function seedItem(
+  request: APIRequestContext,
+  overrides: Record<string, unknown> = {},
+) {
+  const imageKey = await uploadImage(request);
+  const res = await request.post("/api/items", {
+    data: itemPayload({ imageKey, ...overrides }),
+  });
+  if (res.status() !== 201) {
+    throw new Error(`seedItem: 期待 201, 実際 ${res.status()} — ${await res.text()}`);
+  }
+  const body: { item: { id: string; imageKey: string } } = await res.json();
+  return body.item;
 }

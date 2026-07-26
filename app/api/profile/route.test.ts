@@ -4,6 +4,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createTestD1, type TestD1 } from "@/test/helpers/d1";
 import { createTestR2, type TestR2 } from "@/test/helpers/r2";
 import { ALICE, BOB, makeProfileInput } from "@/test/helpers/factories";
+import { recordUpload } from "@/app/_lib/uploads";
 import { callRoute, setTestEnv } from "@/test/helpers/route-runner";
 
 const { GET, PUT } = await import("@/app/api/profile/route");
@@ -84,6 +85,9 @@ describe("PUT /api/profile", () => {
     await r2.bucket.put("profile/new.jpg", new Uint8Array([2]), {
       httpMetadata: { contentType: "image/jpeg" },
     });
+    // referenceImageKey は「自分がアップロードした key」でないと 400 になる。
+    await recordUpload(d1.db, ALICE, "profile/old.jpg");
+    await recordUpload(d1.db, ALICE, "profile/new.jpg");
 
     await callRoute(PUT, {
       user: ALICE,
@@ -102,6 +106,7 @@ describe("PUT /api/profile", () => {
     await r2.bucket.put("profile/p.jpg", new Uint8Array([1]), {
       httpMetadata: { contentType: "image/jpeg" },
     });
+    await recordUpload(d1.db, ALICE, "profile/p.jpg");
     await callRoute(PUT, {
       user: ALICE,
       body: makeProfileInput({ referenceImageKey: "profile/p.jpg" }),

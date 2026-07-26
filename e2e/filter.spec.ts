@@ -1,18 +1,6 @@
 import { expect, test } from "@playwright/test";
-import { clearItems as clearAll, itemPayload } from "./helpers";
+import { clearItems as clearAll, seedItem } from "./helpers";
 
-// Seed helper — creates items via the API
-async function createItem(
-  request: import("@playwright/test").APIRequestContext,
-  overrides: Record<string, unknown>,
-) {
-  const res = await request.post("/api/items", {
-    data: itemPayload({ colors: [{ name: "white", hex: "#ffffff" }], ...overrides }),
-  });
-  expect(res.ok()).toBeTruthy();
-  const body: { item: unknown } = await res.json();
-  return body.item;
-}
 
 test.describe("/ 絞り込み", () => {
   test.beforeEach(async ({ request }) => {
@@ -21,9 +9,9 @@ test.describe("/ 絞り込み", () => {
 
   test("カテゴリチップで絞り込める", async ({ page, request }) => {
     // 2 tops + 1 bottoms
-    await createItem(request, { category: "tops", season: ["spring"] });
-    await createItem(request, { category: "tops", season: ["summer"] });
-    await createItem(request, { category: "bottoms", season: ["autumn"] });
+    await seedItem(request, { category: "tops", season: ["spring"] });
+    await seedItem(request, { category: "tops", season: ["summer"] });
+    await seedItem(request, { category: "bottoms", season: ["autumn"] });
 
     await page.goto("/");
     await expect(page.locator("article")).toHaveCount(3);
@@ -45,8 +33,8 @@ test.describe("/ 絞り込み", () => {
   });
 
   test("シーズンチップで絞り込める", async ({ page, request }) => {
-    await createItem(request, { category: "tops", season: ["spring"] });
-    await createItem(request, {
+    await seedItem(request, { category: "tops", season: ["spring"] });
+    await seedItem(request, {
       category: "bottoms",
       season: ["autumn", "winter"],
     });
@@ -62,8 +50,8 @@ test.describe("/ 絞り込み", () => {
     page,
     request,
   }) => {
-    await createItem(request, { brand: "Uniqlo", category: "tops" });
-    await createItem(request, { brand: "Zara", category: "bottoms" });
+    await seedItem(request, { brand: "Uniqlo", category: "tops" });
+    await seedItem(request, { brand: "Zara", category: "bottoms" });
 
     await page.goto("/");
     await expect(page.locator("article")).toHaveCount(2);
@@ -79,8 +67,8 @@ test.describe("/ 絞り込み", () => {
     page,
     request,
   }) => {
-    await createItem(request, { category: "tops" });
-    await createItem(request, { category: "shoes" });
+    await seedItem(request, { category: "tops" });
+    await seedItem(request, { category: "shoes" });
 
     await page.goto("/?category=tops");
     await expect(page.locator("article")).toHaveCount(1);

@@ -5,6 +5,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createTestD1, type TestD1 } from "@/test/helpers/d1";
 import { createTestR2, type TestR2 } from "@/test/helpers/r2";
 import { ALICE, BOB, makeItemInput, makeItemUpdate } from "@/test/helpers/factories";
+import { recordUpload } from "@/app/_lib/uploads";
 import { callRoute, setTestEnv } from "@/test/helpers/route-runner";
 
 const { GET: listGET, POST: listPOST } = await import("@/app/api/items/route");
@@ -36,6 +37,8 @@ beforeEach(async () => {
 });
 
 async function createItemAs(user: string, key = "items/sample.jpg") {
+  // imageKey は「自分がアップロードした key」でなければ 400 になる。
+  await recordUpload(d1.db, user, key);
   const res = await callRoute(listPOST, {
     user,
     body: makeItemInput({ imageKey: key }),

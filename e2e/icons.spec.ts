@@ -1,15 +1,10 @@
 import { expect, test } from "@playwright/test";
-import { clearItems as clear, itemPayload } from "./helpers";
+import { clearItems as clear, seedItem } from "./helpers";
 
 // ---------------------------------------------------------------------------
 // Shared helpers
 // ---------------------------------------------------------------------------
 
-const BASE_ITEM = itemPayload({
-  subcategory: "Tシャツ",
-  colors: [{ name: "white", hex: "#ffffff" }],
-  imageKey: "items/dummy-icon-test.png",
-});
 
 // ---------------------------------------------------------------------------
 // Case 1: Gallery thumbnail when iconKey is absent
@@ -22,8 +17,10 @@ test("iconKey なし: ギャラリーのサムネイルは imageKey を src と�
   await clear(request);
 
   // Create an item with NO iconKey (the default — iconKey column is NULL).
-  const created = await request.post("/api/items", { data: BASE_ITEM });
-  expect(created.ok()).toBeTruthy();
+  const item = await seedItem(request, {
+    subcategory: "Tシャツ",
+    colors: [{ name: "white", hex: "#ffffff" }],
+  });
 
   await page.goto("/");
 
@@ -36,7 +33,8 @@ test("iconKey なし: ギャラリーのサムネイルは imageKey を src と�
 
   // src must reference imageKey directly (no iconKey fallback path).
   const src = await img.getAttribute("src");
-  expect(src).toContain("/api/images/items/dummy-icon-test.png");
+  // key はアップロード時にサーバが採番するので、返ってきた実 key と突き合わせる。
+  expect(src).toContain(`/api/images/${item.imageKey}`);
   expect(src).not.toContain("icons/");
 
   // Gallery uses objectFit: "cover" when there is no iconKey.
@@ -57,9 +55,10 @@ test("iconize ボタン: POST 成功 → 「生成中...」が見え、ページ
 }) => {
   await clear(request);
 
-  const created = await request.post("/api/items", { data: BASE_ITEM });
-  expect(created.ok()).toBeTruthy();
-  const { item } = await created.json();
+  const item = await seedItem(request, {
+    subcategory: "Tシャツ",
+    colors: [{ name: "white", hex: "#ffffff" }],
+  });
 
   await page.goto(`/items/${item.id}`);
   await expect(page.getByText("カテゴリ")).toBeVisible();
@@ -109,9 +108,10 @@ test("iconize ボタン: POST 失敗 → 「エラー」ラベルと danger (赤
 }) => {
   await clear(request);
 
-  const created = await request.post("/api/items", { data: BASE_ITEM });
-  expect(created.ok()).toBeTruthy();
-  const { item } = await created.json();
+  const item = await seedItem(request, {
+    subcategory: "Tシャツ",
+    colors: [{ name: "white", hex: "#ffffff" }],
+  });
 
   await page.goto(`/items/${item.id}`);
   await expect(page.getByText("カテゴリ")).toBeVisible();

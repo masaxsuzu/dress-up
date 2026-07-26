@@ -3,6 +3,7 @@ import { errorResponse } from "@/app/_lib/api-response";
 import { getItem, setIconKey } from "@/app/_lib/db";
 import { buildIconPrompt } from "./_lib/icon-prompt";
 import { loadImageBase64, putIcon } from "@/app/_lib/r2";
+import { recordUpload } from "@/app/_lib/uploads";
 import { route } from "@/app/_lib/route-handler";
 
 const MODEL = "gemini-2.5-flash-image";
@@ -53,6 +54,7 @@ export const POST = route<IdParams>(async ({ env, user, params }) => {
   const bytes = Uint8Array.from(atob(data), (c) => c.charCodeAt(0)).buffer;
 
   const iconKey = await putIcon(env.IMAGES, params.id, bytes, mimeType);
+  await recordUpload(env.DB, user, iconKey);
   await setIconKey(env.DB, user, params.id, iconKey);
 
   return Response.json({ iconKey });

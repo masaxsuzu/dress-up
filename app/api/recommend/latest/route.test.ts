@@ -6,6 +6,7 @@ import { setLatestRecommendation } from "../_lib/latest-recommendation";
 import { createTestD1, type TestD1 } from "@/test/helpers/d1";
 import { createTestR2, type TestR2 } from "@/test/helpers/r2";
 import { ALICE, BOB, makeItemInput } from "@/test/helpers/factories";
+import { recordUpload } from "@/app/_lib/uploads";
 import { callRoute, setTestEnv } from "@/test/helpers/route-runner";
 
 const { GET } = await import("@/app/api/recommend/latest/route");
@@ -33,6 +34,7 @@ beforeEach(async () => {
 });
 
 async function createItemAs(user: string) {
+  await recordUpload(d1.db, user, makeItemInput().imageKey);
   const res = await callRoute(itemsPOST, { user, body: makeItemInput() });
   const body = (await res.json()) as { item: { id: string } };
   return body.item;

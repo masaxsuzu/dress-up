@@ -76,7 +76,8 @@
 - 認証コードはリポジトリに 1 行もない。Cloudflare Access が外側で守る（email allowlist）
 - Access が付与する `Cf-Access-Authenticated-User-Email` ヘッダを `app/_lib/auth.ts` が抽出・小文字化。ヘッダ無し（ローカル/E2E）は `dev@local` にフォールバック
 - 全アイテム・プロフィールは `user_email` でスコープ。`app/_lib/db.ts` / `app/_lib/profile.ts` の全クエリは user email を第一引数（`db` の次）に取る
-- `GET /api/images/[...key]` は `imageKeyOwnedBy` で所有チェック（URL 推測対策）
+- `GET /api/images/[...key]` は `isUploadedBy` で所有チェック（URL 推測対策）
+- **画像の所有権は `uploaded_images` テーブルが持つ**。`imageKey`/`referenceImageKey` は client が body で送る値なので、それを参照している行の有無で所有を判定すると「他人の key を自分のものとして登録する」だけで所有者になれてしまう（閲覧に加え、旧画像削除の経路で他人の R2 オブジェクトも消せた）。R2 put と同時に `recordUpload()` で記録し、保存前に `isUploadedBy()` で検証する
 
 ## 設計判断
 
