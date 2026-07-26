@@ -185,29 +185,6 @@ export async function updateItem(
   return getItem(db, userEmail, id);
 }
 
-// /api/images の owner check 用: 指定 key がこのユーザの所有物か?
-// items / icons / profile の reference_image_key のいずれかに該当すれば true。
-export async function imageKeyOwnedBy(
-  db: D1Database,
-  userEmail: string,
-  imageKey: string,
-): Promise<boolean> {
-  // clothing_items.image_key または icon_key にマッチ
-  const fromItems = await db
-    .prepare(
-      `SELECT 1 FROM clothing_items
-       WHERE user_email = ? AND (image_key = ? OR icon_key = ?) LIMIT 1`,
-    )
-    .bind(userEmail, imageKey, imageKey)
-    .first<{ "1": number }>();
-  if (fromItems) return true;
-
-  // profile.reference_image_key にマッチ
-  const fromProfile = await db
-    .prepare(
-      `SELECT 1 FROM profile WHERE user_email = ? AND reference_image_key = ? LIMIT 1`,
-    )
-    .bind(userEmail, imageKey)
-    .first<{ "1": number }>();
-  return !!fromProfile;
-}
+// 画像の所有判定は app/_lib/uploads.ts の `isUploadedBy` に移した。
+// 「どの行がその key を参照しているか」ではなく「誰がアップロードしたか」を
+// 根拠にする (前者だと他人の key を自分の行から参照するだけで所有者になれた)。

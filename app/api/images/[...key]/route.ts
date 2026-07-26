@@ -1,4 +1,4 @@
-import { imageKeyOwnedBy } from "@/app/_lib/db";
+import { isUploadedBy } from "@/app/_lib/uploads";
 import { route } from "@/app/_lib/route-handler";
 
 type KeyParams = { key: string[] };
@@ -28,7 +28,7 @@ export const GET = route<KeyParams>(async ({ req, env, user, params }) => {
 
   // owner check: 他人のアイテム/プロフィール画像を URL 推測で取れないようにする。
   // 存在/非所有を区別できないように常に 404 で返す。条件付き GET より必ず先に行う。
-  const owned = await imageKeyOwnedBy(env.DB, user, objectKey);
+  const owned = await isUploadedBy(env.DB, user, objectKey);
   if (!owned) return new Response("not found", { status: 404 });
 
   const onlyIf = parseIfNoneMatch(req.headers);

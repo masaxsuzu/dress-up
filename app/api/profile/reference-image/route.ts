@@ -1,5 +1,6 @@
 import { errorResponse } from "@/app/_lib/api-response";
 import { putProfileImage } from "@/app/_lib/r2";
+import { recordUpload } from "@/app/_lib/uploads";
 import { route } from "@/app/_lib/route-handler";
 
 // extract と同じポリシー: 5MB / ホワイトリスト Content-Type。
@@ -13,7 +14,7 @@ const MAX_IMAGE_BYTES = 5_000_000;
 
 // 参考画像をアップロードして R2 key だけ返す。プロフィール本体への紐付けは
 // PUT /api/profile に referenceImageKey を含めて呼ぶ責務 (画像登録と同じ流れ)。
-export const POST = route(async ({ req, env }) => {
+export const POST = route(async ({ req, env, user }) => {
   const form = await req.formData();
   const file = form.get("file");
   if (!(file instanceof File)) {
@@ -31,5 +32,6 @@ export const POST = route(async ({ req, env }) => {
 
   const bytes = await file.arrayBuffer();
   const imageKey = await putProfileImage(env.IMAGES, bytes, file.type);
+  await recordUpload(env.DB, user, imageKey);
   return Response.json({ imageKey });
 });

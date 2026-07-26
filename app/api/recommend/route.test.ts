@@ -11,6 +11,7 @@ import {
   SAMPLE_PROPOSALS,
 } from "@/test/helpers/factories";
 import { installGenAIMock, toolCallResponse } from "@/test/helpers/gemini";
+import { recordUpload } from "@/app/_lib/uploads";
 import { callRoute, setTestEnv } from "@/test/helpers/route-runner";
 
 const generateContentMock = installGenAIMock();
@@ -43,6 +44,7 @@ async function seedItem(user: string, imageKey = "items/x.jpg") {
   await r2.bucket.put(imageKey, new Uint8Array([1, 2, 3]), {
     httpMetadata: { contentType: "image/jpeg" },
   });
+  await recordUpload(d1.db, user, imageKey);
   const res = await callRoute(itemsPOST, {
     user,
     body: makeItemInput({ imageKey }),
@@ -112,6 +114,8 @@ describe("POST /api/recommend", () => {
   it("R2 に画像が無いアイテムは除外され、Gemini には画像パート無しで渡る", async () => {
     // items/route 経由で imageKey だけ登録し、R2 には実体を置かない
     // (loadImageBase64 が null を返し、そのアイテムは images から除外される)
+    // R2 に実体が無いだけで、key の発行者は本人という状況を作る。
+    await recordUpload(d1.db, ALICE, "items/missing.jpg");
     const createRes = await callRoute(itemsPOST, {
       user: ALICE,
       body: makeItemInput({ imageKey: "items/missing.jpg" }),

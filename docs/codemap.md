@@ -45,7 +45,8 @@
 | `app/_lib/auth.ts` | Cloudflare Access ヘッダから user email 抽出 (`dev@local` フォールバック) |
 | `app/_lib/db.ts` | clothing_items の D1 CRUD + `rowToItem` |
 | `app/_lib/profile.ts` | profile テーブルの D1 読み書き |
-| `app/_lib/r2.ts` | R2 キー生成・アップロード・所有チェック |
+| `app/_lib/r2.ts` | R2 キー生成・アップロード・削除 |
+| `app/_lib/uploads.ts` | 画像の所有権 (`uploaded_images`)。`recordUpload` で発行時に記録、`isUploadedBy` で client 由来 key を検証 |
 | `app/_lib/labels.ts` | enum → 日本語ラベル + `itemLabel` |
 | `app/_lib/season.ts` | 月 → シーズン判定 |
 | `app/_lib/sanitize.ts` | ファイル名等のサニタイズ (add / items/[id]/edit の 2 ページ) |

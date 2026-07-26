@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { TINY_PNG, clearItems as clear, itemPayload } from "./helpers";
+import { TINY_PNG, clearItems as clear, seedItem } from "./helpers";
 
 test("/add でアップロード→VLM失敗→手動入力→保存→一覧に出る", async ({
   page,
@@ -46,11 +46,7 @@ test("/ 一覧に追加ボタンがある", async ({ page, request }) => {
 test("詳細ページから編集して変更が反映される", async ({ page, request }) => {
   await clear(request);
 
-  const created = await request.post("/api/items", {
-    data: itemPayload({ subcategory: "Tシャツ" }),
-  });
-  expect(created.ok()).toBeTruthy();
-  const { item } = await created.json();
+  const item = await seedItem(request, { subcategory: "Tシャツ" });
 
   // 詳細ページに移動して編集ボタンを確認
   await page.goto(`/items/${item.id}`);
@@ -84,11 +80,7 @@ test("詳細ページから削除すると一覧から消える", async ({ page,
   await clear(request);
 
   // API 経由で1件作っておく（UIフローはもう一つのテストでカバー済み）
-  const created = await request.post("/api/items", {
-    data: itemPayload(),
-  });
-  expect(created.ok()).toBeTruthy();
-  const { item } = await created.json();
+  const item = await seedItem(request);
 
   await page.goto(`/items/${item.id}`);
   await expect(page.getByText("カテゴリ")).toBeVisible();

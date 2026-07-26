@@ -2,6 +2,7 @@
 // VLM が失敗しても 200 で imageKey を返す (extraction: null) ことを保証する。
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { createTestD1, type TestD1 } from "@/test/helpers/d1";
 import { createTestR2, type TestR2 } from "@/test/helpers/r2";
 import { installGenAIMock, toolCallResponse } from "@/test/helpers/gemini";
 import { callRoute, setTestEnv } from "@/test/helpers/route-runner";
@@ -10,6 +11,7 @@ const generateContentMock = installGenAIMock();
 const { POST } = await import("@/app/api/extract/route");
 
 let r2: TestR2;
+let d1: TestD1;
 
 const VALID_EXTRACTION = {
   category: "tops",
@@ -26,12 +28,19 @@ const VALID_EXTRACTION = {
 
 beforeAll(async () => {
   r2 = await createTestR2();
+  d1 = await createTestD1();
 });
-afterAll(() => r2.dispose());
+afterAll(async () => {
+  await r2.dispose();
+  await d1.dispose();
+});
 beforeEach(async () => {
   await r2.reset();
+  await d1.reset();
   generateContentMock.mockReset();
+  // アップロード直後に所有権を uploaded_images へ記録するため DB が要る。
   setTestEnv({
+    DB: d1.db,
     IMAGES: r2.bucket,
     GEMINI_API_KEY: "sk-test",
   } as unknown as CloudflareEnv);

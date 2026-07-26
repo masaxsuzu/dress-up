@@ -29,7 +29,12 @@ function loadMigrationStatements(): string[] {
   return out;
 }
 
-const TABLES = ["clothing_items", "profile", "latest_recommendation"] as const;
+const TABLES = [
+  "clothing_items",
+  "profile",
+  "latest_recommendation",
+  "uploaded_images",
+] as const;
 
 export type TestD1 = {
   db: D1Database;

@@ -2,20 +2,27 @@
 // 拡張子・content-type のホワイトリスト挙動を検証する。
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { createTestD1, type TestD1 } from "@/test/helpers/d1";
 import { createTestR2, type TestR2 } from "@/test/helpers/r2";
 import { callRoute, setTestEnv } from "@/test/helpers/route-runner";
 
 const { POST } = await import("@/app/api/profile/reference-image/route");
 
 let r2: TestR2;
+let d1: TestD1;
 
 beforeAll(async () => {
   r2 = await createTestR2();
+  d1 = await createTestD1();
 });
-afterAll(() => r2.dispose());
+afterAll(async () => {
+  await r2.dispose();
+  await d1.dispose();
+});
 beforeEach(async () => {
   await r2.reset();
-  setTestEnv({ IMAGES: r2.bucket } as unknown as CloudflareEnv);
+  await d1.reset();
+  setTestEnv({ DB: d1.db, IMAGES: r2.bucket } as unknown as CloudflareEnv);
 });
 
 function imageForm(file: Blob, name = "x.jpg"): FormData {

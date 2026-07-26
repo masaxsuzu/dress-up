@@ -68,23 +68,48 @@ check_status GET /api/profile            200
 check_status GET /api/recommend/latest   200
 
 # ---------------------------------------------------------------------------
-# Mutating APIs (no AI) — text-only round-trip
-# imageKey は dummy 文字列でよい (API は実画像 R2 存在をチェックしない)
+# Mutating APIs (no AI) — upload → register → read → delete の round-trip
+#
+# imageKey は dummy 文字列では通らない。所有権は「サーバが発行した事実」で
+# 決まるため、実際にアップロードして得た key でないと 400 になる
+# (app/_lib/uploads.ts)。key を発行するルートのうち /api/extract は Gemini を
+# 叩くので、AI を使わない /api/profile/reference-image を使う。prefix は
+# 所有判定に関係しないので、得た key をそのままアイテムに使ってよい。
 # ---------------------------------------------------------------------------
-section "Mutating APIs (text-only round-trip)"
-SAMPLE='{"category":"tops","subcategory":"verify","colors":[{"name":"white","hex":"#ffffff"}],"pattern":"solid","material":null,"silhouette":null,"season":["spring"],"formality":2,"occasion":[],"tags":["__preview_verify__"],"brand":null,"notes":null,"imageKey":"items/__verify__.jpg"}'
+section "Mutating APIs (upload → register round-trip)"
 
-resp=$(curl -sS -X POST -H "Content-Type: application/json" -d "$SAMPLE" "$URL/api/items")
-id=$(echo "$resp" | jq -r '.item.id // empty' 2>/dev/null || echo "")
-if [ -n "$id" ]; then
-  pass "POST /api/items → id=$id"
+# 1x1 透明 PNG (e2e/helpers.ts の TINY_PNG と同じバイト列)
+TINY_PNG_B64="iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+tmp_png=$(mktemp /tmp/verify-preview-XXXXXX.png)
+trap 'rm -f "$tmp_png"' EXIT
+echo "$TINY_PNG_B64" | base64 -d > "$tmp_png"
+
+up=$(curl -sS -X POST -F "file=@${tmp_png};type=image/png" "$URL/api/profile/reference-image")
+image_key=$(echo "$up" | jq -r '.imageKey // empty' 2>/dev/null || echo "")
+if [ -n "$image_key" ]; then
+  pass "POST /api/profile/reference-image → $image_key"
 else
-  fail "POST /api/items: $resp"
+  fail "POST /api/profile/reference-image: $up"
 fi
 
-if [ -n "$id" ]; then
-  check_status GET    "/api/items/$id" 200
-  check_status DELETE "/api/items/$id" 204
+if [ -n "$image_key" ]; then
+  SAMPLE=$(jq -n --arg k "$image_key" '{category:"tops",subcategory:"verify",colors:[{name:"white",hex:"#ffffff"}],pattern:"solid",material:null,silhouette:null,season:["spring"],formality:2,occasion:[],tags:["__preview_verify__"],brand:null,notes:null,imageKey:$k}')
+
+  resp=$(curl -sS -X POST -H "Content-Type: application/json" -d "$SAMPLE" "$URL/api/items")
+  id=$(echo "$resp" | jq -r '.item.id // empty' 2>/dev/null || echo "")
+  if [ -n "$id" ]; then
+    pass "POST /api/items → id=$id"
+  else
+    fail "POST /api/items: $resp"
+  fi
+
+  if [ -n "$id" ]; then
+    check_status GET    "/api/images/$image_key" 200
+    check_status GET    "/api/items/$id"         200
+    # DELETE は最後の参照を消すので、R2 実体と所有レコードも片付く
+    check_status DELETE "/api/items/$id"         204
+    check_status GET    "/api/images/$image_key" 404
+  fi
 fi
 
 # ---------------------------------------------------------------------------

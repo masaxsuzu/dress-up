@@ -5,6 +5,7 @@ import { createTestD1, type TestD1 } from "@/test/helpers/d1";
 import { createTestR2, type TestR2 } from "@/test/helpers/r2";
 import { ALICE, makeItemInput } from "@/test/helpers/factories";
 import { imageResponse, installGenAIMock } from "@/test/helpers/gemini";
+import { recordUpload } from "@/app/_lib/uploads";
 import { callRoute, setTestEnv } from "@/test/helpers/route-runner";
 import { setProfile } from "@/app/_lib/profile";
 
@@ -38,6 +39,7 @@ async function createItem(user: string, imageKey = "items/x.jpg") {
   await r2.bucket.put(imageKey, new Uint8Array([1, 2, 3]), {
     httpMetadata: { contentType: "image/jpeg" },
   });
+  await recordUpload(d1.db, user, imageKey);
   const res = await callRoute(itemsPOST, {
     user,
     body: makeItemInput({ imageKey }),
