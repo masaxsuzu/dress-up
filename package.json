@@ -39,7 +39,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "miniflare": "^4.20260701.0",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.62.1",
+    "typescript-eslint": "^8.65.0",
     "vitest": "^4.1.10",
     "wrangler": "^4.112.0"
   }
