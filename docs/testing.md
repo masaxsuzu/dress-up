@@ -10,7 +10,7 @@ npm run test:e2e           # Playwright (e2e/**)
 
 - **Unit** — テストは**ソースの隣**に置く（`app/_lib/db.test.ts`、`app/api/extract/_lib/vlm.test.ts`、`schema/clothing.test.ts` のように）。`test/` 配下に残るのは共有ヘルパーだけ（`docs/codemap.md`「ファイル配置方針」参照）
 - **Integration** (`app/api/**/route.test.ts`) — `route()` を端から端まで（auth ヘッダ → env → handler → Response）。対象ルートの隣に置く
-- **E2E** (`e2e/**`) — 実 AI API は呼ばない。Gemini 依存エンドポイントは Playwright `page.route()` でモック。dev サーバはローカル D1/R2 実 bindings で動く
+- **E2E** (`e2e/**`) — **ブラウザ上のユーザーフロー単位**で書く（API 単体の入出力は integration、実デプロイの HTTP 往復は `scripts/verify-preview.sh` の担当なので e2e には置かない）。実 AI API は呼ばない。Gemini 依存エンドポイントは Playwright `page.route()` でモック。dev サーバはローカル D1/R2 実 bindings で動く
 
 ## 共有ヘルパー
 

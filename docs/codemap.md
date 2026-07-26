@@ -100,7 +100,7 @@
 - `app/**/*.test.ts` / `schema/*.test.ts` — 全テストはソースの隣（上記「ファイル配置方針」参照）。ルートの integration テストは `route.test.ts`
 - `app/api/extract/_lib/vlm-schema-sync.test.ts` — `vlm.ts` の TOOL_SCHEMA と `schema/clothing.ts` の Zod スキーマの同期検証
 - `test/helpers/` / `e2e/helpers.ts` — 共有ヘルパー (`docs/testing.md` 参照)。`test/` 配下に残るのはこれだけ。`browser.ts` は canvas / `createImageBitmap` の fake で、node 環境で `resize-image` / `export-pdf` を unit テストするために使う
-- `e2e/*.spec.ts` — registration / filter / icons / recommend / api / export-pdf の 6 本
+- `e2e/*.spec.ts` — registration / filter / icons / recommend / export-pdf の 5 本。**粒度はブラウザ上のユーザーフローで統一**する（API 単体の入出力は `app/api/**/route.test.ts` の integration が、実デプロイでの HTTP 往復は `scripts/verify-preview.sh` が担当。e2e に API レベルのケースを足さない）
 
 ## その他
 
