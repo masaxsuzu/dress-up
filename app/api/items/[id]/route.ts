@@ -1,7 +1,6 @@
 import { errorResponse } from "@/app/_lib/api-response";
 import { deleteItem, getItem, updateItem } from "@/app/_lib/db";
-import { deleteImage } from "@/app/_lib/r2";
-import { forgetUpload } from "@/app/_lib/uploads";
+import { releaseUpload } from "@/app/_lib/uploads";
 import { parseJson, route } from "@/app/_lib/route-handler";
 import { ClothingItemUpdateSchema } from "@/schema/clothing";
 
@@ -26,12 +25,11 @@ export const DELETE = route<IdParams>(async ({ env, user, params }) => {
   if (!item) return errorResponse("not found", 404);
 
   await deleteItem(env.DB, user, params.id);
-  await deleteImage(env.IMAGES, item.imageKey);
-  await forgetUpload(env.DB, item.imageKey);
+  // 行を消した後に呼ぶ (releaseUpload が他からの参照有無を見るため)。
+  await releaseUpload(env.DB, env.IMAGES, user, item.imageKey);
   // アイコン (生成済みなら) も R2 から消す。残しておくと R2 にオーファンが残る。
   if (item.iconKey) {
-    await deleteImage(env.IMAGES, item.iconKey).catch(() => {});
-    await forgetUpload(env.DB, item.iconKey);
+    await releaseUpload(env.DB, env.IMAGES, user, item.iconKey);
   }
   return new Response(null, { status: 204 });
 });

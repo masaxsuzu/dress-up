@@ -6,7 +6,11 @@ export default defineConfig({
     // テストはソースの隣に colocate する。ソースが置かれうる場所を全て
     // 列挙すること — 取りこぼすとテストが黙って発見されなくなる
     // (schema/ を書き忘れて 8 件が消えた実績あり)。
-    include: ["app/**/*.test.ts", "schema/**/*.test.ts"],
+    include: [
+      "app/**/*.test.ts",
+      "schema/**/*.test.ts",
+      "migrations/**/*.test.ts",
+    ],
     environment: "node",
     coverage: {
       provider: "v8",

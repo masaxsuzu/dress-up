@@ -14,7 +14,8 @@ import {
   makeProfileInput,
 } from "@/test/helpers/factories";
 import { callRoute, setTestEnv } from "@/test/helpers/route-runner";
-import { recordUpload } from "@/app/_lib/uploads";
+import { createItem, listItems } from "@/app/_lib/db";
+import { isUploadedBy, recordUpload } from "@/app/_lib/uploads";
 
 let d1: TestD1;
 let r2: TestR2;
@@ -36,6 +37,7 @@ beforeEach(async () => {
 const { POST: itemsPOST } = await import("@/app/api/items/route");
 const { PUT: profilePUT } = await import("@/app/api/profile/route");
 const { GET: imagesGET } = await import("@/app/api/images/[...key]/route");
+const { DELETE: itemsDELETE } = await import("@/app/api/items/[id]/route");
 
 const VICTIM_KEY = "items/alice-secret.png";
 
@@ -95,6 +97,63 @@ describe("他人の画像キーの横取り", () => {
     });
 
     expect(await r2.bucket.get(VICTIM_KEY)).not.toBeNull();
+  });
+
+  it("旧バグ由来の不正な行が残っていても、削除で他人の画像を消せない", async () => {
+    // 書き込み側のゲートは新しい claim を防ぐが、修正前に作られた行までは
+    // 消してくれない。そういう行が残っていても実体を消せないことを確認する。
+    await r2.bucket.put(VICTIM_KEY, new Uint8Array([1, 2, 3]));
+    await recordUpload(d1.db, ALICE, VICTIM_KEY);
+    // ルートを通さず、DB に直接「Bob が Alice の key を指す行」を作る
+    await createItem(d1.db, BOB, makeItemInput({ imageKey: VICTIM_KEY }));
+    const bobItem = (await listItems(d1.db, BOB))[0];
+
+    const res = await callRoute(itemsDELETE, {
+      user: BOB,
+      params: { id: bobItem.id },
+    });
+
+    expect(res.status).toBe(204); // Bob 自身の行は消えてよい
+    expect(await r2.bucket.get(VICTIM_KEY)).not.toBeNull(); // 実体は無事
+    expect(await isUploadedBy(d1.db, ALICE, VICTIM_KEY)).toBe(true);
+  });
+
+  it("同じ key を共有する 2 アイテムは、片方を消しても残る方の画像が生きている", async () => {
+    await r2.bucket.put(VICTIM_KEY, new Uint8Array([1, 2, 3]));
+    await recordUpload(d1.db, ALICE, VICTIM_KEY);
+    await callRoute(itemsPOST, {
+      user: ALICE,
+      body: makeItemInput({ imageKey: VICTIM_KEY }),
+    });
+    await callRoute(itemsPOST, {
+      user: ALICE,
+      body: makeItemInput({ imageKey: VICTIM_KEY }),
+    });
+    const [first] = await listItems(d1.db, ALICE);
+
+    await callRoute(itemsDELETE, { user: ALICE, params: { id: first.id } });
+
+    expect(await r2.bucket.get(VICTIM_KEY)).not.toBeNull();
+    const read = await callRoute(imagesGET, {
+      user: ALICE,
+      params: { key: VICTIM_KEY.split("/") },
+    });
+    expect(read.status).toBe(200);
+  });
+
+  it("最後の参照を消したときは実体も所有レコードも片付く", async () => {
+    await r2.bucket.put(VICTIM_KEY, new Uint8Array([1, 2, 3]));
+    await recordUpload(d1.db, ALICE, VICTIM_KEY);
+    const created = await callRoute(itemsPOST, {
+      user: ALICE,
+      body: makeItemInput({ imageKey: VICTIM_KEY }),
+    });
+    const { item } = (await created.json()) as { item: { id: string } };
+
+    await callRoute(itemsDELETE, { user: ALICE, params: { id: item.id } });
+
+    expect(await r2.bucket.get(VICTIM_KEY)).toBeNull();
+    expect(await isUploadedBy(d1.db, ALICE, VICTIM_KEY)).toBe(false);
   });
 
   it("Alice 自身は自分の画像を読める (正常系が壊れていないこと)", async () => {
