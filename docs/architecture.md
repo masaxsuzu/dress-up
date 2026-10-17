@@ -34,6 +34,8 @@
 | `env.IMAGES` | R2Bucket | 写真 `items/<uuid>.<ext>`、アイコン `icons/<item-id>.<ext>` |
 | `env.GEMINI_API_KEY` | secret | Gemini API キー（`wrangler secret put` で設定） |
 | `env.ASSETS` | Fetcher | 静的アセット |
+| `env.WARDROBE_EMAIL` | SendEmail（任意） | Cloudflare Email Service の PDF メール送信 binding（本番トップレベルのみ設定） |
+| `env.EMAIL_FROM` | string（任意） | Email Routing / Email Service のドメインに属する送信元メールアドレス |
 
 ## Gemini 使い分け
 
@@ -53,6 +55,7 @@
 - `POST /api/outfit-image` — 選択アイテム → 全身イメージ（バイナリ）。プロフィールをプロンプトに折込み
 - `GET/PUT /api/profile`、`POST /api/profile/reference-image` — プロフィール（1 ユーザ 1 行）
 - `GET /api/images/[...key]` — R2 プロキシ（owner check 付き。フロントは R2 に直接触らない）
+- `POST /api/wardrobe/email` — ブラウザで生成した写真付き PDF（最大 10 MB）を、Access で認証された本人に Cloudflare `send_email` binding 経由で送信。ログインメールは Email Routing の確認済み宛先に登録しておく。宛先はクライアントから受け取らず、Access ヘッダのメールを使用。同一 origin 必須、ローカル認証フォールバックでは送信しない。200 は配信完了ではなく送信受付
 
 エラーレスポンスは全ルート `{ error: string }`（`app/_lib/api-response.ts`）。Zod エラーは 1 つの可読文字列に flatten。
 

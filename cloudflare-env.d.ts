@@ -4,4 +4,6 @@ interface CloudflareEnv {
   IMAGES: R2Bucket;
   ASSETS: Fetcher;
   GEMINI_API_KEY: string;
+  WARDROBE_EMAIL?: SendEmail;
+  EMAIL_FROM?: string;
 }

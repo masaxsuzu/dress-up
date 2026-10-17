@@ -4,6 +4,11 @@ main = ".open-next/worker.js"
 compatibility_date = "2026-04-01"
 compatibility_flags = ["nodejs_compat"]
 
+# Cloudflare Email Routing / Email Service の確認済み宛先へ送信。
+# remote は有効にしない: ローカル開発・テストでは実メールを送らない。
+[[send_email]]
+name = "WARDROBE_EMAIL"
+
 [assets]
 directory = ".open-next/assets"
 binding = "ASSETS"
