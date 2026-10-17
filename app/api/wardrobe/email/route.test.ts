@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Miniflare } from "miniflare";
 import { setTestEnv } from "@/test/helpers/route-runner";
 
@@ -23,7 +23,9 @@ beforeEach(() => {
   setTestEnv({ WARDROBE_EMAIL: { send: sendMock }, EMAIL_FROM: "wardrobe@example.com" });
   sendMock.mockReset();
   sendMock.mockResolvedValue({ messageId: "email-id" });
+  vi.spyOn(console, "error").mockImplementation(() => {});
 });
+afterEach(() => vi.restoreAllMocks());
 
 describe("POST /api/wardrobe/email", () => {
   it("認証された本人だけに、元の PDF を添付して送信する", async () => {
@@ -58,14 +60,50 @@ describe("POST /api/wardrobe/email", () => {
   });
 
   it.each([
-    { EMAIL_FROM: "wardrobe@example.com" },
-    { WARDROBE_EMAIL: { send: sendMock } },
-    { WARDROBE_EMAIL: { send: sendMock }, EMAIL_FROM: "invalid" },
-  ])("設定不足なら 503", async (env) => {
+    {
+      env: { EMAIL_FROM: "wardrobe@example.com" },
+      reason: "WARDROBE_EMAIL_UNAVAILABLE",
+      error: "実行中の Worker にメール送信 binding WARDROBE_EMAIL がありません。dress-up のバインディングとデプロイを確認してください。",
+    },
+    {
+      env: { WARDROBE_EMAIL: { send: sendMock } },
+      reason: "EMAIL_FROM_MISSING",
+      error: "実行中の Worker に送信元 EMAIL_FROM が設定されていません。dress-up の変数とシークレットで設定し、保存・デプロイしてください。",
+    },
+    {
+      env: { WARDROBE_EMAIL: { send: sendMock }, EMAIL_FROM: "invalid" },
+      reason: "EMAIL_FROM_INVALID",
+      error: "送信元 EMAIL_FROM の形式が不正です。表示名や引用符を含めず、メールアドレスだけを文字列で設定してください。",
+    },
+  ])("設定不良の具体的な原因を表示・記録する: $reason", async ({ env, reason, error }) => {
     setTestEnv(env);
     const response = await sendPdf();
     expect(response.status).toBe(503);
-    expect(await response.json()).toEqual({ error: "メール送信の設定がまだ完了していません。" });
+    expect(await response.json()).toEqual({ error });
+    expect(console.error).toHaveBeenCalledWith({ event: "wardrobe_email_configuration_error", reason });
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it("送信元の前後の空白・改行は取り除いて送信する", async () => {
+    setTestEnv({ WARDROBE_EMAIL: { send: sendMock }, EMAIL_FROM: " \nwardrobe@example.com\r\n " });
+    expect((await sendPdf()).status).toBe(200);
+    expect(sendMock).toHaveBeenCalledWith(expect.objectContaining({ from: "wardrobe@example.com" }));
+  });
+
+  it("空白だけの送信元は未設定として扱う", async () => {
+    setTestEnv({ WARDROBE_EMAIL: { send: sendMock }, EMAIL_FROM: " \n " });
+    expect((await sendPdf()).status).toBe(503);
+    expect(console.error).toHaveBeenCalledWith({ event: "wardrobe_email_configuration_error", reason: "EMAIL_FROM_MISSING" });
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it("送信元の設定値をエラーレスポンスやログに出さない", async () => {
+    const invalidValue = 'private sender <wardrobe@example.com>';
+    setTestEnv({ WARDROBE_EMAIL: { send: sendMock }, EMAIL_FROM: invalidValue });
+    const response = await sendPdf();
+    expect(response.status).toBe(503);
+    expect(await response.text()).not.toContain(invalidValue);
+    expect(JSON.stringify(vi.mocked(console.error).mock.calls)).not.toContain("wardrobe@example.com");
     expect(sendMock).not.toHaveBeenCalled();
   });
 
