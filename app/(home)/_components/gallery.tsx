@@ -15,17 +15,6 @@ import {
   parseParams,
 } from "../_lib/gallery-filters";
 
-function downloadBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
-
 // ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
@@ -113,15 +102,29 @@ export function Gallery({ items }: { items: ClothingItem[] }) {
 
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [exportSent, setExportSent] = useState(false);
 
   async function onExportPdf() {
     setExporting(true);
     setExportError(null);
+    setExportSent(false);
     try {
       const { buildWardrobePdf } = await import("../_lib/export-pdf");
       const blob = await buildWardrobePdf(filtered);
-      const date = new Date().toISOString().slice(0, 10);
-      downloadBlob(blob, `dress-up-wardrobe-${date}.pdf`);
+      const res = await fetch("/api/wardrobe/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/pdf" },
+        body: blob,
+      });
+      if (!res.ok) {
+        const body: unknown = await res.json().catch(() => null);
+        const message = body && typeof body === "object" &&
+          "error" in body && typeof body.error === "string"
+          ? body.error
+          : "メール送信に失敗しました。";
+        throw new Error(message);
+      }
+      setExportSent(true);
     } catch (e) {
       setExportError((e as Error).message);
     } finally {
@@ -252,13 +255,18 @@ export function Gallery({ items }: { items: ClothingItem[] }) {
               whiteSpace: "nowrap",
             }}
           >
-            {exporting ? "PDF 生成中…" : "写真付き PDF"}
+            {exporting ? "PDF 生成・送信中…" : "PDF を自分にメール"}
           </button>
         )}
       </div>
       {exportError && (
-        <p style={{ color: "var(--danger)", fontSize: "0.8rem", margin: "0 0 1rem" }}>
-          PDF 生成に失敗しました: {exportError}
+        <p role="alert" style={{ color: "var(--danger)", fontSize: "0.8rem", margin: "0 0 1rem" }}>
+          PDF のメール送信に失敗しました: {exportError}
+        </p>
+      )}
+      {exportSent && (
+        <p role="status" style={{ fontSize: "0.8rem", margin: "0 0 1rem" }}>
+          ログイン中のメールアドレス宛てに PDF の送信を受け付けました。
         </p>
       )}
 

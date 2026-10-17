@@ -11,7 +11,7 @@ test.describe("/ 写真付き PDF エクスポート", () => {
     await expect(page.getByTestId("export-pdf-button")).toHaveCount(0);
   });
 
-  test("アイテム一覧を PDF としてダウンロードできる (imageKey が R2 に無くても失敗しない)", async ({
+  test("アイテム一覧を PDF として自分宛てに送信できる (実メール送信はモック)", async ({
     page,
     request,
   }) => {
@@ -23,16 +23,37 @@ test.describe("/ 写真付き PDF エクスポート", () => {
     const button = page.getByTestId("export-pdf-button");
     await expect(button).toBeEnabled();
 
-    const downloadPromise = page.waitForEvent("download");
+    await page.route("**/api/wardrobe/email", async (route) => {
+      expect(route.request().method()).toBe("POST");
+      expect(route.request().headers()["content-type"]).toBe("application/pdf");
+      expect(route.request().postDataBuffer()?.subarray(0, 5).toString()).toBe("%PDF-");
+      await route.fulfill({ json: { accepted: true } });
+    });
     await button.click();
-    const download = await downloadPromise;
-
-    expect(download.suggestedFilename()).toMatch(/^dress-up-wardrobe-\d{4}-\d{2}-\d{2}\.pdf$/);
-    const path = await download.path();
-    expect(path).toBeTruthy();
+    await expect(page.getByRole("status")).toContainText("送信を受け付けました");
 
     await expect(button).toBeEnabled();
-    await expect(button).toHaveText("写真付き PDF");
+    await expect(button).toHaveText("PDF を自分にメール");
+  });
+
+  test("メール送信に失敗したらエラーを表示し、再試行できる", async ({ page, request }) => {
+    await seedItem(request, { category: "tops" });
+    await page.route("**/api/wardrobe/email", (route) => route.fulfill({
+      status: 503,
+      json: { error: "メール送信の設定がまだ完了していません。" },
+    }));
+    await page.goto("/");
+    const button = page.getByTestId("export-pdf-button");
+    const error = page.getByRole("alert").filter({ hasText: "PDF のメール送信に失敗しました" });
+    await button.click();
+    await expect(error).toContainText("メール送信の設定がまだ完了していません。");
+    await expect(page.getByRole("status")).toHaveCount(0);
+    await expect(button).toBeEnabled();
+
+    await page.route("**/api/wardrobe/email", (route) => route.fulfill({ json: { accepted: true } }));
+    await button.click();
+    await expect(page.getByRole("status")).toContainText("送信を受け付けました");
+    await expect(error).toHaveCount(0);
   });
 
   test("絞り込み中は表示中のアイテムのみが対象になる (0件時はボタンが無効)", async ({
